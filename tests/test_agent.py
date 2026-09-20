@@ -254,7 +254,7 @@ def test_a_cached_verdict_is_served_without_a_model(tmp_path, monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
 
-    key = _cache_key(FIXTURE, MODEL, 300)
+    key = _cache_key(TriageContext(FIXTURE), MODEL)
     agent_mod._store_verdict(key, _a_verdict(), None)
 
     result = triage(FIXTURE)
@@ -266,7 +266,7 @@ def test_routing_is_recomputed_rather_than_cached(tmp_path, monkeypatch):
     """Only the model's answer is cached. Sweeping the confidence threshold, or
     tightening the evidence check, must re-score answered runs for free."""
     monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
-    agent_mod._store_verdict(_cache_key(FIXTURE, MODEL, 300), _a_verdict(), None)
+    agent_mod._store_verdict(_cache_key(TriageContext(FIXTURE), MODEL), _a_verdict(), None)
 
     assert triage(FIXTURE).route is Route.AUTO_POST
     # The same cached answer, re-routed under a stricter policy.
@@ -278,29 +278,74 @@ def test_routing_is_recomputed_rather_than_cached(tmp_path, monkeypatch):
 def test_editing_the_prompt_invalidates_every_cached_verdict():
     """Otherwise a prompt change would be scored against answers from the old
     prompt, and the eval would report that nothing you did had any effect."""
-    before = _cache_key(FIXTURE, MODEL, 300)
+    before = _cache_key(TriageContext(FIXTURE), MODEL)
     original = agent_mod.INSTRUCTIONS
     try:
         agent_mod.INSTRUCTIONS = original + "\none more rule.\n"
-        assert _cache_key(FIXTURE, MODEL, 300) != before
+        assert _cache_key(TriageContext(FIXTURE), MODEL) != before
     finally:
         agent_mod.INSTRUCTIONS = original
 
 
-def test_the_cache_key_separates_models_and_line_budgets():
-    keys = {
-        _cache_key(FIXTURE, "groq:openai/gpt-oss-120b", 300),
-        _cache_key(FIXTURE, "groq:openai/gpt-oss-20b", 300),
-        _cache_key(FIXTURE, "groq:openai/gpt-oss-120b", 150),
-    }
-    assert len(keys) == 3
+def test_the_cache_key_separates_models():
+    assert _cache_key(TriageContext(FIXTURE), "groq:openai/gpt-oss-120b") != _cache_key(
+        TriageContext(FIXTURE), "groq:openai/gpt-oss-20b"
+    )
+
+
+@pytest.mark.skipif(not Path("fixtures/pydantic__35411255497").exists(), reason="not captured")
+def test_a_line_budget_that_changes_the_excerpt_changes_the_key():
+    big = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=300)
+    small = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=100)
+    assert big.get_logs() != small.get_logs(), "fixture no longer exercises the budget"
+    assert _cache_key(big, MODEL) != _cache_key(small, MODEL)
+
+
+def test_a_line_budget_that_changes_nothing_reuses_the_answer():
+    """Keying on the rendered text rather than on `max_lines` means a budget
+    the logs already fit under is not a different question, so the verdict it
+    was already given still answers it. The old key said otherwise and paid for
+    the same answer twice."""
+    loose = TriageContext(FIXTURE, max_lines=300)
+    tight = TriageContext(FIXTURE, max_lines=150)
+    assert loose.get_logs() == tight.get_logs(), "fixture no longer exercises this"
+    assert _cache_key(loose, MODEL) == _cache_key(tight, MODEL)
+
+
+def test_changing_what_the_model_is_shown_invalidates_the_cache(monkeypatch):
+    """The hole the old key left open. `INSTRUCTIONS` was hashed and the layer
+    that builds the rest of the prompt was not, so an edit to the anchors in
+    `logs.py` or the fingerprint in `tools.py` left every key unchanged while
+    the model saw different text — and the symptom is an eval score that will
+    not move however much you improve the reduction."""
+    ctx = TriageContext(FIXTURE)
+    before = _cache_key(ctx, MODEL)
+
+    shown = ctx.get_logs()
+    monkeypatch.setattr(ctx, "get_logs", lambda job_name=None: shown + "\n... one more line ...")
+    assert _cache_key(ctx, MODEL) != before
+
+
+def test_the_cache_key_covers_every_tool_the_agent_can_call(monkeypatch):
+    """Not just the logs: a re-fetched diff or a backfilled history changes the
+    evidence a verdict rests on just as much."""
+    ctx = TriageContext(FIXTURE)
+    before = _cache_key(ctx, MODEL)
+    for tool, replacement in (
+        ("get_diff", lambda: "a different diff"),
+        ("test_history", lambda: "a different history"),
+        ("overview", lambda: "a different overview"),
+    ):
+        with monkeypatch.context() as m:
+            m.setattr(ctx, tool, replacement)
+            assert _cache_key(ctx, MODEL) != before, f"{tool} is not in the cache key"
 
 
 def test_an_unreadable_cache_entry_is_a_miss_not_a_crash(tmp_path, monkeypatch):
     """A `Verdict` field added later must not make the cache raise on every
     read; the fixture simply gets re-answered."""
     monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
-    key = _cache_key(FIXTURE, MODEL, 300)
+    key = _cache_key(TriageContext(FIXTURE), MODEL)
     (tmp_path / f"{key}.json").write_text("{not json at all")
     assert agent_mod._cached_verdict(key) is None
 

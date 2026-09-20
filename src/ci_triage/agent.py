@@ -394,17 +394,39 @@ def check_evidence(ctx: TriageContext, verdict: Verdict) -> tuple[EvidenceCheck,
 CACHE_DIR = Path(".triage-cache")
 
 
-def _cache_key(fixture: Path, model: str, max_lines: int) -> str:
+def _cache_key(ctx: TriageContext, model: str) -> str:
     """Identify a verdict by everything that could have changed it.
 
-    The prompt is hashed along with the model and the fixture, so editing
-    `INSTRUCTIONS` invalidates every cached verdict automatically. That is the
-    only behaviour that is safe: a cache which survived a prompt change would
-    quietly serve answers from the old prompt, and the first thing to look wrong
-    would be an eval score that refused to move.
+    Everything means everything the model can see, so the key hashes the actual
+    output of every tool, not just `INSTRUCTIONS` and the fixture's name. The
+    earlier key named the fixture, the model, `max_lines` and the prompt, which
+    covers a prompt edit and misses the whole layer underneath it: the anchors
+    in `logs.py`, the excerpt budget arithmetic, the failure fingerprint in
+    `tools.py`. Change any of those and the model is shown different text under
+    an unchanged key — so the cache serves answers to a question no longer being
+    asked, and the first symptom is an eval score that refuses to move no matter
+    what you improve. That is precisely the failure this docstring already
+    warned about for the prompt, with a door left open beside it.
+
+    Hashing the rendered text closes it without anyone having to remember to
+    bump a version: the reduction *is* part of the prompt, so it belongs in the
+    key the same way the prompt does. `max_lines` drops out as a separate
+    component because `get_logs()` already reflects it.
+
+    The cost is reading the fixture's logs on a cache lookup, which is local
+    work on a few hundred KB — nothing next to the request it avoids.
     """
     h = hashlib.sha256()
-    for part in (fixture.name, model, str(max_lines), INSTRUCTIONS):
+    parts = (
+        ctx.fixture.name,
+        model,
+        INSTRUCTIONS,
+        ctx.overview(),
+        ctx.get_logs(),
+        ctx.get_diff(),
+        ctx.test_history(),
+    )
+    for part in parts:
         h.update(part.encode())
         h.update(b"\x00")
     return h.hexdigest()[:16]
@@ -431,7 +453,8 @@ def is_answered(fixture: Path | str, *, model: str = MODEL, max_lines: int = 300
     already paid for without spending anything — which is the difference between
     a report you can regenerate while rate-limited and one you cannot.
     """
-    return _cached_verdict(_cache_key(Path(fixture), model, max_lines)) is not None
+    ctx = TriageContext(Path(fixture), max_lines=max_lines)
+    return _cached_verdict(_cache_key(ctx, model)) is not None
 
 
 def _store_verdict(key: str, verdict: Verdict, usage: RunUsage | None) -> None:
@@ -466,7 +489,7 @@ def triage(
     if trace:
         enable_tracing()
 
-    key = _cache_key(ctx.fixture, model, max_lines)
+    key = _cache_key(ctx, model)
     hit = _cached_verdict(key) if cache else None
     if hit is not None:
         verdict, usage = hit

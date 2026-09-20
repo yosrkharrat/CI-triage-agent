@@ -92,6 +92,23 @@ _UNINFORMATIVE = re.compile(
 #: Jaccard overlap at which two jobs are called the same failure.
 _SIMILARITY = 0.5
 
+#: Line budget the *fingerprint* is always computed at, whatever budget the
+#: excerpt shown to the model uses.
+#:
+#: Grouping used to read the same excerpt that gets rendered, which quietly made
+#: `max_lines` two knobs at once: it set how much of a failure the model sees,
+#: and it decided which failures are the same failure. A tighter budget drops
+#: the lowest-priority spans first, and those spans are often the lines two
+#: matrix legs agree on — so the overlap falls under `_SIMILARITY` and one
+#: failure splits into several, each then rendering its own representative log.
+#:
+#: The effect ran backwards from the intent. On `poetry__35343948952`, halving
+#: `max_lines` from 300 to 150 took 8 distinct failures to 16 and rendered 29%
+#: *more* log, so the one knob you would reach for to fit a smaller budget made
+#: the prompt bigger. Pinning the fingerprint here leaves `max_lines` meaning
+#: only what it says, and leaves grouping identical at the default.
+_FINGERPRINT_LINES = 300
+
 
 def _fingerprint(excerpt: LogExcerpt) -> frozenset[str]:
     """The set of lines that could distinguish this failure from another.
@@ -196,7 +213,13 @@ class TriageContext:
 
     @cached_property
     def groups(self) -> list[FailureGroup]:
-        """Failed jobs collapsed onto their distinct failures, largest first."""
+        """Failed jobs collapsed onto their distinct failures, largest first.
+
+        What a job *is* and how much of it is shown are decided separately: the
+        fingerprint always reads a `_FINGERPRINT_LINES` excerpt, so changing
+        `max_lines` changes the size of each representative and never the number
+        of representatives.
+        """
         groups: list[FailureGroup] = []
         for job in self.failed_jobs:
             log = log_path_for_job(self.fixture, job)
@@ -205,7 +228,13 @@ class TriageContext:
             excerpt = excerpt_file(
                 log, job_name=job.name, log_path=log.name, max_lines=self.max_lines
             )
-            fingerprint = _fingerprint(excerpt)
+            fingerprint = _fingerprint(
+                excerpt
+                if self.max_lines == _FINGERPRINT_LINES
+                else excerpt_file(
+                    log, job_name=job.name, log_path=log.name, max_lines=_FINGERPRINT_LINES
+                )
+            )
             # Greedy, against the group's representative rather than against
             # every member: a chain of pairwise-similar jobs would otherwise
             # drift arbitrarily far from where it started.

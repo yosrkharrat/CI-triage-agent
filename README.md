@@ -59,8 +59,12 @@ Some decisions worth naming:
   as one representative — and the count is reported, because "37 jobs failing
   identically" is evidence of one cause rather than of a broken environment.
 - **Verdicts are cached, routing is not.** Only the model's answer is stored,
-  keyed on a hash of the prompt. Tightening the evidence check or raising the
-  confidence threshold re-scores every run already paid for, for free.
+  keyed on a hash of everything the model was shown — the prompt, and the
+  reduced logs, diff and history under it. Editing the anchors or the failure
+  fingerprint invalidates the cache as surely as editing the prompt does, so a
+  score can never come from answers to a question no longer being asked.
+  Tightening the evidence check or raising the confidence threshold re-scores
+  every run already paid for, for free.
 
 ## Scoring it
 

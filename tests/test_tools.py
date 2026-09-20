@@ -233,3 +233,36 @@ def test_the_infra_fixture_reports_all_four_legs_failing_identically():
     assert len(ctx.groups) == 1
     assert ctx.groups[0].size == 4
     assert "resource not accessible by integration" in ctx.get_logs().lower()
+
+
+@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+def test_the_line_budget_does_not_decide_how_many_failures_there_are():
+    """`max_lines` had two jobs and only one of them was its own.
+
+    Grouping read the same excerpt that gets rendered, so a tighter budget
+    dropped the lowest-priority spans — often the very lines two matrix legs
+    agree on — and one failure split into several, each then rendering its own
+    representative log. The knob you reach for to fit a smaller budget made the
+    prompt *bigger*: on this fixture, 300 -> 150 took 8 distinct failures to 16
+    and rendered 29% more log.
+    """
+    counts = {ml: len(TriageContext(REAL / "poetry__35343948952", max_lines=ml).groups)
+              for ml in (300, 150, 100)}
+    assert len(set(counts.values())) == 1, f"grouping moved with the budget: {counts}"
+
+
+@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+def test_a_tighter_line_budget_never_renders_more():
+    """The property the fix exists to restore, stated as the user sees it."""
+    sizes = [len(TriageContext(REAL / "poetry__35343948952", max_lines=ml).get_logs())
+             for ml in (300, 150, 100)]
+    assert sizes == sorted(sizes, reverse=True), sizes
+
+
+@pytest.mark.skipif(not (REAL / "pydantic__35411255497").exists(), reason="fixture not captured")
+def test_grouping_at_the_default_budget_is_unchanged_by_the_fix():
+    """Pinned because the fix had to be free: these counts are what every
+    cached verdict was answered against, and moving them would silently
+    invalidate the only measurements that exist."""
+    ctx = TriageContext(REAL / "pydantic__35411255497", max_lines=300)
+    assert (len(ctx.groups), ctx.groups[0].size) == (2, 36)
