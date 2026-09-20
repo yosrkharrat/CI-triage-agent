@@ -1,0 +1,13 @@
+{
+  "repo": "Agence-OOO/sweep",
+  "run_id": 30005314760,
+  "run_attempt": 1,
+  "fetched_at": "2026-09-19T11:37:29.519351Z",
+  "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005314760",
+  "label": {
+    "category": "regression",
+    "root_cause": "Rust compile errors in src-tauri/src/lib.rs:166 — a local 'categories' Vec binding shadows the categories() function",
+    "notes": "Latent: the commit diff only adds .github/workflows/release.yml and never touches lib.rs. This run is the first time CI ever built the crate, which is what exposed it. Good adversarial case — an agent that keys off 'what changed in the diff' will get this wrong.",
+    "labeled_at": "2026-09-19T11:38:06.484279Z"
+  }
+}

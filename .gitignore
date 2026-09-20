@@ -6,10 +6,21 @@
 # The captured corpus: ~370 MB of GitHub Actions logs across 43 runs.
 # Deliberately not in git. It is reproducible — `ci-triage hunt` finds failed
 # runs and `ci-triage fetch` re-captures any of them — so committing it would
-# trade a 44 MB clone for bytes anyone can regenerate from the run URL. The
-# labels are the part that is genuinely hand-made and hard to recreate; they
-# live in each fixture's meta.json, so back those up separately from the logs.
-fixtures/
+# trade a 44 MB clone for bytes anyone can regenerate from the run URL.
+#
+# The labels are the exception, and they are tracked. A run URL regenerates its
+# logs; nothing regenerates a human reading them and deciding what broke. They
+# are the eval set's ground truth and they exist on exactly one laptop, so the
+# four rules below keep every meta.json and not one log line.
+#
+# It takes four rather than one because git will not descend into an excluded
+# directory: `fixtures/` followed by `!fixtures/*/meta.json` un-ignores nothing,
+# since the parent is already gone. So the directories stay visible and their
+# contents are excluded a level down instead.
+fixtures/*
+!fixtures/*/
+fixtures/*/*
+!fixtures/*/meta.json
 
 # Answered verdicts, keyed by prompt + model + fixture. A cache, not a result:
 # re-running rebuilds it, and editing the prompt invalidates it automatically.

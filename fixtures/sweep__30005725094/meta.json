@@ -1,0 +1,13 @@
+{
+  "repo": "Agence-OOO/sweep",
+  "run_id": 30005725094,
+  "run_attempt": 1,
+  "fetched_at": "2026-09-19T11:28:50.582559Z",
+  "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094",
+  "label": {
+    "category": "infra",
+    "root_cause": "Workflow lacks 'contents: write' permission, so tauri-action could not create release v0.1.0",
+    "notes": "All 4 matrix jobs fail identically at the same step; the build itself succeeded and produced artifacts. Fix is a permissions block in the workflow YAML, not a code change.",
+    "labeled_at": "2026-09-19T11:28:50.582729Z"
+  }
+}

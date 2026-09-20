@@ -1,0 +1,13 @@
+{
+  "repo": "pydantic/pydantic",
+  "run_id": 35411255497,
+  "run_attempt": 1,
+  "fetched_at": "2026-09-19T17:02:40.522450Z",
+  "html_url": "https://github.com/pydantic/pydantic/actions/runs/35411255497",
+  "label": {
+    "category": "regression",
+    "root_cause": "The two tests this diff adds (tests/test_v1_hypothesis_plugin.py) fail at import of pydantic.v1._hypothesis_plugin: hypothesis's register_type_strategy reads sys.modules['pydantic.generics'].GenericModel, which trips pydantic's own V2 deprecation shim, and the suite runs warnings-as-errors.",
+    "notes": "Adversarial on two axes. (1) The exception is raised inside hypothesis and inside pydantic/_migration.py, so an agent keying off 'which package raised' will answer dependency. The discriminator is the DEPENDENCY definition's second clause: hypothesis did not change underneath an unpinned reference, the repo's own new code is what reached that path, and 12,828 other tests pass. (2) 37 of 66 jobs are red with byte-identical failures across every OS and Python version, which reads as infra breadth; here it is one deterministic break fanned out over a matrix. History supports this: no green on this commit, and the workflow's background failure rate is 11%.",
+    "labeled_at": "2026-09-20T10:30:13.680845Z"
+  }
+}
