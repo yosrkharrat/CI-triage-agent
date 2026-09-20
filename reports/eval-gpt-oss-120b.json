@@ -1,0 +1,92 @@
+{
+  "model": "groq:openai/gpt-oss-120b",
+  "max_lines": 300,
+  "started_at": "2026-09-20T17:25:52.576881+00:00",
+  "seconds": 1.6,
+  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198411, Requested 2194. Please try again in 4m21.36s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/",
+  "fixtures": 1,
+  "answered": 0,
+  "citations": {
+    "cited": 0,
+    "verified": 0,
+    "rate": null,
+    "sound_verdicts": 0,
+    "sound_verdict_rate": null,
+    "faults": {}
+  },
+  "categories": {
+    "labelled": 0,
+    "correct": 0,
+    "accuracy": null,
+    "confusion": {},
+    "abstentions": 0
+  },
+  "routing": {
+    "auto_post": 0,
+    "human_review": 0,
+    "unsound_auto_posts": [],
+    "wrong_auto_posts": [],
+    "threshold_sweep": [
+      {
+        "threshold": 0.5,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      },
+      {
+        "threshold": 0.6,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      },
+      {
+        "threshold": 0.7,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      },
+      {
+        "threshold": 0.8,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      },
+      {
+        "threshold": 0.9,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      },
+      {
+        "threshold": 0.95,
+        "auto_posted": 0,
+        "correct": 0,
+        "unsound": 0
+      }
+    ]
+  },
+  "cost": {
+    "tokens": 0,
+    "tokens_spent": 0,
+    "requests": 0
+  },
+  "scores": [
+    {
+      "fixture": "airflow__32529760720",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 0,
+      "requests": 0,
+      "cached": false,
+      "seconds": 1.6,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198411, Requested 2194. Please try again in 4m21.36s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/",
+      "verdict": null
+    }
+  ]
+}

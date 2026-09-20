@@ -476,6 +476,20 @@ def test_the_report_renders_with_labels():
     assert "flaky -> infra: 1" in text
 
 
+def test_an_account_id_never_reaches_a_written_report():
+    """Reports are committed, so a quota message quoted out of an API response
+    gets published along with whatever account it names."""
+    exc = ModelHTTPError(
+        status_code=429,
+        model_name="groq:openai/gpt-oss-20b",
+        body={"error": {"message": "Rate limit for org `org_0123456789abcdefghij` (TPD): 200000"}},
+    )
+    detail = eval_mod._http_detail(exc)
+    assert "org_0123456789abcdefghij" not in detail
+    assert "org_<redacted>" in detail
+    assert "200000" in detail, "the quota itself is the part worth keeping"
+
+
 def test_the_report_round_trips_through_json(tmp_path):
     report = _report(
         _score("a", label=FailureCategory.INFRA, ok=(True, False)),

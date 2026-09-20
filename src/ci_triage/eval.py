@@ -37,6 +37,7 @@ quota is gone and you still need the number.
 from __future__ import annotations
 
 import json
+import re
 import time
 from collections import Counter
 from dataclasses import dataclass
@@ -782,13 +783,20 @@ def run_eval(
     )
 
 
+#: Account identifiers providers put in error bodies. Reports are written to
+#: `reports/` and committed, so anything quoted verbatim out of an API response
+#: gets published — a quota message is worth keeping, the org it belongs to is
+#: not, and neither is worth noticing only after it is in git history.
+_ACCOUNT_ID = re.compile(r"\b(org|user|acct|team)_[A-Za-z0-9]{6,}", re.IGNORECASE)
+
+
 def _http_detail(exc: ModelHTTPError) -> str:
     """The provider's own message, which is where a quota reset time lives."""
     body = exc.body if isinstance(exc.body, dict) else {}
     if isinstance(err := body.get("error"), dict):
         if message := err.get("message"):
-            return f"{exc.status_code}: {message}"[:300]
-    return f"{exc.status_code}: {exc}"[:300]
+            return _ACCOUNT_ID.sub(r"\1_<redacted>", f"{exc.status_code}: {message}")[:300]
+    return _ACCOUNT_ID.sub(r"\1_<redacted>", f"{exc.status_code}: {exc}")[:300]
 
 
 def write_report(report: EvalReport, path: Path) -> Path:
