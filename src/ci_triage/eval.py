@@ -242,22 +242,29 @@ class EvalReport:
 
     @property
     def oversized(self) -> list[FixtureScore]:
-        """Fixtures whose reduced prompt exceeded the provider's per-request cap.
+        """Runs whose request exceeded the provider's per-request token cap.
 
-        Neither a model failure nor a fixture failure — the request never
-        reached the model. `airflow__32529760720` reduces to ~9.4k tokens and
-        `gpt-oss-20b` on the free tier caps a request at 8k, so no retry and no
-        prompt change makes it answerable on that budget. Counted apart from the
-        rest because folding it into a quality metric blames the agent for an
-        account limit, and because a run of them must not look like a provider
-        outage and stop the sweep.
+        Counted apart from the quality metrics because the request never reached
+        the model, so it is not an answer the model got wrong. It is not a
+        property of the fixture either, which is the part that took a sweep to
+        learn: on `gpt-oss-20b`'s 8k-per-minute free tier, 37 of 43 fixtures
+        returned 413, and the rejected sizes clustered at 8.2k-11k while the
+        logs behind them ranged from 489 to 34,662 tokens. The logs were never
+        in those requests.
 
-        Six of the 43 exceed 8k at the default `max_lines=300`. Lowering it is
-        the obvious remedy and only sometimes works: `TriageContext.groups`
-        fingerprints each job from an excerpt the same budget cut, so a smaller
-        budget can drop the lines that made two jobs match. On
-        `poetry__35343948952`, halving it to 150 splits 8 distinct failures into
-        16 and renders 29% *more* log, not less.
+        What fills them is the agent loop. Every turn re-sends the whole
+        conversation, reasoning traces included, and `RETRIES` allows five
+        rounds of a model getting the schema wrong before the verdict is
+        abandoned. `core__35505915015` answers in 2 requests and 4,089 tokens
+        when the model gets the tool call right the first time, and 413s at
+        9,020 when it does not — same fixture, same prompt, same budget.
+
+        So a 413 here is stochastic and a re-run is worth making: it says the
+        model spent its budget arguing with the schema, which is a fact about
+        the model on a small budget rather than about the run being triaged.
+        Groq distinguishes the two cases cleanly — a request that is itself too
+        large is 413, a request that does not fit the *remaining* window is 429
+        — so this never silently absorbs ordinary rate limiting.
         """
         return [s for s in self.errored if (s.error or "").startswith(str(_TOO_LARGE))]
 
@@ -524,14 +531,14 @@ class EvalReport:
         if oversized := self.oversized:
             lines.append("")
             lines.append(
-                f"{len(oversized)} of those never reached the model at all: the reduced prompt "
-                "is larger than this account's per-request cap, so no retry and no prompt "
-                "change makes them answerable on this budget."
+                f"{len(oversized)} of those never reached the model: the request itself was "
+                "larger than this account's per-request cap."
             )
             lines.append(
-                "  a smaller --max-lines is worth trying and is not guaranteed to help — the "
-                "line budget also feeds the failure fingerprint, so cutting it can split one "
-                "failure into several and render more log, not less."
+                "  usually the agent loop rather than the logs — every turn re-sends the whole "
+                "conversation with its reasoning, so a model that retries its way through the "
+                "schema can cross the cap on a fixture whose logs are tiny. Worth re-running; "
+                "the same fixture often answers on a cleaner attempt."
             )
             for s in oversized[:5]:
                 lines.append(f"  {s.fixture}")
