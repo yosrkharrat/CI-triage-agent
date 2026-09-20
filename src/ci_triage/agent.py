@@ -424,6 +424,16 @@ def _cached_verdict(key: str) -> tuple[Verdict, RunUsage | None] | None:
         return None
 
 
+def is_answered(fixture: Path | str, *, model: str = MODEL, max_lines: int = 300) -> bool:
+    """Whether `triage` could answer for this fixture without calling the model.
+
+    The eval harness asks this before a sweep so it can report over the verdicts
+    already paid for without spending anything — which is the difference between
+    a report you can regenerate while rate-limited and one you cannot.
+    """
+    return _cached_verdict(_cache_key(Path(fixture), model, max_lines)) is not None
+
+
 def _store_verdict(key: str, verdict: Verdict, usage: RunUsage | None) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     blob: dict = {"verdict": verdict.model_dump(mode="json")}

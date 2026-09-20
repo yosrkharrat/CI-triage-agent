@@ -26,6 +26,12 @@ fixtures/*/*
 # re-running rebuilds it, and editing the prompt invalidates it automatically.
 .triage-cache/
 
+# Eval reports are the opposite: `reports/*.json` is a result, tied to one model
+# and one prompt revision, and is what the numbers in the README are read from.
+# It is tracked. The raw sweep logs beside it are not — they are a terminal
+# transcript, regenerable by re-running the sweep against the cache for free.
+reports/*.log
+
 # Project planning notes, not documentation.
 readme
 

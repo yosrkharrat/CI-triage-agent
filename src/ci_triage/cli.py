@@ -5,6 +5,7 @@
     ci-triage inspect <fixture>    show exactly what the agent will be shown
     ci-triage triage <fixture>     run the agent and print its verdict
     ci-triage label <fixture>      record human ground truth for the eval set
+    ci-triage eval                 score the agent over the whole corpus
     ci-triage ls                   list fixtures and their labels
     ci-triage backfill             add history.json to older fixtures
 """
@@ -257,6 +258,108 @@ def label(
     )
     (path / "meta.json").write_text(meta.model_dump_json(indent=2))
     console.print(f"[green]labelled[/green] {path.name} as [cyan]{category.value}[/cyan]")
+
+
+@app.command("eval")
+def run_eval_command(
+    fixtures: list[str] = typer.Argument(None, help="Fixture names; all of them when omitted"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Provider:model to score"),
+    max_lines: int = typer.Option(300, help="Line budget per log excerpt"),
+    limit: int | None = typer.Option(None, "--limit", "-n", help="Stop after this many fixtures"),
+    labelled: bool = typer.Option(
+        False, "--labelled", help="Only fixtures carrying a human label"
+    ),
+    cached_only: bool = typer.Option(
+        False, "--cached-only", help="Score answered verdicts only; never call the model"
+    ),
+    refresh: bool = typer.Option(
+        False, "--refresh", help="Re-ask the model for every fixture; pays for the sweep again"
+    ),
+    report: Path | None = typer.Option(None, "--json", help="Write the full report here"),
+) -> None:
+    """Score the agent over the captured corpus.
+
+    Reports two numbers. The citation verification rate needs no ground truth —
+    it asks whether each quoted line is really at the coordinates the model gave
+    — so it covers every fixture from the first day. Category accuracy needs a
+    label and covers the labelled subset, which widens as you label.
+
+    Verdicts are cached, so an interrupted sweep resumes for the price of what
+    it never reached, and re-scoring costs nothing at all.
+    """
+    load_dotenv(".env.local")
+    load_dotenv(".env")
+
+    # pydantic-ai prints a multi-line setup banner the first time an agent is
+    # constructed. Harmless once; in a 43-fixture sweep it lands in the middle
+    # of the progress line and makes the run log unreadable. Set before the
+    # import, which is when the flag is read.
+    os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
+
+    # Deferred with the rest of the agent imports, so capture and labelling keep
+    # working in an environment that never installed the model providers.
+    from ci_triage.agent import MODEL
+    from ci_triage.eval import find_fixtures, run_eval, write_report
+
+    if cached_only and refresh:
+        # One says never call the model, the other says call it for everything.
+        # Silently honouring either would spend a day's quota or report on
+        # nothing, so neither is a safe default to pick.
+        console.print("[red]--cached-only and --refresh contradict each other[/red]")
+        raise typer.Exit(1)
+
+    paths = find_fixtures(FIXTURES, names=fixtures or (), labelled_only=labelled)
+    missing = [p for p in paths if not (p / "run.json").exists()]
+    if missing:
+        console.print(f"[red]not a captured fixture:[/red] {', '.join(p.name for p in missing)}")
+        raise typer.Exit(1)
+    if not paths:
+        console.print("[yellow]no fixtures to score[/yellow]")
+        raise typer.Exit(1)
+    if limit is not None:
+        paths = paths[:limit]
+
+    chosen = model or MODEL
+    console.print(
+        f"scoring [bold]{len(paths)}[/bold] fixture(s) with {chosen}"
+        + ("  [dim](cache only — no model calls)[/dim]" if cached_only else "")
+    )
+
+    def on_start(i: int, path: Path) -> None:
+        console.print(f"  [{i}/{len(paths)}] {path.name}", end=" ")
+
+    def on_score(score) -> None:
+        if score.result is None:
+            console.print(f"[red]— {score.error}[/red]")
+            return
+        cites = f"{score.verified}/{score.cited} cites"
+        mark = "" if score.correct is None else (" [green]ok[/green]" if score.correct else " [red]WRONG[/red]")
+        cached = " [dim](cached)[/dim]" if score.cached else ""
+        console.print(f"— {score.predicted.value} {cites}{mark}{cached}")
+
+    result = run_eval(
+        paths,
+        model=chosen,
+        max_lines=max_lines,
+        cache=not refresh,
+        cached_only=cached_only,
+        on_start=on_start,
+        on_score=on_score,
+    )
+
+    console.print()
+    # `soft_wrap` so the fixture table survives being piped to a file or a
+    # pager: rich otherwise hard-wraps at 80 columns when stdout is not a tty,
+    # which folds every row onto two.
+    console.print(result.render(), highlight=False, markup=False, soft_wrap=True)
+    if report is not None:
+        write_report(result, report)
+        console.print(f"\n[green]wrote[/green] {report}")
+    # A sweep that stopped on a quota is not a passing run: the numbers above
+    # describe a subset, and a CI step or a shell loop should be able to see
+    # that without parsing the report.
+    if result.stopped_early:
+        raise typer.Exit(2)
 
 
 @app.command("ls")
