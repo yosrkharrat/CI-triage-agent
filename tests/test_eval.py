@@ -291,6 +291,12 @@ def test_the_threshold_sweep_reads_stored_verdicts_rather_than_re_running(monkey
 # --------------------------------------------------------------------------
 
 
+def _usage(inp: int, out: int):
+    from pydantic_ai.usage import RunUsage
+
+    return RunUsage(input_tokens=inp, output_tokens=out, requests=3)
+
+
 def _fixture_paths(tmp_path: Path, n: int) -> list[Path]:
     paths = []
     for i in range(n):
@@ -431,6 +437,38 @@ def test_cached_only_never_calls_the_model(tmp_path, monkeypatch):
     report = run_eval(paths, cached_only=True)
     assert len(report.errored) == 2
     assert all("cache" in (s.error or "") for s in report.scores)
+
+
+def test_a_failed_run_still_counts_toward_what_the_sweep_cost(tmp_path, monkeypatch):
+    """The report used to bill only the fixtures that answered. Today's sweep
+    answered 5 of 43 and called it 7,673 tokens; the 37 that failed had each
+    been served several requests first, and the real spend was near a day's
+    budget."""
+    paths = _fixture_paths(tmp_path, 2)
+
+    def fake(path, **kw):
+        if Path(path).name == "repo__0":
+            exc = UnexpectedModelBehavior("exceeded max retries")
+            setattr(exc, "triage_spent_usage", _usage(9000, 1000))
+            raise exc
+        return _result()
+
+    monkeypatch.setattr(eval_mod, "triage", fake)
+    report = run_eval(paths)
+
+    assert report.burned == 10_000
+    assert report.tokens_spent == 10_000, "the failed run is what this sweep actually paid for"
+    assert "bought no verdict" in report.render()
+
+
+def test_a_run_that_never_reached_the_model_burned_nothing(tmp_path, monkeypatch):
+    paths = _fixture_paths(tmp_path, 1)
+    monkeypatch.setattr(
+        eval_mod, "triage", lambda *a, **k: (_ for _ in ()).throw(_too_large())
+    )
+    report = run_eval(paths)
+    assert report.burned == 0
+    assert "bought no verdict" not in report.render()
 
 
 def test_cost_separates_what_this_sweep_paid_from_what_is_cached(tmp_path, monkeypatch):

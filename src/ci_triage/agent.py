@@ -26,7 +26,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from pydantic_ai import Agent, RunContext
+from pydantic_ai import Agent, RunContext, capture_run_messages
+from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models import Model
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import RunUsage
@@ -469,6 +470,45 @@ def _store_verdict(key: str, verdict: Verdict, usage: RunUsage | None) -> None:
     (CACHE_DIR / f"{key}.json").write_text(json.dumps(blob, indent=2))
 
 
+#: Attribute the partial usage of a failed run is attached to, on the exception
+#: that ended it.
+#:
+#: A run that dies has still been paid for: every model request before the one
+#: that failed was served and billed, and on a free tier those are the tokens
+#: that will not be there tomorrow. `run_sync` raises instead of returning, so
+#: its `RunUsage` goes with it, and a sweep of 43 fixtures where 37 fail reports
+#: the cost of the 6 — today that read 7,673 tokens against a real spend near
+#: 200,000, which is the kind of wrong number that makes someone budget two days
+#: for something that ends in an hour.
+#:
+#: Attached to the exception rather than raised as a new one so that every
+#: existing `except ModelHTTPError` in the CLI keeps working, and so the status
+#: code a caller needs is still on the object it was always on.
+SPENT_ATTR = "triage_spent_usage"
+
+
+def _usage_of(messages: list[ModelMessage]) -> RunUsage | None:
+    """Total usage across the model responses a run did get back."""
+    spent = RunUsage()
+    served = 0
+    for message in messages:
+        if isinstance(message, ModelResponse) and message.usage is not None:
+            spent.incr(message.usage)
+            served += 1
+    if not served:
+        return None
+    # `incr` carries the token counts of a `RequestUsage` and not a request
+    # count, which only a `RunUsage` has. Counting the responses is the same
+    # number and is the one that makes "N tokens over 0 requests" impossible.
+    spent.requests = served
+    return spent
+
+
+def spent_on(exc: BaseException) -> RunUsage | None:
+    """What a failed triage cost before it failed, if it got that far."""
+    return getattr(exc, SPENT_ATTR, None)
+
+
 def triage(
     fixture: Path | str,
     *,
@@ -496,7 +536,12 @@ def triage(
         cached = True
     else:
         agent = build_agent(model)
-        run = agent.run_sync(ctx.overview(), deps=ctx)
+        with capture_run_messages() as messages:
+            try:
+                run = agent.run_sync(ctx.overview(), deps=ctx)
+            except Exception as exc:
+                setattr(exc, SPENT_ATTR, _usage_of(messages))
+                raise
         verdict, usage = run.output, run.usage
         _store_verdict(key, verdict, usage)
         cached = False

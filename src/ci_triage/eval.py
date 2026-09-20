@@ -48,7 +48,7 @@ from typing import Callable, Sequence
 
 from pydantic_ai.exceptions import AgentRunError, ModelHTTPError
 
-from ci_triage.agent import MODEL, EvidenceCheck, TriageResult, is_answered, triage
+from ci_triage.agent import MODEL, EvidenceCheck, TriageResult, is_answered, spent_on, triage
 from ci_triage.github import load_fixture
 from ci_triage.models import FailureCategory, Label, Route, Verdict, route
 
@@ -123,6 +123,12 @@ class FixtureScore:
     result: TriageResult | None = None
     error: str | None = None
     seconds: float = 0.0
+    #: Tokens a run that produced no verdict still paid for. A failed run is not
+    #: a free one: every request before the one that failed was served, and on a
+    #: free tier those are tokens that will not be there tomorrow.
+    burned: int = 0
+    #: The requests behind `burned`, so the two halves of the cost line agree.
+    burned_requests: int = 0
 
     # -- the verdict -------------------------------------------------------
 
@@ -174,13 +180,13 @@ class FixtureScore:
     def tokens(self) -> int:
         usage = self.result.usage if self.result else None
         if usage is None:
-            return 0
+            return self.burned
         return (usage.input_tokens or 0) + (usage.output_tokens or 0)
 
     @property
     def requests(self) -> int:
         usage = self.result.usage if self.result else None
-        return usage.requests if usage else 0
+        return usage.requests if usage else self.burned_requests
 
     @property
     def cached(self) -> bool:
@@ -198,6 +204,7 @@ class FixtureScore:
             "verified": self.verified,
             "faults": {f.value: n for f, n in self.faults.items()},
             "tokens": self.tokens,
+            "burned": self.burned,
             "requests": self.requests,
             "cached": self.cached,
             "seconds": round(self.seconds, 1),
@@ -394,16 +401,31 @@ class EvalReport:
 
     @property
     def tokens(self) -> int:
-        return sum(s.tokens for s in self.answered)
+        return sum(s.tokens for s in self.scores)
+
+    @property
+    def burned(self) -> int:
+        """Tokens paid for by runs that produced no verdict.
+
+        The number a sweep on a metered tier is actually limited by, and the one
+        this report used to omit entirely. Today's sweep answered 5 of 43 and
+        reported their 7,673 tokens as the cost; the 37 that failed had each
+        been served several requests before the one that broke them, and the
+        real spend was near 200,000 — a day's budget, reported as an hour's.
+        """
+        return sum(s.burned for s in self.errored)
 
     @property
     def tokens_spent(self) -> int:
         """Tokens this sweep actually paid for — cache hits cost nothing."""
-        return sum(s.tokens for s in self.answered if not s.cached)
+        return sum(s.tokens for s in self.answered if not s.cached) + self.burned
 
     @property
     def requests(self) -> int:
-        return sum(s.requests for s in self.answered if not s.cached)
+        """Requests this sweep paid for, answered and failed alike."""
+        return sum(s.requests for s in self.answered if not s.cached) + sum(
+            s.requests for s in self.errored
+        )
 
     # -- output ------------------------------------------------------------
 
@@ -516,6 +538,12 @@ class EvalReport:
             f"tokens          {self.tokens:,} total; {self.tokens_spent:,} spent this sweep "
             f"over {self.requests} request(s)"
         )
+        if self.burned:
+            lines.append(
+                f"burned          {self.burned:,} of those bought no verdict — spent by "
+                f"{len(self.errored)} run(s) that failed after the model had already answered "
+                "some of their requests"
+            )
         if self.errored:
             lines.append("")
             lines.append(f"{len(self.errored)} fixture(s) produced no verdict:")
@@ -595,6 +623,7 @@ class EvalReport:
             "cost": {
                 "tokens": self.tokens,
                 "tokens_spent": self.tokens_spent,
+                "burned": self.burned,
                 "requests": self.requests,
             },
             "scores": [s.to_dict() for s in self.scores],
@@ -738,7 +767,13 @@ def run_eval(
             result = triage(path, model=model, max_lines=max_lines, cache=cache)
         except ModelHTTPError as exc:
             detail = _http_detail(exc)
-            score = FixtureScore(path.name, label, error=detail, seconds=time.monotonic() - step)
+            score = FixtureScore(
+                path.name,
+                label,
+                error=detail,
+                seconds=time.monotonic() - step,
+                **_burned_fields(exc),
+            )
             scores.append(score)
             if on_score:
                 on_score(score)
@@ -757,6 +792,7 @@ def run_eval(
                 label,
                 error=f"{type(exc).__name__}: {exc}"[:200],
                 seconds=time.monotonic() - step,
+                **_burned_fields(exc),
             )
             scores.append(score)
             if on_score:
@@ -788,6 +824,19 @@ def run_eval(
 #: gets published — a quota message is worth keeping, the org it belongs to is
 #: not, and neither is worth noticing only after it is in git history.
 _ACCOUNT_ID = re.compile(r"\b(org|user|acct|team)_[A-Za-z0-9]{6,}", re.IGNORECASE)
+
+
+def _burned_fields(exc: BaseException) -> dict[str, int]:
+    tokens, requests = _burned(exc)
+    return {"burned": tokens, "burned_requests": requests}
+
+
+def _burned(exc: BaseException) -> tuple[int, int]:
+    """`(tokens, requests)` a failed run had already paid for when it failed."""
+    usage = spent_on(exc)
+    if usage is None:
+        return 0, 0
+    return (usage.input_tokens or 0) + (usage.output_tokens or 0), usage.requests
 
 
 def _http_detail(exc: ModelHTTPError) -> str:

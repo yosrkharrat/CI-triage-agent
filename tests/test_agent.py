@@ -427,3 +427,50 @@ def test_the_tools_are_reachable_from_inside_the_loop(tmp_path, monkeypatch):
     monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
     _stub_agent(monkeypatch, call_tools="all")
     assert triage(FIXTURE).verdict is not None
+
+
+# --------------------------------------------------------------------------
+# What a failed run cost
+# --------------------------------------------------------------------------
+
+
+def _response(inp: int, out: int):
+    from pydantic_ai.messages import ModelResponse, TextPart
+    from pydantic_ai.usage import RequestUsage
+
+    return ModelResponse(parts=[TextPart("x")], usage=RequestUsage(input_tokens=inp, output_tokens=out))
+
+
+def test_the_usage_of_a_failed_run_is_summed_across_its_responses():
+    """`run_sync` raises instead of returning, so its `RunUsage` goes with it —
+    but every request the model did answer was served and billed. A sweep that
+    loses 37 of 43 fixtures and reports the cost of the 6 understates a day's
+    budget as an hour's."""
+    spent = agent_mod._usage_of([_response(1200, 300), _response(2400, 500)])
+    assert spent is not None
+    assert (spent.input_tokens, spent.output_tokens) == (3600, 800)
+    # `incr` carries a RequestUsage's tokens and not a request count, so
+    # without counting responses the report reads "3,600 tokens over 0 requests".
+    assert spent.requests == 2
+
+
+def test_a_run_that_failed_before_any_response_reports_nothing_spent():
+    """Nothing was served, so there is nothing to account for — and `None`
+    rather than a confident zero, which would be a measurement."""
+    assert agent_mod._usage_of([]) is None
+
+
+def test_a_failing_triage_always_carries_its_spend_on_the_exception(tmp_path, monkeypatch):
+    """The contract the harness reads. Attached to the original exception so
+    that `except ModelHTTPError` in the CLI keeps seeing its status code."""
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+
+    class Exploding:
+        def run_sync(self, *a, **kw):
+            raise RuntimeError("refused")
+
+    monkeypatch.setattr(agent_mod, "build_agent", lambda *a, **kw: Exploding())
+    with pytest.raises(RuntimeError) as caught:
+        triage(FIXTURE, cache=False)
+    assert hasattr(caught.value, agent_mod.SPENT_ATTR)
+    assert agent_mod.spent_on(caught.value) is None
