@@ -1,0 +1,32 @@
+# secrets
+.env
+.env.local
+.env.*.local
+
+# The captured corpus: ~370 MB of GitHub Actions logs across 43 runs.
+# Deliberately not in git. It is reproducible — `ci-triage hunt` finds failed
+# runs and `ci-triage fetch` re-captures any of them — so committing it would
+# trade a 44 MB clone for bytes anyone can regenerate from the run URL. The
+# labels are the part that is genuinely hand-made and hard to recreate; they
+# live in each fixture's meta.json, so back those up separately from the logs.
+fixtures/
+
+# Answered verdicts, keyed by prompt + model + fixture. A cache, not a result:
+# re-running rebuilds it, and editing the prompt invalidates it automatically.
+.triage-cache/
+
+# Project planning notes, not documentation.
+readme
+
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# macos
+.DS_Store

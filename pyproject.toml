@@ -1,0 +1,29 @@
+[project]
+name = "ci-triage"
+version = "0.1.0"
+description = "A GitHub App that triages failed CI runs: categorises the failure, cites log evidence, and routes low-confidence verdicts to a human."
+readme = "README.md"
+authors = [
+    { name = "Yosr", email = "yosr.kharrat@insat.ucar.tn" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28.1",
+    "logfire>=5.1.0",
+    "pydantic>=2.13.5",
+    "pydantic-ai-slim[anthropic,google,groq,openai]>=2.46.0",
+    "python-dotenv>=1.2.3",
+    "typer>=0.27.2",
+]
+
+[project.scripts]
+ci-triage = "ci_triage.cli:app"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
