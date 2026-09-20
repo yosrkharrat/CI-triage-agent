@@ -247,10 +247,17 @@ class EvalReport:
         Neither a model failure nor a fixture failure — the request never
         reached the model. `airflow__32529760720` reduces to ~9.4k tokens and
         `gpt-oss-20b` on the free tier caps a request at 8k, so no retry and no
-        prompt change can make it answerable; only a smaller `--max-lines` or a
-        bigger budget can. Counted apart from the rest because folding it into a
-        quality metric blames the agent for an account limit, and because a run
-        of them must not look like a provider outage and stop the sweep.
+        prompt change makes it answerable on that budget. Counted apart from the
+        rest because folding it into a quality metric blames the agent for an
+        account limit, and because a run of them must not look like a provider
+        outage and stop the sweep.
+
+        Six of the 43 exceed 8k at the default `max_lines=300`. Lowering it is
+        the obvious remedy and only sometimes works: `TriageContext.groups`
+        fingerprints each job from an excerpt the same budget cut, so a smaller
+        budget can drop the lines that made two jobs match. On
+        `poetry__35343948952`, halving it to 150 splits 8 distinct failures into
+        16 and renders 29% *more* log, not less.
         """
         return [s for s in self.errored if (s.error or "").startswith(str(_TOO_LARGE))]
 
@@ -518,8 +525,13 @@ class EvalReport:
             lines.append("")
             lines.append(
                 f"{len(oversized)} of those never reached the model at all: the reduced prompt "
-                f"is larger than this account's per-request cap. Retry them with a smaller "
-                f"--max-lines, or on a bigger budget — no prompt change makes them answerable."
+                "is larger than this account's per-request cap, so no retry and no prompt "
+                "change makes them answerable on this budget."
+            )
+            lines.append(
+                "  a smaller --max-lines is worth trying and is not guaranteed to help — the "
+                "line budget also feeds the failure fingerprint, so cutting it can split one "
+                "failure into several and render more log, not less."
             )
             for s in oversized[:5]:
                 lines.append(f"  {s.fixture}")
