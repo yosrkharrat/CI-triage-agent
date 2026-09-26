@@ -5,8 +5,8 @@ An agent that reads a failed GitHub Actions run and decides *why* it is red —
 that prove it. Low-confidence verdicts route to a human instead of being posted.
 
 **Status: in progress.** Capture, the agent, its evidence checking and the eval
-harness work end to end against 43 captured runs. The webhook service and the
-dashboard are not built yet.
+harness work end to end against 43 captured runs, and a webhook service runs the
+same agent on live runs. The dashboard and the sandbox are not built yet.
 
 ## The idea it is built around
 
@@ -39,6 +39,7 @@ ci-triage inspect <fixture>   show exactly what the agent will be shown
 ci-triage triage <fixture>    run the agent, print and check its verdict
 ci-triage label <fixture>     record human ground truth for the eval set
 ci-triage eval                score the agent over the whole corpus
+ci-triage serve               triage live runs as GitHub reports them
 ```
 
 A captured run is the unit of work. The agent's three tools — `get_logs`,
@@ -141,16 +142,55 @@ across 43 runs, all re-fetchable from their run URLs. Each fixture's `meta.json`
 is not: a run URL regenerates its logs, and nothing regenerates a human reading
 them and deciding what broke.
 
+## Running it on live runs
+
+`ci-triage serve` is a small FastAPI service for a GitHub App's webhook. It
+takes failed `workflow_run` deliveries, captures each run to disk exactly as
+`fetch` would, triages the capture, and decides what to do with the verdict:
+
+| outcome | when |
+| --- | --- |
+| `posted` | auto-post route **and** every citation verified; comment on the PR |
+| `dry_run` | the same, while posting is switched off (the default) |
+| `awaiting_review` | low confidence, `unknown`, a proposed fix, or any citation that failed |
+| `no_pr` | postable, but the commit has no open pull request |
+
+The rule that matters is the second half of the first row. The eval reports
+auto-posts carrying a failed citation as a liability; the service does not
+count them, it refuses them. A comment is posted only when every quote in it
+was found where it claims to be, and it edits its own earlier comment on a
+re-run rather than stacking another.
+
+The handler only checks the signature and queues the run in SQLite, keyed on
+`(repo, run, attempt)`, so a redelivered webhook changes nothing. A run
+interrupted by a restart is picked up again on the next start. A run that hits
+the model's quota waits and retries instead of failing. Every verdict, posted
+or not, is at `GET /runs` along with the comment it would have posted.
+
+```bash
+echo 'GITHUB_WEBHOOK_SECRET=...' >> .env.local     # required; unsigned requests get 401
+echo 'GITHUB_APP_ID=...' >> .env.local             # or rely on GITHUB_TOKEN
+echo 'GITHUB_APP_PRIVATE_KEY_FILE=app.pem' >> .env.local
+uv run ci-triage serve                             # dry run; add CI_TRIAGE_POST_COMMENTS=1 to post
+```
+
+The App needs **Actions: read**, **Contents: read** and **Pull requests:
+write**, and a subscription to the **Workflow run** event. The service binds to
+localhost; expose it with a tunnel (`cloudflared`, `ngrok`) rather than a
+public interface, since `/runs` has no authentication.
+
 ## Built with
 
 Python 3.12 · [Pydantic AI](https://ai.pydantic.dev) for the agent loop and tool
-definitions · Pydantic v2 at every boundary · [Logfire](https://logfire.dev) for
-tracing · httpx · Typer · pytest · uv.
+definitions · FastAPI and SQLite for the webhook service · Pydantic v2 at every
+boundary · [Logfire](https://logfire.dev) for tracing · httpx · Typer · pytest ·
+uv.
 
 ## Not done yet
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- Webhook service so this runs on live PRs rather than captures
+- A human approval action for `awaiting_review` verdicts; the queue exists,
+  the button does not
 - Sandbox tool to reproduce a failure and test a patch
 - Dashboard streaming a triage run as it happens

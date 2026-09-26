@@ -29,7 +29,7 @@ import re
 import shutil
 import time
 import zipfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -269,6 +269,113 @@ class GitHubClient:
             headers={"Accept": "application/vnd.github.diff"},
         )
         return r.text
+
+    # -- writing, for the webhook service ------------------------------------
+
+    def _write(self, method: str, path: str, body: dict) -> dict:
+        """Send one write, without retrying it.
+
+        Reads go through `_with_retry`; writes do not. A POST that timed out may
+        still have landed, and retrying it is how a PR collects two identical
+        comments. Losing one comment is the cheaper failure.
+        """
+        r = self._client.request(method, path, json=body)
+        if r.status_code in (403, 404):
+            raise GitHubError(
+                f"{method} {path}: {r.status_code} — does the token or App have write access "
+                "to pull requests?"
+            )
+        r.raise_for_status()
+        return r.json()
+
+    def open_pulls_for_commit(self, owner: str, repo: str, sha: str) -> list[int]:
+        """Open PRs whose head is `sha`.
+
+        A run's own `pull_requests` field is empty whenever the PR comes from a
+        fork, which is most PRs to a public repo, so this is the fallback.
+        """
+        pulls = self._get(f"/repos/{owner}/{repo}/commits/{sha}/pulls").json()
+        return [p["number"] for p in pulls if p.get("state") == "open"]
+
+    def find_comment(self, owner: str, repo: str, number: int, marker: str) -> int | None:
+        """The id of the comment on a PR carrying `marker`, if there is one."""
+        page = 1
+        while True:
+            comments = self._get(
+                f"/repos/{owner}/{repo}/issues/{number}/comments",
+                params={"per_page": 100, "page": page},
+            ).json()
+            for c in comments:
+                if marker in (c.get("body") or ""):
+                    return int(c["id"])
+            if len(comments) < 100:
+                return None
+            page += 1
+
+    def upsert_comment(self, owner: str, repo: str, number: int, body: str, marker: str) -> str:
+        """Post `body` on a PR, or edit the comment that already carries `marker`.
+
+        Re-running a failed job produces a new run attempt and a new verdict; it
+        should replace the comment about that run rather than stack a second one
+        under it. Returns the comment's URL.
+        """
+        existing = self.find_comment(owner, repo, number, marker)
+        if existing is not None:
+            c = self._write("PATCH", f"/repos/{owner}/{repo}/issues/comments/{existing}", {"body": body})
+        else:
+            c = self._write("POST", f"/repos/{owner}/{repo}/issues/{number}/comments", {"body": body})
+        return str(c["html_url"])
+
+
+# --------------------------------------------------------------------------
+# GitHub App authentication
+# --------------------------------------------------------------------------
+
+
+class AppAuth:
+    """Mint installation tokens for a GitHub App.
+
+    An App authenticates as itself with a short-lived JWT signed by its private
+    key, and trades that for a token scoped to one installation — one account
+    that installed it. Tokens last an hour; they are cached and replaced five
+    minutes before they expire, so a burst of webhooks costs one exchange.
+    """
+
+    def __init__(self, app_id: str, private_key: str, *, api_root: str = API_ROOT):
+        self.app_id = app_id
+        self.private_key = private_key
+        self.api_root = api_root
+        self._tokens: dict[int, tuple[str, datetime]] = {}
+
+    def _jwt(self) -> str:
+        import jwt
+
+        now = int(time.time())
+        # Backdated a minute because GitHub rejects an `iat` from its future,
+        # and clocks drift; ten minutes is the most GitHub accepts.
+        claims = {"iat": now - 60, "exp": now + 540, "iss": self.app_id}
+        return jwt.encode(claims, self.private_key, algorithm="RS256")
+
+    def token(self, installation: int) -> str:
+        cached = self._tokens.get(installation)
+        if cached and cached[1] - datetime.now(UTC) > timedelta(minutes=5):
+            return cached[0]
+        r = httpx.post(
+            f"{self.api_root}/app/installations/{installation}/access_tokens",
+            headers={
+                "Authorization": f"Bearer {self._jwt()}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "ci-triage-agent",
+            },
+            timeout=_API_TIMEOUT,
+        )
+        if r.status_code != 201:
+            raise GitHubError(f"installation token for {installation}: {r.status_code} {r.text[:200]}")
+        payload = r.json()
+        expires = datetime.fromisoformat(payload["expires_at"].replace("Z", "+00:00"))
+        self._tokens[installation] = (payload["token"], expires)
+        return str(payload["token"])
 
 
 def save_fixture(

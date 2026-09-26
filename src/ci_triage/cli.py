@@ -8,6 +8,7 @@
     ci-triage eval                 score the agent over the whole corpus
     ci-triage ls                   list fixtures and their labels
     ci-triage backfill             add history.json to older fixtures
+    ci-triage serve                run the webhook service for live runs
 """
 
 from __future__ import annotations
@@ -593,6 +594,44 @@ def backfill(
 
             if got:
                 console.print(f"[green]+[/green] {path.name} — {', '.join(got)}")
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", help="Interface to bind; 0.0.0.0 to expose it"),
+    port: int = typer.Option(8000, help="Port to listen on"),
+) -> None:
+    """Run the webhook service: triage failed runs as GitHub reports them.
+
+    Needs GITHUB_WEBHOOK_SECRET, and either a GitHub App (GITHUB_APP_ID plus
+    GITHUB_APP_PRIVATE_KEY or GITHUB_APP_PRIVATE_KEY_FILE) or GITHUB_TOKEN.
+    Comments are only posted with CI_TRIAGE_POST_COMMENTS=1; until then every
+    verdict is recorded as a dry run and readable at /runs.
+
+    Binds to localhost by default: /runs has no authentication, so put it
+    behind a tunnel or a proxy rather than on a public interface.
+    """
+    load_dotenv(".env.local")
+    load_dotenv(".env")
+    os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
+
+    import logging
+
+    import uvicorn
+
+    from ci_triage.service import Settings, create_app
+
+    try:
+        settings = Settings.from_env()
+        application = create_app(settings)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
+    mode = "[green]posting comments[/green]" if settings.post_comments else "[yellow]dry run[/yellow]"
+    console.print(f"serving on http://{host}:{port} — {mode}; runs recorded in {settings.db_path}")
+    uvicorn.run(application, host=host, port=port)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,311 @@
+"""Tests for the webhook service.
+
+No GitHub and no model: the pipeline is a fake that hands back a prepared
+verdict, and the "captured" run is the one fixture tracked in git. What is pinned
+here is the part a live deployment cannot be allowed to get wrong: that an
+unsigned request is refused, that a redelivered webhook does nothing, and above
+all that a verdict resting on a citation that does not verify is never posted,
+however confident it is.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+from dataclasses import replace
+from datetime import timedelta
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from ci_triage.agent import EvidenceCheck, TriageResult
+from ci_triage.models import Evidence, FailureCategory, Route, Verdict, WorkflowRun
+from ci_triage.service import (
+    Settings,
+    _fence,
+    comment_marker,
+    create_app,
+    decide,
+    render_comment,
+    verify_signature,
+)
+from ci_triage.store import RunRecord, Status, Store
+
+FIXTURE = Path("fixtures/sweep__30005725094")
+pytestmark = pytest.mark.skipif(not FIXTURE.exists(), reason="fixture not captured")
+SECRET = "s3cret"
+
+
+def _result(*, ok: bool = True, confidence: float = 0.9, fix: str | None = None) -> TriageResult:
+    ev = Evidence(
+        job_name="build (ubuntu-22.04)",
+        log_path="2_build (ubuntu-22.04).txt",
+        line_start=10,
+        line_end=12,
+        quote="Error: Resource not accessible by integration",
+        why="the release step was refused write access",
+    )
+    verdict = Verdict(
+        category=FailureCategory.INFRA,
+        confidence=confidence,
+        summary="The workflow lacks contents: write.",
+        reasoning="r",
+        evidence=[ev],
+        suggested_fix=fix,
+    )
+    from ci_triage.models import route
+
+    dest, reason = route(verdict)
+    check = EvidenceCheck(ev, ok, "ok" if ok else "quote does not appear within the cited lines")
+    return TriageResult(verdict, dest, reason, (check,))
+
+
+class FakePipeline:
+    def __init__(self, result: TriageResult | Exception, pulls: list[int] | None = None):
+        self.result = result
+        self._pulls = [7] if pulls is None else pulls
+        self.posted: list[tuple[int, str, str]] = []
+
+    def capture(self, record: RunRecord) -> Path:
+        return FIXTURE
+
+    def triage(self, fixture: Path) -> TriageResult:
+        if isinstance(self.result, Exception):
+            raise self.result
+        return self.result
+
+    def pulls(self, record: RunRecord, run: WorkflowRun) -> list[int]:
+        return self._pulls
+
+    def post(self, record: RunRecord, number: int, body: str, marker: str) -> str:
+        self.posted.append((number, body, marker))
+        return f"https://github.com/o/r/pull/{number}#issuecomment-1"
+
+
+def _payload(**run_overrides) -> dict:
+    run = json.loads((FIXTURE / "run.json").read_text())
+    run.update(run_overrides)
+    return {"action": "completed", "workflow_run": run, "installation": {"id": 42}}
+
+
+def _post(client: TestClient, payload: dict, *, event: str = "workflow_run", secret: str = SECRET,
+          delivery: str = "d-1"):
+    body = json.dumps(payload).encode()
+    sig = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return client.post(
+        "/webhook",
+        content=body,
+        headers={"X-GitHub-Event": event, "X-Hub-Signature-256": sig, "X-GitHub-Delivery": delivery},
+    )
+
+
+@pytest.fixture
+def make(tmp_path: Path):
+    def _make(pipeline: FakePipeline, *, post_comments: bool = True):
+        settings = Settings(
+            webhook_secret=SECRET, post_comments=post_comments, db_path=tmp_path / "db.sqlite"
+        )
+        app = create_app(settings, pipeline=pipeline, start_worker=False)
+        return TestClient(app), app.state.store, app.state.worker
+
+    return _make
+
+
+# -- the door --------------------------------------------------------------
+
+
+def test_signature_must_match_the_raw_body():
+    body = b'{"a": 1}'
+    good = "sha256=" + hmac.new(b"k", body, hashlib.sha256).hexdigest()
+    assert verify_signature("k", body, good)
+    assert not verify_signature("k", b'{"a":1}', good)  # same JSON, different bytes
+    assert not verify_signature("other", body, good)
+    assert not verify_signature("k", body, None)
+    assert not verify_signature("k", body, good.removeprefix("sha256="))
+
+
+def test_unsigned_request_is_refused_and_queues_nothing(make):
+    client, store, _ = make(FakePipeline(_result()))
+    assert _post(client, _payload(), secret="wrong").status_code == 401
+    assert store.recent() == []
+
+
+def test_settings_refuse_to_start_without_a_webhook_secret(monkeypatch):
+    monkeypatch.delenv("GITHUB_WEBHOOK_SECRET", raising=False)
+    with pytest.raises(RuntimeError, match="GITHUB_WEBHOOK_SECRET"):
+        Settings.from_env()
+
+
+def test_ping_is_answered(make):
+    client, _, _ = make(FakePipeline(_result()))
+    assert _post(client, {"zen": "hi"}, event="ping").json()["pong"] is True
+
+
+@pytest.mark.parametrize(
+    ("event", "payload", "why"),
+    [
+        ("push", {}, "event"),
+        ("workflow_run", {"action": "requested"}, "action"),
+        ("workflow_run", {"conclusion": "success"}, "conclusion"),
+        ("workflow_run", {"conclusion": "cancelled"}, "conclusion"),
+    ],
+)
+def test_irrelevant_deliveries_are_ignored(make, event, payload, why):
+    client, store, _ = make(FakePipeline(_result()))
+    body = _payload(**{k: v for k, v in payload.items() if k != "action"})
+    body["action"] = payload.get("action", "completed")
+    r = _post(client, body, event=event)
+    assert r.status_code == 200
+    assert why in r.json()["ignored"]
+    assert store.recent() == []
+
+
+def test_a_redelivered_webhook_is_a_no_op(make):
+    client, store, _ = make(FakePipeline(_result()))
+    first = _post(client, _payload(), delivery="d-1").json()
+    again = _post(client, _payload(), delivery="d-2").json()
+    assert "queued" in first
+    assert again["duplicate"] is True
+    assert len(store.recent()) == 1
+
+
+def test_a_rerun_attempt_is_a_new_triage(make):
+    client, store, _ = make(FakePipeline(_result()))
+    _post(client, _payload(run_attempt=1))
+    _post(client, _payload(run_attempt=2))
+    assert len(store.recent()) == 2
+
+
+# -- the policy ------------------------------------------------------------
+
+
+def test_unverified_citation_is_never_posted_even_when_confident():
+    result = _result(ok=False, confidence=0.99)
+    assert result.route is Route.AUTO_POST  # the eval's routing would post it
+    status, reason = decide(result, pulls=[7], post_comments=True)
+    assert status is Status.AWAITING_REVIEW
+    assert "failed verification" in reason
+
+
+@pytest.mark.parametrize(
+    ("result", "pulls", "post", "want"),
+    [
+        (_result(confidence=0.4), [7], True, Status.AWAITING_REVIEW),
+        (_result(fix="add permissions: contents: write"), [7], True, Status.AWAITING_REVIEW),
+        (_result(), [], True, Status.NO_PR),
+        (_result(), [7], False, Status.DRY_RUN),
+        (_result(), [7], True, Status.POSTED),
+    ],
+)
+def test_decide(result, pulls, post, want):
+    assert decide(result, pulls=pulls, post_comments=post)[0] is want
+
+
+# -- end to end through the worker ----------------------------------------
+
+
+def test_posts_a_sound_confident_verdict(make):
+    pipeline = FakePipeline(_result())
+    client, store, worker = make(pipeline)
+    rid = _post(client, _payload()).json()["queued"]
+    assert worker.drain() == 1
+
+    record = store.get(rid)
+    assert record.status is Status.POSTED
+    assert record.comment_url.endswith("issuecomment-1")
+    assert record.verdict["category"] == "infra"
+    [(number, body, marker)] = pipeline.posted
+    assert number == 7
+    assert marker == comment_marker(30005725094) and body.startswith(marker)
+
+    # And the review API shows it.
+    assert client.get(f"/runs/{rid}").json()["status"] == "posted"
+    assert [r["id"] for r in client.get("/runs?status=posted").json()] == [rid]
+
+
+def test_dry_run_records_the_comment_it_would_have_posted(make):
+    pipeline = FakePipeline(_result())
+    client, store, worker = make(pipeline, post_comments=False)
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    record = store.get(rid)
+    assert record.status is Status.DRY_RUN
+    assert pipeline.posted == []
+    assert "Resource not accessible" in record.comment
+
+
+def test_unsound_verdict_waits_for_review_and_posts_nothing(make):
+    pipeline = FakePipeline(_result(ok=False, confidence=0.99))
+    client, store, worker = make(pipeline)
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    assert store.get(rid).status is Status.AWAITING_REVIEW
+    assert store.get(rid).evidence_ok is False
+    assert pipeline.posted == []
+
+
+def test_a_failed_triage_is_recorded_not_raised(make):
+    client, store, worker = make(FakePipeline(RuntimeError("boom")))
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    record = store.get(rid)
+    assert record.status is Status.FAILED
+    assert "boom" in record.error
+
+
+def test_an_exhausted_quota_defers_rather_than_fails(make):
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    quota = ModelHTTPError(429, "groq:openai/gpt-oss-120b", {"error": {"message": "TPD"}})
+    client, store, worker = make(FakePipeline(quota))
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    record = store.get(rid)
+    assert record.status is Status.QUEUED
+    assert record.not_before is not None
+    assert store.claim_next() is None  # not due yet
+
+
+def test_a_run_interrupted_mid_triage_is_requeued(tmp_path: Path):
+    store = Store(tmp_path / "db.sqlite")
+    store.enqueue(repo="o/r", run_id=1, run_attempt=1, html_url="u")
+    assert store.claim_next() is not None
+    assert store.claim_next() is None
+    assert Store(tmp_path / "db.sqlite").requeue_interrupted() == 1
+    assert store.claim_next() is not None
+
+
+def test_a_deferred_run_comes_back_when_due(tmp_path: Path):
+    store = Store(tmp_path / "db.sqlite")
+    rid = store.enqueue(repo="o/r", run_id=1, run_attempt=1, html_url="u")
+    store.claim_next()
+    store.defer(rid, timedelta(seconds=-1), "quota")
+    again = store.claim_next()
+    assert again is not None and again.attempts == 2
+
+
+# -- the comment -----------------------------------------------------------
+
+
+def test_comment_quotes_each_citation_with_its_coordinates():
+    run = WorkflowRun.model_validate_json((FIXTURE / "run.json").read_text())
+    body = render_comment(run, _result())
+    assert "**infra**" in body and "0.90" in body
+    assert "`2_build (ubuntu-22.04).txt` lines 10-12" in body
+    assert "Resource not accessible by integration" in body
+    assert run.html_url in body
+
+
+def test_a_quote_containing_backticks_cannot_break_out_of_its_fence():
+    assert _fence("plain") == "```"
+    assert _fence("a ``` b") == "````"
+    result = _result()
+    ev = result.checks[0].evidence.model_copy(update={"quote": "```\n## injected heading"})
+    check = replace(result.checks[0], evidence=ev)
+    body = render_comment(
+        WorkflowRun.model_validate_json((FIXTURE / "run.json").read_text()),
+        replace(result, checks=(check,)),
+    )
+    assert "````text\n```\n## injected heading\n````" in body

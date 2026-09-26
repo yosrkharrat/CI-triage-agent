@@ -31,6 +31,11 @@ fixtures/sweep__30005725094/logs.zip
 # re-running rebuilds it, and editing the prompt invalidates it automatically.
 .triage-cache/
 
+# The webhook service's run queue and its captures of live runs. Operational
+# state for one deployment, not part of the eval corpus: a capture worth keeping
+# is moved into fixtures/ and labelled like any other.
+.ci-triage/
+
 # Eval reports are the opposite: `reports/*.json` is a result, tied to one model
 # and one prompt revision, and is what the numbers in the README are read from.
 # It is tracked. The raw sweep logs beside it are not — they are a terminal
