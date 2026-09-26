@@ -220,7 +220,7 @@ def test_the_fanout_count_is_reported_because_it_is_evidence(tmp_path: Path):
 # --------------------------------------------------------------------------
 
 
-@pytest.mark.skipif(not (REAL / "pydantic__35411255497").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "pydantic__35411255497" / "run.json").exists(), reason="fixture not captured")
 def test_pydantic_matrix_collapses_but_keeps_the_gate_job_separate():
     """37 failed jobs: 36 identical pytest legs, plus the `check` gate whose log
     says something different and would otherwise vanish into them."""
@@ -231,7 +231,7 @@ def test_pydantic_matrix_collapses_but_keeps_the_gate_job_separate():
     assert ctx.groups[1].representative.name == "check"
 
 
-@pytest.mark.skipif(not (REAL / "pydantic__35411255497").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "pydantic__35411255497" / "run.json").exists(), reason="fixture not captured")
 def test_the_pydantic_excerpt_names_the_failing_tests():
     """Reduction is only worth anything if what survives is the evidence. These
     two test names and the exception are the whole case for the label."""
@@ -248,7 +248,7 @@ def test_the_infra_fixture_reports_all_four_legs_failing_identically():
     assert "resource not accessible by integration" in ctx.get_logs().lower()
 
 
-@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "poetry__35343948952" / "run.json").exists(), reason="fixture not captured")
 def test_the_line_budget_does_not_decide_how_many_failures_there_are():
     """`max_lines` had two jobs and only one of them was its own.
 
@@ -264,7 +264,7 @@ def test_the_line_budget_does_not_decide_how_many_failures_there_are():
     assert len(set(counts.values())) == 1, f"grouping moved with the budget: {counts}"
 
 
-@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "poetry__35343948952" / "run.json").exists(), reason="fixture not captured")
 def test_a_tighter_line_budget_never_renders_more():
     """The property the fix exists to restore, stated as the user sees it."""
     sizes = [len(TriageContext(REAL / "poetry__35343948952", max_lines=ml).get_logs())
@@ -272,7 +272,7 @@ def test_a_tighter_line_budget_never_renders_more():
     assert sizes == sorted(sizes, reverse=True), sizes
 
 
-@pytest.mark.skipif(not (REAL / "pydantic__35411255497").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "pydantic__35411255497" / "run.json").exists(), reason="fixture not captured")
 def test_grouping_at_the_default_budget_is_unchanged_by_the_fix():
     """Pinned because the fix had to be free: these counts are what every
     cached verdict was answered against, and moving them would silently
@@ -293,7 +293,7 @@ def _tokens(text: str) -> int:
     return int(len(text) / 3.0)
 
 
-@pytest.mark.skipif(not (REAL / "pandas__35489338041").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "pandas__35489338041" / "run.json").exists(), reason="fixture not captured")
 def test_asking_for_a_matrix_leg_by_name_fits_one_request():
     """Four of these legs rendered at 15k tokens, against the representative's
     3k, because of one 250k-character line of pytest-xdist dots. The prompt
@@ -303,7 +303,7 @@ def test_asking_for_a_matrix_leg_by_name_fits_one_request():
         assert _tokens(ctx.get_logs(job.name)) < _REQUEST_CAP - _FIXED, job.name
 
 
-@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "poetry__35343948952" / "run.json").exists(), reason="fixture not captured")
 def test_many_distinct_failures_share_the_budget_and_the_rest_are_named():
     ctx = TriageContext(REAL / "poetry__35343948952")
     out = ctx.get_logs()
@@ -313,12 +313,11 @@ def test_many_distinct_failures_share_the_budget_and_the_rest_are_named():
         assert group.representative.name in out
 
 
-@pytest.mark.skipif(not REAL.exists(), reason="fixtures not captured")
 def test_every_fixture_leaves_room_for_the_rest_of_the_run():
     """Logs, diff and history together, on top of the fixed prompt, under one
     request's cap. Before the character budgets, 37 of 43 fixtures 413'd."""
     over = []
-    for path in sorted(p for p in REAL.iterdir() if (p / "meta.json").exists()):
+    for path in sorted(p for p in REAL.iterdir() if (p / "run.json").exists()):
         ctx = TriageContext(path)
         total = _FIXED + sum(map(_tokens, (ctx.get_logs(), ctx.get_diff(), ctx.test_history())))
         if total >= _REQUEST_CAP:

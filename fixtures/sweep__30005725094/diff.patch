@@ -1,0 +1,28 @@
+diff --git a/src-tauri/src/lib.rs b/src-tauri/src/lib.rs
+index 30eee69..8011ed2 100644
+--- a/src-tauri/src/lib.rs
++++ b/src-tauri/src/lib.rs
+@@ -161,12 +161,12 @@ fn scan() -> Report {
+         0
+     };
+     let h = home();
+-    let mut categories = Vec::new();
++    let mut cats: Vec<Cat> = Vec::new();
+     let mut reclaimable_total = 0u64;
+     for (key, desc, paths) in categories() {
+         let bytes = category_size(&paths);
+         reclaimable_total += bytes;
+-        categories.push(Cat {
++        cats.push(Cat {
+             key: key.to_string(),
+             name: key.to_string(),
+             bytes,
+@@ -180,7 +180,7 @@ fn scan() -> Report {
+         git_bytes: size_of(&format!("{h}/.git")),
+         claude_bytes: size_of(&format!("{h}/.claude")),
+         claude_projects_bytes: size_of(&format!("{h}/.claude/projects")),
+-        categories,
++        categories: cats,
+         reclaimable_total,
+     }
+ }

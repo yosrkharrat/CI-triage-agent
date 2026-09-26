@@ -93,7 +93,7 @@ def test_run_refs_parse_from_every_accepted_form(ref: str):
     assert parse_run_ref(ref) == ("pydantic", "pydantic", 35411255497)
 
 
-@pytest.mark.skipif(not REAL.exists(), reason="fixture not captured")
+@pytest.mark.skipif(not (REAL / "run.json").exists(), reason="fixture not captured")
 def test_every_failed_job_in_a_real_matrix_fixture_resolves_to_a_log():
     """Regression: 20+ jobs of this fixture silently resolved to nothing."""
     import json

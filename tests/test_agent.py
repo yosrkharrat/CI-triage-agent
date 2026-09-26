@@ -293,7 +293,9 @@ def test_the_cache_key_separates_models():
     )
 
 
-@pytest.mark.skipif(not Path("fixtures/pydantic__35411255497").exists(), reason="not captured")
+@pytest.mark.skipif(
+    not Path("fixtures/pydantic__35411255497/run.json").exists(), reason="not captured"
+)
 def test_a_line_budget_that_changes_the_excerpt_changes_the_key():
     big = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=300)
     small = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=40)

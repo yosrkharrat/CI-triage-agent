@@ -1,0 +1,8 @@
+2026-07-23T12:07:15.8830000Z Evaluating build.if
+2026-07-23T12:07:15.8830000Z Evaluating: success()
+2026-07-23T12:07:15.8830000Z Result: true
+2026-07-23T12:07:15.8820000Z Requested labels: macos-latest
+2026-07-23T12:07:15.8820000Z Job defined at: Agence-OOO/sweep/.github/workflows/release.yml@refs/tags/v0.1.0
+2026-07-23T12:07:15.8820000Z Waiting for a runner to pick up this job...
+2026-07-23T12:07:16.3310000Z Job is about to start running on the hosted runner: GitHub Actions 1000000071
+2026-07-23T12:07:16.3310000Z Job is waiting for a hosted runner to come online.

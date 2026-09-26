@@ -1,0 +1,501 @@
+{
+  "total_count": 4,
+  "jobs": [
+    {
+      "id": 89201131651,
+      "run_id": 30005725094,
+      "workflow_name": "Release desktop app",
+      "head_branch": "v0.1.0",
+      "run_url": "https://api.github.com/repos/Agence-OOO/sweep/actions/runs/30005725094",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOThM0hM8AAAAUxM1Agw",
+      "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+      "url": "https://api.github.com/repos/Agence-OOO/sweep/actions/jobs/89201131651",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094/job/89201131651",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-07-23T12:07:15Z",
+      "started_at": "2026-07-23T12:07:18Z",
+      "completed_at": "2026-07-23T12:13:50Z",
+      "name": "build (ubuntu-22.04)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-07-23T12:07:19Z",
+          "completed_at": "2026-07-23T12:07:22Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-07-23T12:07:22Z",
+          "completed_at": "2026-07-23T12:07:22Z"
+        },
+        {
+          "name": "Install Linux deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-07-23T12:07:22Z",
+          "completed_at": "2026-07-23T12:07:48Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-07-23T12:07:48Z",
+          "completed_at": "2026-07-23T12:07:52Z"
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@stable",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-07-23T12:07:52Z",
+          "completed_at": "2026-07-23T12:08:03Z"
+        },
+        {
+          "name": "Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-07-23T12:08:03Z",
+          "completed_at": "2026-07-23T12:08:04Z"
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-07-23T12:08:04Z",
+          "completed_at": "2026-07-23T12:08:17Z"
+        },
+        {
+          "name": "Run tauri-apps/tauri-action@v0",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-07-23T12:08:17Z",
+          "completed_at": "2026-07-23T12:13:42Z"
+        },
+        {
+          "name": "Post Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14,
+          "started_at": "2026-07-23T12:13:42Z",
+          "completed_at": "2026-07-23T12:13:42Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15,
+          "started_at": "2026-07-23T12:13:42Z",
+          "completed_at": "2026-07-23T12:13:42Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-07-23T12:13:42Z",
+          "completed_at": "2026-07-23T12:13:42Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-07-23T12:13:42Z",
+          "completed_at": "2026-07-23T12:13:42Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/Agence-OOO/sweep/check-runs/89201131651",
+      "labels": [
+        "ubuntu-22.04"
+      ],
+      "runner_id": 1000000072,
+      "runner_name": "GitHub Actions 1000000072",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 89201131683,
+      "run_id": 30005725094,
+      "workflow_name": "Release desktop app",
+      "head_branch": "v0.1.0",
+      "run_url": "https://api.github.com/repos/Agence-OOO/sweep/actions/runs/30005725094",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOThM0hM8AAAAUxM1Aow",
+      "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+      "url": "https://api.github.com/repos/Agence-OOO/sweep/actions/jobs/89201131683",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094/job/89201131683",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-07-23T12:07:15Z",
+      "started_at": "2026-07-23T12:07:18Z",
+      "completed_at": "2026-07-23T12:12:27Z",
+      "name": "build (macos-latest, --target x86_64-apple-darwin)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-07-23T12:07:20Z",
+          "completed_at": "2026-07-23T12:07:24Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-07-23T12:07:24Z",
+          "completed_at": "2026-07-23T12:07:26Z"
+        },
+        {
+          "name": "Install Linux deps",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-07-23T12:07:26Z",
+          "completed_at": "2026-07-23T12:07:26Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-07-23T12:07:26Z",
+          "completed_at": "2026-07-23T12:07:33Z"
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@stable",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-07-23T12:07:33Z",
+          "completed_at": "2026-07-23T12:07:46Z"
+        },
+        {
+          "name": "Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-07-23T12:07:46Z",
+          "completed_at": "2026-07-23T12:07:47Z"
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-07-23T12:07:47Z",
+          "completed_at": "2026-07-23T12:08:09Z"
+        },
+        {
+          "name": "Run tauri-apps/tauri-action@v0",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-07-23T12:08:09Z",
+          "completed_at": "2026-07-23T12:12:23Z"
+        },
+        {
+          "name": "Post Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14,
+          "started_at": "2026-07-23T12:12:23Z",
+          "completed_at": "2026-07-23T12:12:23Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15,
+          "started_at": "2026-07-23T12:12:23Z",
+          "completed_at": "2026-07-23T12:12:23Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-07-23T12:12:23Z",
+          "completed_at": "2026-07-23T12:12:23Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-07-23T12:12:23Z",
+          "completed_at": "2026-07-23T12:12:24Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/Agence-OOO/sweep/check-runs/89201131683",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000000071,
+      "runner_name": "GitHub Actions 1000000071",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 89201131688,
+      "run_id": 30005725094,
+      "workflow_name": "Release desktop app",
+      "head_branch": "v0.1.0",
+      "run_url": "https://api.github.com/repos/Agence-OOO/sweep/actions/runs/30005725094",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOThM0hM8AAAAUxM1AqA",
+      "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+      "url": "https://api.github.com/repos/Agence-OOO/sweep/actions/jobs/89201131688",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094/job/89201131688",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-07-23T12:07:15Z",
+      "started_at": "2026-07-23T12:07:18Z",
+      "completed_at": "2026-07-23T12:11:55Z",
+      "name": "build (macos-latest, --target aarch64-apple-darwin)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-07-23T12:07:18Z",
+          "completed_at": "2026-07-23T12:07:22Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-07-23T12:07:22Z",
+          "completed_at": "2026-07-23T12:07:24Z"
+        },
+        {
+          "name": "Install Linux deps",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-07-23T12:07:24Z",
+          "completed_at": "2026-07-23T12:07:24Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-07-23T12:07:24Z",
+          "completed_at": "2026-07-23T12:07:29Z"
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@stable",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-07-23T12:07:29Z",
+          "completed_at": "2026-07-23T12:07:32Z"
+        },
+        {
+          "name": "Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-07-23T12:07:32Z",
+          "completed_at": "2026-07-23T12:07:33Z"
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-07-23T12:07:33Z",
+          "completed_at": "2026-07-23T12:07:49Z"
+        },
+        {
+          "name": "Run tauri-apps/tauri-action@v0",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-07-23T12:07:49Z",
+          "completed_at": "2026-07-23T12:11:52Z"
+        },
+        {
+          "name": "Post Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14,
+          "started_at": "2026-07-23T12:11:52Z",
+          "completed_at": "2026-07-23T12:11:52Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15,
+          "started_at": "2026-07-23T12:11:52Z",
+          "completed_at": "2026-07-23T12:11:52Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-07-23T12:11:52Z",
+          "completed_at": "2026-07-23T12:11:52Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-07-23T12:11:52Z",
+          "completed_at": "2026-07-23T12:11:53Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/Agence-OOO/sweep/check-runs/89201131688",
+      "labels": [
+        "macos-latest"
+      ],
+      "runner_id": 1000000070,
+      "runner_name": "GitHub Actions 1000000070",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 89201131750,
+      "run_id": 30005725094,
+      "workflow_name": "Release desktop app",
+      "head_branch": "v0.1.0",
+      "run_url": "https://api.github.com/repos/Agence-OOO/sweep/actions/runs/30005725094",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOThM0hM8AAAAUxM1A5g",
+      "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+      "url": "https://api.github.com/repos/Agence-OOO/sweep/actions/jobs/89201131750",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094/job/89201131750",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-07-23T12:07:15Z",
+      "started_at": "2026-07-23T12:07:19Z",
+      "completed_at": "2026-07-23T12:14:47Z",
+      "name": "build (windows-latest)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-07-23T12:07:20Z",
+          "completed_at": "2026-07-23T12:07:22Z"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-07-23T12:07:22Z",
+          "completed_at": "2026-07-23T12:07:27Z"
+        },
+        {
+          "name": "Install Linux deps",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 3,
+          "started_at": "2026-07-23T12:07:27Z",
+          "completed_at": "2026-07-23T12:07:27Z"
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-07-23T12:07:27Z",
+          "completed_at": "2026-07-23T12:07:35Z"
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@stable",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-07-23T12:07:35Z",
+          "completed_at": "2026-07-23T12:07:56Z"
+        },
+        {
+          "name": "Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-07-23T12:07:56Z",
+          "completed_at": "2026-07-23T12:07:57Z"
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-07-23T12:07:57Z",
+          "completed_at": "2026-07-23T12:08:32Z"
+        },
+        {
+          "name": "Run tauri-apps/tauri-action@v0",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 8,
+          "started_at": "2026-07-23T12:08:32Z",
+          "completed_at": "2026-07-23T12:14:43Z"
+        },
+        {
+          "name": "Post Run swatinem/rust-cache@v2",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 14,
+          "started_at": "2026-07-23T12:14:43Z",
+          "completed_at": "2026-07-23T12:14:43Z"
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 15,
+          "started_at": "2026-07-23T12:14:43Z",
+          "completed_at": "2026-07-23T12:14:43Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-07-23T12:14:43Z",
+          "completed_at": "2026-07-23T12:14:45Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-07-23T12:14:45Z",
+          "completed_at": "2026-07-23T12:14:45Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/Agence-OOO/sweep/check-runs/89201131750",
+      "labels": [
+        "windows-latest"
+      ],
+      "runner_id": 1000000073,
+      "runner_name": "GitHub Actions 1000000073",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    }
+  ]
+}

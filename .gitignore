@@ -22,6 +22,11 @@ fixtures/*
 fixtures/*/*
 !fixtures/*/meta.json
 
+# One small run (~430 KB) is tracked whole, because the test suite reads it and
+# CI has no other way to get it. The zip duplicates the logs beside it.
+!fixtures/sweep__30005725094/*
+fixtures/sweep__30005725094/logs.zip
+
 # Answered verdicts, keyed by prompt + model + fixture. A cache, not a result:
 # re-running rebuilds it, and editing the prompt invalidates it automatically.
 .triage-cache/

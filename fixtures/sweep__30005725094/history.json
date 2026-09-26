@@ -1,0 +1,39 @@
+{
+  "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+  "workflow_name": "Release desktop app",
+  "same_commit": [
+    {
+      "id": 30005725094,
+      "name": "Release desktop app",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "failure",
+      "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+      "created_at": "2026-07-23T12:07:14Z",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094"
+    }
+  ],
+  "same_workflow": [
+    {
+      "id": 30006135496,
+      "name": "Release desktop app",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "7a86fb3b97207c0e77224d872e841f2ae7054660",
+      "created_at": "2026-07-23T12:13:29Z",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30006135496"
+    },
+    {
+      "id": 30005314760,
+      "name": "Release desktop app",
+      "run_attempt": 1,
+      "status": "completed",
+      "conclusion": "failure",
+      "head_sha": "84fdc3504b1323a523d23c28512b6cf492fe988d",
+      "created_at": "2026-07-23T12:01:03Z",
+      "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005314760"
+    }
+  ],
+  "truncated": false
+}
