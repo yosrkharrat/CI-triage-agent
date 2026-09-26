@@ -108,3 +108,52 @@ def test_real_fixture_reduces_hard_and_keeps_the_root_cause():
     ex = excerpt_file(log, job_name="build (ubuntu-22.04)", log_path=log.name)
     assert ex.reduction > 0.9
     assert "Resource not accessible by integration" in ex.render()
+
+
+# --------------------------------------------------------------------------
+# Size, as opposed to line count
+# --------------------------------------------------------------------------
+
+
+def test_a_long_line_is_shown_clipped_with_both_ends_kept():
+    line = "START" + "." * 250_000 + "END"
+    raw = "\n".join(["pad"] * 5 + [line, "##[error]boom"])
+    body = excerpt(raw, job_name="j", log_path="j.txt").render()
+    assert "START" in body and "END" in body
+    assert "chars cut" in body
+    assert len(body) < 2_000
+
+
+def test_clipping_is_display_only_so_either_end_still_verifies():
+    """Clipping must not make an honest citation of a clipped line fail."""
+    line = "START" + "." * 10_000 + "END"
+    raw = "\n".join([line, "##[error]boom"])
+    ex = excerpt(raw, job_name="j", log_path="j.txt")
+    assert ex.spans[0].lines[0] == line, "spans keep the full text"
+    assert verify_evidence(_ev(quote="START..."), raw)[0]
+    assert verify_evidence(_ev(quote="...END"), raw)[0]
+    # A quote across the mark claims text the model was never shown.
+    assert not verify_evidence(_ev(quote="START [... 9803 chars cut ...] END"), raw)[0]
+
+
+def test_excerpt_respects_a_character_budget():
+    raw = "\n".join(f"##[error]failure {i} " + "x" * 200 for i in range(0, 5000, 50))
+    ex = excerpt(raw, job_name="j", log_path="j.txt", max_chars=3_000)
+    assert len(ex.render()) < 3_600
+    assert ex.truncated
+
+
+def test_a_window_over_budget_on_its_own_is_narrowed_onto_its_anchor():
+    """The strongest span alone exceeding the budget must not leave nothing."""
+    raw = "\n".join(["y" * 290] * 40 + ["##[error]the actual failure"] + ["z" * 290] * 20)
+    ex = excerpt(raw, job_name="j", log_path="j.txt", max_chars=1_500)
+    assert ex.spans, "an empty excerpt shows the model nothing to cite"
+    assert "##[error]the actual failure" in ex.render()
+    assert len(ex.render()) < 1_800
+
+
+def test_the_tail_fallback_respects_a_character_budget():
+    raw = "\n".join(f"quiet {i} " + "q" * 290 for i in range(300))
+    ex = excerpt(raw, job_name="j", log_path="j.txt", max_chars=2_000)
+    assert ex.spans[0].line_end == 300, "the bottom of the log is what matters"
+    assert len(ex.render()) < 2_400

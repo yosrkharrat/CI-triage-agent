@@ -115,6 +115,19 @@ def test_an_oversized_diff_is_truncated_and_says_so(tmp_path: Path):
     assert len(out) < len(big)
 
 
+def test_a_truncated_diff_names_the_files_it_hid(tmp_path: Path):
+    """The head of a diff is whichever files sort first, not the ones that matter."""
+    big = "".join(
+        f"diff --git a/pkg/mod{i}.py b/pkg/mod{i}.py\n" + "".join(f"+line {j}\n" for j in range(50))
+        for i in range(20)
+    )
+    out = TriageContext(_fixture(tmp_path / "f", jobs={"build": "x"}, diff=big)).get_diff(
+        max_bytes=1_000
+    )
+    assert "pkg/mod19.py" in out
+    assert "pkg/mod0.py" not in out.split("files changed in the part not shown")[1]
+
+
 # --------------------------------------------------------------------------
 # The other tools, on absences
 # --------------------------------------------------------------------------
@@ -266,3 +279,88 @@ def test_grouping_at_the_default_budget_is_unchanged_by_the_fix():
     invalidate the only measurements that exist."""
     ctx = TriageContext(REAL / "pydantic__35411255497", max_lines=300)
     assert (len(ctx.groups), ctx.groups[0].size) == (2, 36)
+
+
+#: What Groq's free tier accepts in one request, and what the instructions,
+#: tool definitions and overview take as Groq counts, before any tool returns.
+_REQUEST_CAP = 8_000
+_FIXED = 3_000
+
+
+def _tokens(text: str) -> int:
+    # Logs run at ~3.6 characters per o200k token across this corpus; 3.0 errs
+    # on the side of calling a fixture too big.
+    return int(len(text) / 3.0)
+
+
+@pytest.mark.skipif(not (REAL / "pandas__35489338041").exists(), reason="fixture not captured")
+def test_asking_for_a_matrix_leg_by_name_fits_one_request():
+    """Four of these legs rendered at 15k tokens, against the representative's
+    3k, because of one 250k-character line of pytest-xdist dots. The prompt
+    invites exactly this call to check a fan-out, so it made a 413 certain."""
+    ctx = TriageContext(REAL / "pandas__35489338041")
+    for job in ctx.failed_jobs:
+        assert _tokens(ctx.get_logs(job.name)) < _REQUEST_CAP - _FIXED, job.name
+
+
+@pytest.mark.skipif(not (REAL / "poetry__35343948952").exists(), reason="fixture not captured")
+def test_many_distinct_failures_share_the_budget_and_the_rest_are_named():
+    ctx = TriageContext(REAL / "poetry__35343948952")
+    out = ctx.get_logs()
+    assert len(out) <= ctx.max_chars * 1.2
+    # Every distinct failure is either shown or named, never silently dropped.
+    for group in ctx.groups:
+        assert group.representative.name in out
+
+
+@pytest.mark.skipif(not REAL.exists(), reason="fixtures not captured")
+def test_every_fixture_leaves_room_for_the_rest_of_the_run():
+    """Logs, diff and history together, on top of the fixed prompt, under one
+    request's cap. Before the character budgets, 37 of 43 fixtures 413'd."""
+    over = []
+    for path in sorted(p for p in REAL.iterdir() if (p / "meta.json").exists()):
+        ctx = TriageContext(path)
+        total = _FIXED + sum(map(_tokens, (ctx.get_logs(), ctx.get_diff(), ctx.test_history())))
+        if total >= _REQUEST_CAP:
+            over.append((path.name, total))
+    assert not over, over
+
+
+# --------------------------------------------------------------------------
+# The run's budget, across calls
+# --------------------------------------------------------------------------
+
+
+def _metered_ctx(tmp_path: Path, run_chars: int) -> TriageContext:
+    return TriageContext(_fixture(tmp_path / "f", jobs={"build": "x"}), run_chars=run_chars)
+
+
+def test_results_within_the_run_budget_pass_through_untouched(tmp_path: Path):
+    ctx = _metered_ctx(tmp_path, 10_000)
+    assert ctx.metered("a" * 4_000) == "a" * 4_000
+    assert ctx.spent_chars == 4_000
+
+
+def test_a_result_past_the_budget_is_cut_at_a_line_and_says_so(tmp_path: Path):
+    ctx = _metered_ctx(tmp_path, 5_000)
+    ctx.metered("a" * 2_000)
+    out = ctx.metered("\n".join(f"{i:>4} | line" for i in range(2_000)))
+    assert "cut here" in out
+    kept = out.split("\n... cut here")[0]
+    assert kept.endswith("| line"), "never a half line with a bad line number"
+    assert ctx.spent_chars <= 5_000
+
+
+def test_a_spent_budget_refuses_and_tells_the_model_to_answer(tmp_path: Path):
+    ctx = _metered_ctx(tmp_path, 5_000)
+    ctx.metered("a" * 4_500)
+    out = ctx.metered("b" * 3_000)
+    assert out.startswith("Not shown")
+    assert "b" not in out.split(":")[0]
+
+
+def test_the_unmetered_tools_do_not_spend_the_budget(tmp_path: Path):
+    """The cache key reads every tool before a run; that must not count."""
+    ctx = _metered_ctx(tmp_path, 5_000)
+    ctx.get_logs(), ctx.get_diff(), ctx.test_history()
+    assert ctx.spent_chars == 0

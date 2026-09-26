@@ -38,13 +38,16 @@ from functools import cached_property
 from pathlib import Path
 
 from ci_triage.github import load_fixture, load_history, log_path_for_job
-from ci_triage.logs import ANCHORS, LogExcerpt, excerpt_file
+from ci_triage.logs import ANCHORS, LogExcerpt, excerpt
 from ci_triage.models import FixtureMeta, Job, RunHistory, WorkflowRun
 
 #: What `get_diff` says when there is no diff. A fixed, greppable phrase: the
 #: prompt names it, and the eval harness checks the agent did not treat it as
 #: evidence of anything.
 NO_DIFF = "no diff available"
+
+#: A file header in a unified diff.
+_DIFF_FILE = re.compile(r"^diff --git a/(\S+) b/", re.MULTILINE)
 
 #: Detail that differs between matrix legs while the failure is the same.
 #: Applied in order — paths before numbers, since a path contains digits.
@@ -109,6 +112,56 @@ _SIMILARITY = 0.5
 #: only what it says, and leaves grouping identical at the default.
 _FINGERPRINT_LINES = 300
 
+#: Characters of log one `get_logs` call may return, about 2.2k tokens.
+#:
+#: Sized against the budget that actually binds on the default model: Groq's
+#: free tier refuses any single request over 8,000 tokens, and every request
+#: re-sends the conversation so far. The instructions, tool definitions and
+#: output schema are ~3.0k of that as Groq counts before the run has shown
+#: anything, which leaves room for one call of this, one `get_diff`, the
+#: history and a retry — see `RUN_CHARS` for the arithmetic.
+#: Measured before this existed, 6 of 43 fixtures rendered their default view
+#: over that and two rendered it at 39k; asking for one pandas matrix leg by
+#: name returned 15k.
+#:
+#: The fingerprint never reads under this budget, for the same reason it never
+#: reads under `max_lines`: how much of a failure the model is shown must not
+#: decide which failures are the same failure.
+LOG_CHARS = 8_000
+
+#: Least log each distinct failure gets in the default view before some are
+#: listed by name instead. Below this a representative is too short to cite.
+_MIN_SHARE = 2_500
+
+#: Characters of tool output one triage run may receive in total, about 3.6k
+#: tokens.
+#:
+#: The per-call budgets above bound each result and not their sum, and the sum
+#: is what a request carries: every turn re-sends every result so far. With
+#: each call fitting, `poetry__35343948952` still 413'd at 10.3k because the
+#: model read the default view and then asked for two more legs by name. That
+#: is a reasonable thing to do, and past this point it cannot fit, so the tools
+#: say so and the model answers from what it has — which beats a run refused
+#: outright, and beats silently pruning earlier results from the history, since
+#: the model would then cite from memory text it can no longer see.
+#:
+#: The arithmetic, from request bodies logged on the wire. Groq counts about
+#: 8% more than o200k does (refused at 8,056 for a body o200k makes 7,439).
+#: Instructions are 1.3k, tool definitions with the output schema 1.25k, the
+#: overview up to 0.4k: ~3.0k as Groq counts. Tool output runs at ~3.6
+#: characters per token, so 13k characters is ~3.9k, and what is left — about
+#: 1k — covers the model's own tool calls and a retry prompt or two. The two
+#: per-call budgets together (8k + 4k) fit inside it with the history.
+RUN_CHARS = 13_000
+
+#: Below this much budget a result is refused rather than cut; a few lines of
+#: log are more likely to mislead than to settle anything.
+_MIN_RESULT = 1_500
+
+#: Characters of diff `get_diff` returns, about 1.2k tokens. The largest diff
+#: in the corpus is 23k tokens, three times the whole request budget alone.
+DIFF_CHARS = 4_000
+
 
 def _fingerprint(excerpt: LogExcerpt) -> frozenset[str]:
     """The set of lines that could distinguish this failure from another.
@@ -166,6 +219,7 @@ class FailureGroup:
     jobs: list[Job]
     excerpt: LogExcerpt
     fingerprint: frozenset[str]
+    raw: str
 
     @property
     def representative(self) -> Job:
@@ -193,9 +247,19 @@ class TriageContext:
     so the tools are bound to a fixture rather than reaching for global state.
     """
 
-    def __init__(self, fixture: Path, *, max_lines: int = 300):
+    def __init__(
+        self,
+        fixture: Path,
+        *,
+        max_lines: int = 300,
+        max_chars: int = LOG_CHARS,
+        run_chars: int = RUN_CHARS,
+    ):
         self.fixture = Path(fixture)
         self.max_lines = max_lines
+        self.max_chars = max_chars
+        self.run_chars = run_chars
+        self.spent_chars = 0
         self.run: WorkflowRun
         self.jobs: list[Job]
         self.meta: FixtureMeta | None
@@ -225,15 +289,10 @@ class TriageContext:
             log = log_path_for_job(self.fixture, job)
             if log is None:
                 continue
-            excerpt = excerpt_file(
-                log, job_name=job.name, log_path=log.name, max_lines=self.max_lines
-            )
+            raw = log.read_text(encoding="utf-8", errors="replace")
+            shown = self._excerpt(job, log.name, raw, self.max_chars)
             fingerprint = _fingerprint(
-                excerpt
-                if self.max_lines == _FINGERPRINT_LINES
-                else excerpt_file(
-                    log, job_name=job.name, log_path=log.name, max_lines=_FINGERPRINT_LINES
-                )
+                excerpt(raw, job_name=job.name, log_path=log.name, max_lines=_FINGERPRINT_LINES)
             )
             # Greedy, against the group's representative rather than against
             # every member: a chain of pairwise-similar jobs would otherwise
@@ -244,7 +303,7 @@ class TriageContext:
             if best is not None and _overlap(best.fingerprint, fingerprint) >= _SIMILARITY:
                 best.jobs.append(job)
             else:
-                groups.append(FailureGroup([job], excerpt, fingerprint))
+                groups.append(FailureGroup([job], shown, fingerprint, raw))
         return sorted(groups, key=lambda g: (-g.size, g.representative.name))
 
     @property
@@ -313,10 +372,9 @@ class TriageContext:
                     "GitHub discards Actions logs after ~90 days; this run may have been "
                     "captured after its logs expired."
                 )
-            excerpt = excerpt_file(
-                log, job_name=job.name, log_path=log.name, max_lines=self.max_lines
-            )
-            return f"--- job: {job.name}\n{excerpt.render()}"
+            raw = log.read_text(encoding="utf-8", errors="replace")
+            shown = self._excerpt(job, log.name, raw, self.max_chars)
+            return f"--- job: {job.name}\n{shown.render()}"
 
         if not self.groups:
             return (
@@ -331,11 +389,44 @@ class TriageContext:
                 "failure(s). One representative log per distinct failure follows; ask for a "
                 "specific job by name to see its log in full."
             )
-        for group in self.groups:
-            parts.append(f"{group.header()}\n{group.excerpt.render()}")
+        shown, listed = self._share_budget()
+        for group, excerpt_ in shown:
+            parts.append(f"{group.header()}\n{excerpt_.render()}")
+        if listed:
+            names = "\n".join(f"  {g.representative.name}  [{g.size} job(s)]" for g in listed)
+            parts.append(
+                f"{len(listed)} more distinct failure(s), not shown to stay within the size "
+                f"limit. Ask for one by job name to see its log:\n{names}"
+            )
         return "\n\n".join(parts)
 
-    def get_diff(self, max_bytes: int = 60_000) -> str:
+    def _share_budget(self) -> tuple[list[tuple[FailureGroup, LogExcerpt]], list[FailureGroup]]:
+        """Split `max_chars` across the distinct failures, largest first.
+
+        Every representative at its own full budget is what the default view
+        used to be, and on `poetry__35343948952` that was 39k tokens of 8
+        distinct failures. Each now gets an even share, and when there are too
+        many for a share worth reading, the smallest groups are named rather
+        than shown — the model can ask for any of them, and at least knows they
+        exist.
+        """
+        groups = self.groups
+        if sum(len(g.excerpt.render()) for g in groups) <= self.max_chars:
+            return [(g, g.excerpt) for g in groups], []
+        count = max(1, min(len(groups), self.max_chars // _MIN_SHARE))
+        share = self.max_chars // count
+        shown = [
+            (g, self._excerpt(g.representative, g.excerpt.log_path, g.raw, share))
+            for g in groups[:count]
+        ]
+        return shown, groups[count:]
+
+    def _excerpt(self, job: Job, log_path: str, raw: str, max_chars: int) -> LogExcerpt:
+        return excerpt(
+            raw, job_name=job.name, log_path=log_path, max_lines=self.max_lines, max_chars=max_chars
+        )
+
+    def get_diff(self, max_bytes: int = DIFF_CHARS) -> str:
         """The diff of the commit under test.
 
         Returns a description of the absence rather than raising when there is
@@ -357,7 +448,16 @@ class TriageContext:
             if len(text) > max_bytes:
                 shown = text[:max_bytes]
                 cut = len(text.splitlines()) - len(shown.splitlines())
-                return f"{shown}\n... diff truncated, {cut} more lines ...".rstrip()
+                # The head of a diff is whichever files sort first, not the ones
+                # that matter, so name every file the cut hid. That is often
+                # enough to tell whether the failing module was touched at all.
+                seen = set(_DIFF_FILE.findall(shown))
+                hidden = [f for f in dict.fromkeys(_DIFF_FILE.findall(text)) if f not in seen]
+                tail = f"\n... diff truncated, {cut} more lines ..."
+                if hidden:
+                    more = f", +{len(hidden) - 40} more" if len(hidden) > 40 else ""
+                    tail += f"\nfiles changed in the part not shown: {', '.join(hidden[:40])}{more}"
+                return f"{shown}{tail}".rstrip()
             return text
 
         reason = self.fixture / "diff_unavailable.txt"
@@ -394,6 +494,37 @@ class TriageContext:
         if candidate.is_file():
             return candidate.read_text(encoding="utf-8", errors="replace")
         return None
+
+    # -- the run's budget --------------------------------------------------
+
+    def metered(self, text: str) -> str:
+        """`text` as far as this run's remaining budget allows.
+
+        Only the agent's tools go through this. The tool methods themselves stay
+        unmetered, because the cache key and `inspect` read them too, and
+        neither is a model spending a request. A result that does not fit is
+        cut at a line boundary, and one that would leave too little to be worth
+        reading is refused; both say so, in words the model can act on.
+        """
+        left = self.run_chars - self.spent_chars
+        if len(text) <= left:
+            self.spent_chars += len(text)
+            return text
+        if left < _MIN_RESULT:
+            return (
+                f"Not shown: this run has already received {self.spent_chars:,} characters of "
+                "tool output, which is all one request can carry. Answer from what you have "
+                "seen, and cite only lines that were shown to you."
+            )
+        cut = text[:left].rsplit("\n", 1)[0]
+        self.spent_chars += len(cut)
+        return (
+            f"{cut}\n... cut here: {len(text) - len(cut):,} more characters would not fit in "
+            "what one request can carry. Nothing further can be shown this run."
+        )
+
+    def reset_meter(self) -> None:
+        self.spent_chars = 0
 
     # -- helpers -----------------------------------------------------------
 

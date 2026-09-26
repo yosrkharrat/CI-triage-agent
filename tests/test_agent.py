@@ -296,7 +296,7 @@ def test_the_cache_key_separates_models():
 @pytest.mark.skipif(not Path("fixtures/pydantic__35411255497").exists(), reason="not captured")
 def test_a_line_budget_that_changes_the_excerpt_changes_the_key():
     big = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=300)
-    small = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=100)
+    small = TriageContext(Path("fixtures/pydantic__35411255497"), max_lines=40)
     assert big.get_logs() != small.get_logs(), "fixture no longer exercises the budget"
     assert _cache_key(big, MODEL) != _cache_key(small, MODEL)
 
@@ -474,3 +474,133 @@ def test_a_failing_triage_always_carries_its_spend_on_the_exception(tmp_path, mo
         triage(FIXTURE, cache=False)
     assert hasattr(caught.value, agent_mod.SPENT_ATTR)
     assert agent_mod.spent_on(caught.value) is None
+
+
+def _http(status: int, code: str | None = None):
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    body = {"error": {"message": "x", "code": code}} if code else {"error": {"message": "x"}}
+    return ModelHTTPError(status, "m", body)
+
+
+class _Flaky:
+    """An agent whose first `failures` runs raise `exc`, then fail loudly."""
+
+    def __init__(self, exc, failures: int):
+        self.exc, self.failures, self.calls = exc, failures, 0
+
+    def run_sync(self, *a, **kw):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise self.exc
+        raise RuntimeError("answered")  # stands in for success: the retry happened
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [_http(413), _http(400, "tool_use_failed")],
+    ids=["too-large", "tool-use-failed"],
+)
+def test_a_failure_another_attempt_can_avoid_is_tried_once_more(tmp_path, monkeypatch, exc):
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+    flaky = _Flaky(exc, failures=1)
+    monkeypatch.setattr(agent_mod, "build_agent", lambda *a, **kw: flaky)
+    with pytest.raises(RuntimeError, match="answered"):
+        triage(FIXTURE, cache=False)
+    assert flaky.calls == 2
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [_http(429), _http(400, "invalid_request_error"), _http(500)],
+    ids=["rate-limit", "other-400", "server"],
+)
+def test_other_failures_are_not_retried(tmp_path, monkeypatch, exc):
+    """A 429 already had the SDK's backoff, and a per-day lockout will not clear
+    in seconds; retrying anything else is spending quota on a guess."""
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+    flaky = _Flaky(exc, failures=5)
+    monkeypatch.setattr(agent_mod, "build_agent", lambda *a, **kw: flaky)
+    with pytest.raises(type(exc)):
+        triage(FIXTURE, cache=False)
+    assert flaky.calls == 1
+
+
+def test_attempts_are_bounded_and_each_one_is_billed(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+    flaky = _Flaky(_http(413), failures=99)
+    monkeypatch.setattr(agent_mod, "build_agent", lambda *a, **kw: flaky)
+    from pydantic_ai.usage import RunUsage
+
+    monkeypatch.setattr(agent_mod, "_usage_of", lambda messages: RunUsage(input_tokens=100, requests=1))
+    with pytest.raises(type(_http(413))) as caught:
+        triage(FIXTURE, cache=False)
+    assert flaky.calls == agent_mod.RUN_ATTEMPTS
+    spent = agent_mod.spent_on(caught.value)
+    assert (spent.input_tokens, spent.requests) == (100 * agent_mod.RUN_ATTEMPTS, agent_mod.RUN_ATTEMPTS)
+
+
+def test_earlier_reasoning_is_not_sent_back_but_everything_citable_is():
+    """Groq bills re-sent `<think>` traces against the per-request cap; on
+    airflow they were most of the assistant turns and the margin of a 413."""
+    from pydantic_ai.messages import (
+        ModelRequest,
+        ModelResponse,
+        ThinkingPart,
+        ToolCallPart,
+        ToolReturnPart,
+        UserPromptPart,
+    )
+
+    history = [
+        ModelRequest(parts=[UserPromptPart("overview")]),
+        ModelResponse(parts=[ThinkingPart("long deliberation"), ToolCallPart("get_logs", {})]),
+        ModelRequest(parts=[ToolReturnPart("get_logs", "12 | ##[error]boom", tool_call_id="c")]),
+    ]
+    kept = agent_mod.drop_reasoning(history)
+    parts = [p for m in kept for p in m.parts]
+    assert not any(isinstance(p, ThinkingPart) for p in parts)
+    assert any(isinstance(p, ToolCallPart) for p in parts)
+    assert any(isinstance(p, ToolReturnPart) and "boom" in p.content for p in parts)
+    assert kept[0] is history[0], "messages with nothing to drop are left alone"
+
+
+def test_the_agent_drops_reasoning_before_every_request(ctx):
+    """Through the real agent loop, not just the function: what the model is
+    sent on its second turn carries the first turn's tool call and result, and
+    none of its reasoning."""
+    from pydantic_ai.messages import ModelResponse, ThinkingPart, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    seen: list[list] = []
+    answer = _verdict([_real_citation(ctx)]).model_dump(mode="json")
+
+    def model(messages, info):
+        seen.append(messages)
+        if len(seen) == 1:
+            return ModelResponse(parts=[ThinkingPart("x" * 5_000), ToolCallPart("get_logs", {})])
+        return ModelResponse(parts=[ToolCallPart(info.output_tools[0].name, answer)])
+
+    build_agent(FunctionModel(model)).run_sync(ctx.overview(), deps=ctx)
+    second = [p for m in seen[1] for p in m.parts]
+    assert not any(isinstance(p, ThinkingPart) for p in second)
+    assert any(isinstance(p, ToolCallPart) and p.tool_name == "get_logs" for p in second)
+
+
+def test_a_run_that_never_answers_is_stopped_by_the_request_limit(tmp_path, monkeypatch):
+    from pydantic_ai.exceptions import UsageLimitExceeded
+    from pydantic_ai.messages import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+    calls = []
+
+    def circling(messages, info):
+        calls.append(1)
+        return ModelResponse(parts=[ToolCallPart("test_history", {})])
+
+    real = agent_mod.build_agent
+    monkeypatch.setattr(agent_mod, "build_agent", lambda *a, **kw: real(FunctionModel(circling)))
+    with pytest.raises(UsageLimitExceeded):
+        triage(FIXTURE, cache=False)
+    assert len(calls) == agent_mod.REQUEST_LIMIT

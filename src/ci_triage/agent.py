@@ -26,11 +26,15 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
+from dataclasses import replace
+
 from pydantic_ai import Agent, RunContext, capture_run_messages
-from pydantic_ai.messages import ModelMessage, ModelResponse
+from pydantic_ai.capabilities import ProcessHistory
+from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.messages import ModelMessage, ModelResponse, ThinkingPart
 from pydantic_ai.models import Model
 from pydantic_ai.settings import ModelSettings
-from pydantic_ai.usage import RunUsage
+from pydantic_ai.usage import RunUsage, UsageLimits
 
 from ci_triage.logs import verify_evidence
 from ci_triage.models import Evidence, Route, Verdict, category_guide, route
@@ -76,7 +80,9 @@ must decide why it is red, citing the log evidence that proves it.
   other commits.
 
 Call the tools you need. `get_logs()` first is almost always right; the other
-two answer questions the logs alone cannot settle.
+two answer questions the logs alone cannot settle. A run can receive only so
+much tool output in total, so ask for another job's log only when it would
+change your answer.
 
 ## Evidence
 
@@ -104,7 +110,9 @@ mechanically against the log after you answer, so a quote that is not at the
 coordinates you gave is a failed verdict regardless of how good the reasoning
 is. Never reconstruct a line from memory of what such logs usually say. Excerpts
 are reduced, with omitted ranges marked — if the evidence you want is in a gap,
-ask for that job's log by name rather than guessing at its contents.
+ask for that job's log by name rather than guessing at its contents. A very long
+line is shown with its middle cut out and marked `[... N chars cut ...]`; quote
+from one side of the mark only, since the text it replaced is not what you saw.
 
 ## Categories
 
@@ -166,6 +174,15 @@ def enable_tracing() -> bool:
 #: budget tuned to a frontier model silently reads as "this model cannot do the
 #: task" — the run fails on bookkeeping and the verdict is never reached.
 RETRIES = 5
+
+
+#: Model requests one run may make before it is abandoned. Three tools, the
+#: answer, and room for the retries `RETRIES` allows and for Groq refusing a
+#: turn the model tried to end in plain text ("Tool choice is required, but
+#: model did not call a tool"), which it did twice in one fastapi run. Without
+#: a cap nothing bounds a run that keeps circling, and one sweep sat on a
+#: single fixture for eight hours.
+REQUEST_LIMIT = 12
 
 
 #: HTTP-level retries for a single model call. Distinct from `RETRIES` below,
@@ -265,6 +282,29 @@ def _model_settings(model: str | Model) -> ModelSettings:
     return settings
 
 
+def drop_reasoning(messages: list[ModelMessage]) -> list[ModelMessage]:
+    """The conversation without the model's earlier reasoning traces.
+
+    pydantic-ai's Groq adapter sends every earlier `ThinkingPart` back inside
+    `<think>` tags, and Groq bills them against the per-request cap. Measured on
+    the wire for `airflow__32529760720`, the assistant turns were 945 tokens by
+    the third request — almost all reasoning around two short tool calls —
+    and the request was refused at 8,056 against 8,000. Without them it is
+    ~6.5k.
+
+    Nothing is lost that the verdict can use. Every citation has to come from a
+    tool result, which stays; a trace only restates what the model already
+    concluded from one. gpt-oss's own chat format drops earlier reasoning
+    between turns for the same reason.
+    """
+    return [
+        replace(m, parts=[p for p in m.parts if not isinstance(p, ThinkingPart)])
+        if isinstance(m, ModelResponse) and any(isinstance(p, ThinkingPart) for p in m.parts)
+        else m
+        for m in messages
+    ]
+
+
 def build_agent(
     model: str | Model = MODEL, *, retries: int = RETRIES
 ) -> Agent[TriageContext, Verdict]:
@@ -282,6 +322,7 @@ def build_agent(
         retries=retries,
         defer_model_check=True,
         model_settings=_model_settings(model),
+        capabilities=[ProcessHistory(drop_reasoning)],
     )
 
     @agent.tool
@@ -292,12 +333,12 @@ def build_agent(
             job_name: A specific failed job. Omit for one representative per
                 distinct failure, which is the right default.
         """
-        return ctx.deps.get_logs(job_name)
+        return ctx.deps.metered(ctx.deps.get_logs(job_name))
 
     @agent.tool
     def get_diff(ctx: RunContext[TriageContext]) -> str:
         """The unified diff of the commit under test, when one was captured."""
-        return ctx.deps.get_diff()
+        return ctx.deps.metered(ctx.deps.get_diff())
 
     @agent.tool
     def test_history(ctx: RunContext[TriageContext]) -> str:
@@ -305,7 +346,7 @@ def build_agent(
 
         The only evidence that can support or rule out `flaky`.
         """
-        return ctx.deps.test_history()
+        return ctx.deps.metered(ctx.deps.test_history())
 
     return agent
 
@@ -421,6 +462,9 @@ def _cache_key(ctx: TriageContext, model: str) -> str:
     parts = (
         ctx.fixture.name,
         model,
+        # What the tools show after the first call depends on the run budget,
+        # and nothing rendered below reflects it.
+        f"run_chars={ctx.run_chars}",
         INSTRUCTIONS,
         ctx.overview(),
         ctx.get_logs(),
@@ -504,6 +548,41 @@ def _usage_of(messages: list[ModelMessage]) -> RunUsage | None:
     return spent
 
 
+#: Times a run is attempted from scratch when it ends in a failure a second
+#: attempt can plausibly avoid. Each attempt is a fresh conversation, since the
+#: one that failed is the thing being escaped.
+#:
+#: Two failures qualify, and both are the model's dice rather than the input's:
+#:
+#: * **413.** A request only outgrows the cap when the loop runs long — the
+#:   schema missed, the model asked for more logs — so the same fixture fits
+#:   on one attempt and not the next. `core__35505915015` answered in 4.1k
+#:   tokens once and was refused at 9.0k another time.
+#: * **400 `tool_use_failed`.** Groq refuses a generation it cannot parse as a
+#:   tool call. pydantic-ai turns most of these into a retry within the run,
+#:   and raises the rest, which then ended the fixture on a coin toss.
+#:
+#: A 429 is not retried here: the SDK already waits out a per-minute limit, and
+#: a per-day one is not going to clear in the next few seconds.
+RUN_ATTEMPTS = 2
+
+
+def _worth_another_attempt(exc: Exception) -> bool:
+    if not isinstance(exc, ModelHTTPError):
+        return False
+    if exc.status_code == 413:
+        return True
+    body = exc.body if isinstance(exc.body, dict) else {}
+    error = body.get("error", body)
+    return exc.status_code == 400 and isinstance(error, dict) and error.get("code") == "tool_use_failed"
+
+
+def _add(a: RunUsage | None, b: RunUsage | None) -> RunUsage | None:
+    if a is None or b is None:
+        return a or b
+    return a + b
+
+
 def spent_on(exc: BaseException) -> RunUsage | None:
     """What a failed triage cost before it failed, if it got that far."""
     return getattr(exc, SPENT_ATTR, None)
@@ -536,13 +615,26 @@ def triage(
         cached = True
     else:
         agent = build_agent(model)
-        with capture_run_messages() as messages:
-            try:
-                run = agent.run_sync(ctx.overview(), deps=ctx)
-            except Exception as exc:
-                setattr(exc, SPENT_ATTR, _usage_of(messages))
-                raise
-        verdict, usage = run.output, run.usage
+        # What earlier attempts spent. The verdict's cost is every attempt it
+        # took, not only the one that answered.
+        spent: RunUsage | None = None
+        for attempt in range(1, RUN_ATTEMPTS + 1):
+            ctx.reset_meter()
+            with capture_run_messages() as messages:
+                try:
+                    run = agent.run_sync(
+                        ctx.overview(),
+                        deps=ctx,
+                        usage_limits=UsageLimits(request_limit=REQUEST_LIMIT),
+                    )
+                except Exception as exc:
+                    spent = _add(spent, _usage_of(messages))
+                    if attempt < RUN_ATTEMPTS and _worth_another_attempt(exc):
+                        continue
+                    setattr(exc, SPENT_ATTR, spent)
+                    raise
+            break
+        verdict, usage = run.output, _add(spent, run.usage)
         _store_verdict(key, verdict, usage)
         cached = False
 

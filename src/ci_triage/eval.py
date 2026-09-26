@@ -253,26 +253,26 @@ class EvalReport:
         """Runs whose request exceeded the provider's per-request token cap.
 
         Counted apart from the quality metrics because the request never reached
-        the model, so it is not an answer the model got wrong. It is not a
-        property of the fixture either, which is the part that took a sweep to
-        learn: on `gpt-oss-20b`'s 8k-per-minute free tier, 37 of 43 fixtures
-        returned 413, and the rejected sizes clustered at 8.2k-11k while the
-        logs behind them ranged from 489 to 34,662 tokens. The logs were never
-        in those requests.
+        the model, so it is not an answer the model got wrong.
 
-        What fills them is the agent loop. Every turn re-sends the whole
-        conversation, reasoning traces included, and `RETRIES` allows five
-        rounds of a model getting the schema wrong before the verdict is
-        abandoned. `core__35505915015` answers in 2 requests and 4,089 tokens
-        when the model gets the tool call right the first time, and 413s at
-        9,020 when it does not — same fixture, same prompt, same budget.
+        On the first `gpt-oss-20b` sweep, 37 of 43 fixtures returned 413, most
+        of them asking for 8.3k against an 8k cap. The clustering is what a
+        conversation that grows each turn looks like: the request that is
+        refused is the first one to cross the line, whatever the fixture. What
+        grew it, measured turn by turn, was tool output with nothing bounding
+        its size — `max_lines` counted lines, and one pandas line is 250k
+        characters of pytest-xdist dots, so asking for that matrix leg by name
+        returned 15k tokens; the default view of `poetry__35343948952` rendered
+        at 39k and one diff at 23k. Not reasoning traces: Groq's adapter does
+        not re-send them, and input grows by exactly the tool results.
 
-        So a 413 here is stochastic and a re-run is worth making: it says the
-        model spent its budget arguing with the schema, which is a fact about
-        the model on a small budget rather than about the run being triaged.
-        Groq distinguishes the two cases cleanly — a request that is itself too
-        large is 413, a request that does not fit the *remaining* window is 429
-        — so this never silently absorbs ordinary rate limiting.
+        The tools now have character budgets per call (`tools.LOG_CHARS`,
+        `DIFF_CHARS`) and per run (`RUN_CHARS`), and a 413 that still happens is
+        retried once from scratch by `triage`, since how long the loop runs is
+        the model's dice. One here means both attempts were refused. Groq keeps
+        the two cases apart — a request larger than the cap is 413, one that
+        does not fit the *remaining* window is 429 — so this never absorbs
+        ordinary rate limiting.
         """
         return [s for s in self.errored if (s.error or "").startswith(str(_TOO_LARGE))]
 
@@ -564,10 +564,9 @@ class EvalReport:
                 "larger than this account's per-request cap."
             )
             lines.append(
-                "  usually the agent loop rather than the logs — every turn re-sends the whole "
-                "conversation with its reasoning, so a model that retries its way through the "
-                "schema can cross the cap on a fixture whose logs are tiny. Worth re-running; "
-                "the same fixture often answers on a cleaner attempt."
+                "  every turn re-sends the conversation so far, so a run that asks for many logs "
+                "or misses the schema repeatedly can outgrow the cap. Each was already tried "
+                "twice; a lower tools.RUN_CHARS makes it less likely again."
             )
             for s in oversized[:5]:
                 lines.append(f"  {s.fixture}")
@@ -780,10 +779,9 @@ def run_eval(
             if exc.status_code == 429:
                 stopped = f"rate limited by {exc.model_name}: {detail}"
                 break
-            # A 413 is a property of this fixture against this account's budget:
-            # deterministic, and the next fixture may well be smaller. Letting a
-            # run of oversized fixtures trip the give-up streak would abandon a
-            # sweep over something no retry could have fixed.
+            # A 413 says this run outgrew one request, not that the provider is
+            # down: the next fixture may well fit. Letting a run of them trip the
+            # give-up streak would abandon a sweep over something local.
             if exc.status_code != _TOO_LARGE:
                 consecutive += 1
         except AgentRunError as exc:

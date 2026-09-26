@@ -32,6 +32,41 @@ _TIMESTAMP = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z ?")
 _ANSI = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
 
 
+#: Longest line the model is shown. Longer ones are cut in the middle, keeping
+#: both ends, and the cut is marked with `CLIP_MARK`.
+#:
+#: `max_lines` bounds how many lines an excerpt holds and nothing about how long
+#: they are, which turned out to be most of the problem with fitting a request
+#: under an 8k budget. pytest-xdist prints its progress as one line of dots per
+#: worker: on `pandas__35489338041` a single such line is 250,643 characters,
+#: and the matrix legs carrying it rendered at 15k tokens against the 3k of the
+#: representative that happened not to. Asking for one of those legs by name —
+#: exactly what the prompt invites to check a fan-out — made a 413 certain.
+#:
+#: Clipping is display only. `Span.lines` keep the full text, so the fingerprint
+#: groups on what the log says, and `verify_evidence` checks against the raw log
+#: as before: a quote from either visible end of a clipped line is still a
+#: verbatim substring of it, and a quote that runs across the mark is not, which
+#: is the right answer — nobody was shown the text in between.
+MAX_LINE_CHARS = 300
+CLIP_MARK = "[... {n} chars cut ...]"
+
+
+def clip_line(text: str, limit: int = MAX_LINE_CHARS) -> str:
+    """`text`, or its two ends around a marker saying how much was cut."""
+    if len(text) <= limit:
+        return text
+    head = limit * 2 // 3
+    tail = limit - head
+    return f"{text[:head]} {CLIP_MARK.format(n=len(text) - head - tail)} {text[-tail:]}"
+
+
+def _cost(lines: list[str]) -> int:
+    """Characters these lines take once rendered, near enough to budget against."""
+    # The line-number gutter and separator add about eight per line.
+    return sum(len(clip_line(line)) + 8 for line in lines)
+
+
 def normalize(raw: str) -> list[str]:
     """Strip per-line timestamps, ANSI colour, and CR; return 1-based lines.
 
@@ -169,7 +204,7 @@ class LogExcerpt(BaseModel):
                 parts.append(f"  ... {span.line_start - cursor} lines omitted ...")
             width = len(str(span.line_end))
             parts.extend(
-                f"{n:>{width}} | {text}"
+                f"{n:>{width}} | {clip_line(text)}"
                 for n, text in enumerate(span.lines, start=span.line_start)
             )
             cursor = span.line_end + 1
@@ -207,18 +242,26 @@ def excerpt(
     job_name: str,
     log_path: str,
     max_lines: int = 300,
+    max_chars: int | None = None,
     tail_fallback: int = 60,
 ) -> LogExcerpt:
     """Reduce one raw log to the windows around its failure signals.
 
-    `max_lines` is a hard budget. When anchors produce more than that, the
-    lowest-priority spans are dropped first — better to show the whole of the
-    strongest signal than fragments of everything.
+    `max_lines` is a hard budget, and `max_chars` a second one on the rendered
+    size. When anchors produce more than either allows, the lowest-priority
+    spans are dropped first — better to show the whole of the strongest signal
+    than fragments of everything.
+
+    `max_chars` is what a request budget is actually made of: a line count
+    says nothing about tokens when one line can hold 250k characters. It is
+    counted per span before merging, so overlapping windows are charged twice
+    and the result errs under the budget. Merging can also fill a gap of up to
+    two lines between spans, uncharged, which errs over it by at most as much.
     """
     lines = normalize(raw)
     total = len(lines)
 
-    scored: list[tuple[int, Span]] = []
+    scored: list[tuple[int, Span, int]] = []
     for i, text in enumerate(lines, start=1):
         for anchor in ANCHORS:
             if anchor.pattern.search(text):
@@ -230,7 +273,7 @@ def excerpt(
                         line_end=end,
                         lines=lines[start - 1 : end],
                         anchors=[anchor.name],
-                    ))
+                    ), i)
                 )
                 break  # one anchor per line; patterns are ordered by strength
 
@@ -238,6 +281,11 @@ def excerpt(
         # No recognised signal. The failing output is almost always at the end,
         # so show the tail rather than nothing.
         start = max(1, total - tail_fallback + 1)
+        if max_chars is not None:
+            # Give up lines from the top of the tail, since the failing output
+            # is at the bottom.
+            while start < total and _cost(lines[start - 1 :]) > max_chars:
+                start += 1
         return LogExcerpt(
             job_name=job_name,
             log_path=log_path,
@@ -245,7 +293,7 @@ def excerpt(
             spans=[Span(line_start=start, line_end=total, lines=lines[start - 1 :], anchors=["tail"])]
             if total
             else [],
-            truncated=total > tail_fallback,
+            truncated=start > 1,
         )
 
     # Take spans in priority order until the budget is spent, then re-sort into
@@ -253,13 +301,24 @@ def excerpt(
     scored.sort(key=lambda p: (-p[0], p[1].line_start))
     kept: list[Span] = []
     budget = max_lines
+    chars = max_chars
     truncated = False
-    for _, span in scored:
-        if span.length <= budget:
+    for _, span, _ in scored:
+        cost = _cost(span.lines) if chars is not None else 0
+        if span.length <= budget and (chars is None or cost <= chars):
             kept.append(span)
             budget -= span.length
+            if chars is not None:
+                chars -= cost
         else:
             truncated = True
+
+    if not kept and chars is not None:
+        # Even the strongest window is over the character budget on its own.
+        # Showing nothing would be worse than showing less of it, so narrow it
+        # onto the line that matched.
+        _, span, at = scored[0]
+        kept.append(_narrow(span, at, lines, max_chars))
 
     merged = _merge(kept, lines)
     return LogExcerpt(
@@ -269,6 +328,21 @@ def excerpt(
         spans=merged,
         truncated=truncated,
     )
+
+
+def _narrow(span: Span, at: int, lines: list[str], max_chars: int) -> Span:
+    """`span` cut down to fit `max_chars`, always keeping line `at`.
+
+    Lines go from whichever end is farther from `at`, so the window closes in
+    on the anchor evenly rather than losing all the context on one side.
+    """
+    start, end = span.line_start, span.line_end
+    while start < end and _cost(lines[start - 1 : end]) > max_chars:
+        if at - start >= end - at:
+            start += 1
+        else:
+            end -= 1
+    return Span(line_start=start, line_end=end, lines=lines[start - 1 : end], anchors=span.anchors)
 
 
 def excerpt_file(path: Path, *, job_name: str, log_path: str | None = None, **kwargs) -> LogExcerpt:
