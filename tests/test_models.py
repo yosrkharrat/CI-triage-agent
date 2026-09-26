@@ -21,10 +21,10 @@ def _evidence():
 
 
 def _verdict(**kw) -> Verdict:
-    base = dict(
-        category=FailureCategory.INFRA, confidence=0.9, summary="s",
-        reasoning="r", evidence=[_evidence()], suggested_fix=None,
-    )
+    base = {
+        "category": FailureCategory.INFRA, "confidence": 0.9, "summary": "s",
+        "reasoning": "r", "evidence": [_evidence()], "suggested_fix": None,
+    }
     return Verdict(**{**base, **kw})
 
 

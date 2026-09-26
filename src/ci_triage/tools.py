@@ -38,7 +38,7 @@ from functools import cached_property
 from pathlib import Path
 
 from ci_triage.github import load_fixture, load_history, log_path_for_job
-from ci_triage.logs import ANCHORS, LogExcerpt, excerpt
+from ci_triage.logs import LogExcerpt, excerpt
 from ci_triage.models import FixtureMeta, Job, RunHistory, WorkflowRun
 
 #: What `get_diff` says when there is no diff. A fixed, greppable phrase: the
@@ -373,8 +373,8 @@ class TriageContext:
                     "captured after its logs expired."
                 )
             raw = log.read_text(encoding="utf-8", errors="replace")
-            shown = self._excerpt(job, log.name, raw, self.max_chars)
-            return f"--- job: {job.name}\n{shown.render()}"
+            view = self._excerpt(job, log.name, raw, self.max_chars)
+            return f"--- job: {job.name}\n{view.render()}"
 
         if not self.groups:
             return (

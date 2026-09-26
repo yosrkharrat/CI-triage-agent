@@ -21,6 +21,7 @@ quietly landing every fault in `OTHER`.
 from __future__ import annotations
 
 import json
+from datetime import UTC
 from pathlib import Path
 
 import pytest
@@ -37,7 +38,7 @@ from ci_triage.eval import (
     run_eval,
     write_report,
 )
-from ci_triage.models import Evidence, FailureCategory, Label, Route, Verdict, route
+from ci_triage.models import Evidence, FailureCategory, Label, Verdict, route
 from ci_triage.tools import TriageContext
 
 FIXTURE = Path("fixtures/sweep__30005725094")
@@ -94,13 +95,13 @@ def _score(name="f", *, label=None, ok=(True,), verdict=None, error=None) -> Fix
 
 
 def _report(*scores: FixtureScore, stopped: str | None = None) -> EvalReport:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     return EvalReport(
         model="test:model",
         max_lines=300,
         scores=tuple(scores),
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
         seconds=1.0,
         stopped_early=stopped,
     )
@@ -449,7 +450,7 @@ def test_a_failed_run_still_counts_toward_what_the_sweep_cost(tmp_path, monkeypa
     def fake(path, **kw):
         if Path(path).name == "repo__0":
             exc = UnexpectedModelBehavior("exceeded max retries")
-            setattr(exc, "triage_spent_usage", _usage(9000, 1000))
+            exc.triage_spent_usage = _usage(9000, 1000)
             raise exc
         return _result()
 

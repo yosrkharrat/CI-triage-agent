@@ -23,10 +23,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-
-from dataclasses import replace
+from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent, RunContext, capture_run_messages
 from pydantic_ai.capabilities import ProcessHistory
@@ -39,6 +38,10 @@ from pydantic_ai.usage import RunUsage, UsageLimits
 from ci_triage.logs import verify_evidence
 from ci_triage.models import Evidence, Route, Verdict, category_guide, route
 from ci_triage.tools import NO_DIFF, TriageContext
+
+if TYPE_CHECKING:
+    from pydantic_ai.models.anthropic import AnthropicModelSettings
+    from pydantic_ai.models.groq import GroqModelSettings
 
 #: Triage is a judgement call on ambiguous evidence. The default is an
 #: open-weights reasoning model on Groq's free tier: 120B, 131k context, native
@@ -262,24 +265,31 @@ def _model_settings(model: str | Model) -> ModelSettings:
     Extending this to a new provider is the one-line change the eval harness
     needs to sweep it.
     """
-    settings: ModelSettings = {
-        # Enough for a reasoning trace plus a verdict carrying several verbatim
-        # log quotes. gpt-oss allows 65k, so this budget, not the model, binds.
-        "max_tokens": 16000,
-    }
+    # Enough for a reasoning trace plus a verdict carrying several verbatim
+    # log quotes. gpt-oss allows 65k, so this budget, not the model, binds.
+    max_tokens = 16000
     # A constructed `Model` carries its own settings; `system` is the provider
     # name for the instance forms, and unknown ones simply get no reasoning key.
     provider = model.split(":", 1)[0] if isinstance(model, str) else getattr(model, "system", "")
     if provider == "anthropic":
-        settings["anthropic_thinking"] = {"type": "adaptive"}
-        settings["anthropic_effort"] = "high"
-    elif provider == "groq":
-        settings["groq_reasoning_effort"] = "high"
-        # "parsed" keeps the reasoning on its own field instead of inlining it
-        # into content, where it would be parsed as part of the answer. Groq
-        # rejects "raw" for gpt-oss, and "hidden" would throw the trace away.
-        settings["groq_reasoning_format"] = "parsed"
-    return settings
+        anthropic: AnthropicModelSettings = {
+            "max_tokens": max_tokens,
+            "anthropic_thinking": {"type": "adaptive"},
+            "anthropic_effort": "high",
+        }
+        return anthropic
+    if provider == "groq":
+        groq: GroqModelSettings = {
+            "max_tokens": max_tokens,
+            "groq_reasoning_effort": "high",
+            # "parsed" keeps the reasoning on its own field instead of inlining
+            # it into content, where it would be parsed as part of the answer.
+            # Groq rejects "raw" for gpt-oss, and "hidden" would throw the
+            # trace away.
+            "groq_reasoning_format": "parsed",
+        }
+        return groq
+    return {"max_tokens": max_tokens}
 
 
 def drop_reasoning(messages: list[ModelMessage]) -> list[ModelMessage]:

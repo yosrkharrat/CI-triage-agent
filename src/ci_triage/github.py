@@ -29,7 +29,7 @@ import re
 import shutil
 import time
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -347,7 +347,7 @@ def _populate(
         repo=run.repository.full_name,
         run_id=run.id,
         run_attempt=run.run_attempt,
-        fetched_at=datetime.now(timezone.utc),
+        fetched_at=datetime.now(UTC),
         html_url=run.html_url,
         label=None,
     )

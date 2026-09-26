@@ -5,11 +5,11 @@ definition is only worth anything if the data behind it is actually assembled
 correctly, so the assembly is pinned here.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from ci_triage.models import HistoricalRun, RunHistory
 
-T0 = datetime(2026, 9, 19, 12, 0, tzinfo=timezone.utc)
+T0 = datetime(2026, 9, 19, 12, 0, tzinfo=UTC)
 
 
 def _run(conclusion: str | None, *, attempt: int = 1, sha: str = "abc123", minutes: int = 0):

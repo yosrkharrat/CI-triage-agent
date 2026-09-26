@@ -171,7 +171,7 @@ def test_the_agent_can_be_built_without_credentials():
 
 
 def test_triage_requires_a_fixture_that_exists(tmp_path: Path):
-    with pytest.raises(Exception):
+    with pytest.raises(FileNotFoundError):
         triage(tmp_path / "nope")
 
 

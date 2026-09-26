@@ -40,11 +40,11 @@ import json
 import re
 import time
 from collections import Counter
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Sequence
 
 from pydantic_ai.exceptions import AgentRunError, ModelHTTPError
 
@@ -263,11 +263,12 @@ class EvalReport:
         its size — `max_lines` counted lines, and one pandas line is 250k
         characters of pytest-xdist dots, so asking for that matrix leg by name
         returned 15k tokens; the default view of `poetry__35343948952` rendered
-        at 39k and one diff at 23k. Not reasoning traces: Groq's adapter does
-        not re-send them, and input grows by exactly the tool results.
+        at 39k and one diff at 23k. Earlier reasoning traces added to it too,
+        since Groq's adapter re-sends them inside `<think>` tags.
 
         The tools now have character budgets per call (`tools.LOG_CHARS`,
-        `DIFF_CHARS`) and per run (`RUN_CHARS`), and a 413 that still happens is
+        `DIFF_CHARS`) and per run (`RUN_CHARS`), `agent.drop_reasoning` strips
+        the traces from the history, and a 413 that still happens is
         retried once from scratch by `triage`, since how long the loop runs is
         the model's dice. One here means both attempts were refused. Groq keeps
         the two cases apart — a request larger than the cap is 413, one that
@@ -663,10 +664,10 @@ _NOTE_MAX = 48
 
 
 def _row(*cells: str) -> str:
-    cells = cells[:-1] + (_clip(cells[-1], _NOTE_MAX),)
+    cells = (*cells[:-1], _clip(cells[-1], _NOTE_MAX))
     return "  ".join(
         cell if i == len(cells) - 1 else f"{cell[:w]:<{w}}"
-        for i, (cell, w) in enumerate(zip(cells, _WIDTHS))
+        for i, (cell, w) in enumerate(zip(cells, _WIDTHS, strict=True))
     ).rstrip()
 
 
@@ -743,7 +744,7 @@ def run_eval(
     would hit the same wall — but the report is still returned, marked with why
     it stopped, and re-running picks up where it left off from the cache.
     """
-    started_at = datetime.now(timezone.utc)
+    started_at = datetime.now(UTC)
     t0 = time.monotonic()
     scores: list[FixtureScore] = []
     stopped: str | None = None
@@ -765,13 +766,15 @@ def run_eval(
         try:
             result = triage(path, model=model, max_lines=max_lines, cache=cache)
         except ModelHTTPError as exc:
+            burned, burned_requests = _burned(exc)
             detail = _http_detail(exc)
             score = FixtureScore(
                 path.name,
                 label,
                 error=detail,
                 seconds=time.monotonic() - step,
-                **_burned_fields(exc),
+                burned=burned,
+                burned_requests=burned_requests,
             )
             scores.append(score)
             if on_score:
@@ -785,12 +788,14 @@ def run_eval(
             if exc.status_code != _TOO_LARGE:
                 consecutive += 1
         except AgentRunError as exc:
+            burned, burned_requests = _burned(exc)
             score = FixtureScore(
                 path.name,
                 label,
                 error=f"{type(exc).__name__}: {exc}"[:200],
                 seconds=time.monotonic() - step,
-                **_burned_fields(exc),
+                burned=burned,
+                burned_requests=burned_requests,
             )
             scores.append(score)
             if on_score:
@@ -824,11 +829,6 @@ def run_eval(
 _ACCOUNT_ID = re.compile(r"\b(org|user|acct|team)_[A-Za-z0-9]{6,}", re.IGNORECASE)
 
 
-def _burned_fields(exc: BaseException) -> dict[str, int]:
-    tokens, requests = _burned(exc)
-    return {"burned": tokens, "burned_requests": requests}
-
-
 def _burned(exc: BaseException) -> tuple[int, int]:
     """`(tokens, requests)` a failed run had already paid for when it failed."""
     usage = spent_on(exc)
@@ -840,9 +840,8 @@ def _burned(exc: BaseException) -> tuple[int, int]:
 def _http_detail(exc: ModelHTTPError) -> str:
     """The provider's own message, which is where a quota reset time lives."""
     body = exc.body if isinstance(exc.body, dict) else {}
-    if isinstance(err := body.get("error"), dict):
-        if message := err.get("message"):
-            return _ACCOUNT_ID.sub(r"\1_<redacted>", f"{exc.status_code}: {message}")[:300]
+    if isinstance(err := body.get("error"), dict) and (message := err.get("message")):
+        return _ACCOUNT_ID.sub(r"\1_<redacted>", f"{exc.status_code}: {message}")[:300]
     return _ACCOUNT_ID.sub(r"\1_<redacted>", f"{exc.status_code}: {exc}")[:300]
 
 

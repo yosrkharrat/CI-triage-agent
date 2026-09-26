@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 import shutil
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import httpx
@@ -32,8 +32,8 @@ from ci_triage.github import (
     parse_run_ref,
     save_fixture,
 )
-from ci_triage.tools import TriageContext
 from ci_triage.models import FailureCategory, FixtureMeta, Label
+from ci_triage.tools import TriageContext
 
 app = typer.Typer(add_completion=False, help="Triage failed CI runs.")
 console = Console()
@@ -73,7 +73,7 @@ def fetch(
             dest = save_fixture(client, owner, repo, run_id, root=FIXTURES, overwrite=overwrite)
         except GitHubError as exc:
             console.print(f"[red]{exc}[/red]")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
     console.print(f"[green]saved[/green] {dest}")
     console.print(f"next: [bold]uv run ci-triage inspect {dest.name}[/bold]")
 
@@ -86,7 +86,7 @@ def inspect(
 ) -> None:
     """Show the run, its failures, and how far the logs reduce."""
     path = _resolve(fixture)
-    run, jobs, meta = load_fixture(path)
+    run, _jobs, meta = load_fixture(path)
 
     console.print(f"[bold]{run.repository.full_name}[/bold] run {run.id} — {run.name}")
     console.print(f"  {run.event} on {run.head_branch} @ {run.head_sha[:8]} — [red]{run.conclusion}[/red]")
@@ -177,7 +177,8 @@ def triage(
     # working without the agent dependencies installed.
     from pydantic_ai.exceptions import ModelHTTPError, UserError
 
-    from ci_triage.agent import MODEL, triage as run_triage
+    from ci_triage.agent import MODEL
+    from ci_triage.agent import triage as run_triage
 
     console.print(f"triaging [bold]{path.name}[/bold] with {model or MODEL}...")
     # Which credential is needed depends on the provider in the model string,
@@ -191,7 +192,7 @@ def triage(
     except UserError as exc:
         console.print(f"[red]{exc}[/red]")
         console.print("add the key to [bold].env.local[/bold], or pass --model for another provider")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except ModelHTTPError as exc:
         # A free tier is a quota you will hit, not an edge case, and a 429 in
         # the middle of an eval sweep is the normal way a sweep ends. A traceback
@@ -212,7 +213,7 @@ def triage(
         else:
             console.print(f"[red]{exc.model_name} returned {exc.status_code}[/red]")
             console.print(detail or str(exc))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     console.print()
     console.print(result.render(), highlight=False, markup=False)
 
@@ -243,7 +244,7 @@ def label(
             repo=run.repository.full_name,
             run_id=run.id,
             run_attempt=run.run_attempt,
-            fetched_at=datetime.now(timezone.utc),
+            fetched_at=datetime.now(UTC),
             html_url=run.html_url,
         )
     meta = meta.model_copy(
@@ -252,7 +253,7 @@ def label(
                 category=category,
                 root_cause=root_cause,
                 notes=notes,
-                labeled_at=datetime.now(timezone.utc),
+                labeled_at=datetime.now(UTC),
             )
         }
     )
@@ -420,7 +421,7 @@ def hunt(
     meant to run wide and early, ahead of knowing which fixtures you want.
     """
     have = {p.name.split("__")[-1] for p in FIXTURES.iterdir()} if FIXTURES.is_dir() else set()
-    cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
+    cutoff = datetime.now(UTC) - timedelta(days=max_age_days)
 
     # `owner/repo#run_id` rather than the URL: `parse_run_ref` accepts both, and
     # only this one survives a narrow terminal intact enough to copy.
@@ -445,7 +446,7 @@ def hunt(
                 if str(r.id) in have or r.created_at < cutoff:
                     skipped += 1
                     continue
-                age = (datetime.now(timezone.utc) - r.created_at).days
+                age = (datetime.now(UTC) - r.created_at).days
                 found += 1
                 if not capture:
                     table.add_row(f"{age}d", (r.name or "—")[:24], f"{ref}#{r.id}")

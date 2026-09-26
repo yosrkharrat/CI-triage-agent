@@ -65,7 +65,7 @@ def test_excerpt_handles_empty_log():
 
 
 def _ev(**kw):
-    base = dict(job_name="j", log_path="j.txt", line_start=1, line_end=1, quote="q", why="w")
+    base = {"job_name": "j", "log_path": "j.txt", "line_start": 1, "line_end": 1, "quote": "q", "why": "w"}
     return Evidence(**{**base, **kw})
 
 

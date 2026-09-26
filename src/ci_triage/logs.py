@@ -144,7 +144,7 @@ ANCHORS: tuple[AnchorPattern, ...] = (
     ),
     AnchorPattern(
         name="test_failure",
-        pattern=re.compile(r"\bFAILED\b|\bAssertionError\b|^\s*[✕✗×]\s|\bFAIL\b"),
+        pattern=re.compile(r"\bFAILED\b|\bAssertionError\b|^\s*[✕✗×]\s|\bFAIL\b"),  # noqa: RUF001
         priority=70,
         before=10,
         after=15,
@@ -313,7 +313,7 @@ def excerpt(
         else:
             truncated = True
 
-    if not kept and chars is not None:
+    if not kept and max_chars is not None:
         # Even the strongest window is over the character budget on its own.
         # Showing nothing would be worse than showing less of it, so narrow it
         # onto the line that matched.
