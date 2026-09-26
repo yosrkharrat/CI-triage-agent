@@ -1,29 +1,35 @@
 {
   "model": "groq:openai/gpt-oss-120b",
   "max_lines": 300,
-  "started_at": "2026-09-20T17:25:52.576881+00:00",
-  "seconds": 1.6,
-  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198411, Requested 2194. Please try again in 4m21.36s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/",
-  "fixtures": 1,
-  "answered": 0,
+  "started_at": "2026-09-26T16:49:10.984953+00:00",
+  "seconds": 1446.5,
+  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198205, Requested 9057. Please try again in 52m17.184s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
+  "fixtures": 17,
+  "answered": 15,
+  "oversized": [
+    "pandas__35489338041"
+  ],
   "citations": {
-    "cited": 0,
-    "verified": 0,
-    "rate": null,
-    "sound_verdicts": 0,
-    "sound_verdict_rate": null,
-    "faults": {}
+    "cited": 26,
+    "verified": 25,
+    "rate": 0.9615384615384616,
+    "sound_verdicts": 14,
+    "sound_verdict_rate": 0.9333333333333333,
+    "faults": {
+      "quote not in the cited lines": 1
+    }
   },
   "categories": {
     "labelled": 0,
     "correct": 0,
     "accuracy": null,
+    "per_class": {},
     "confusion": {},
     "abstentions": 0
   },
   "routing": {
     "auto_post": 0,
-    "human_review": 0,
+    "human_review": 15,
     "unsound_auto_posts": [],
     "wrong_auto_posts": [],
     "threshold_sweep": [
@@ -66,13 +72,580 @@
     ]
   },
   "cost": {
-    "tokens": 0,
-    "tokens_spent": 0,
-    "requests": 0
+    "tokens": 287228,
+    "tokens_spent": 193598,
+    "burned": 16100,
+    "requests": 60
   },
   "scores": [
     {
       "fixture": "airflow__32529760720",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 16720,
+      "burned": 0,
+      "requests": 5,
+      "cached": true,
+      "seconds": 0.5,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The CI run fails because a core unit test asserts an unexpected queue assignment, causing an AssertionError across multiple jobs \u2013 a clear regression.",
+        "reasoning": "All failing jobs report the same AssertionError in 'test_mutation_hook_safe_session_reuse_routes_mapped_tis_under_prohibit_commit', a core unit test. This shows that the recent change broke expected behavior (queues not all 'high_queue'), which is a regression of the repository's own code. No evidence of flakiness, infra issues, or external dependency changes is present; the failure is deterministic across multiple matrix jobs.",
+        "evidence": [
+          {
+            "job_name": "Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization",
+            "log_path": "25_Sqlite tests core _ DB-coreSqlite3.10Core...Serialization.txt",
+            "line_start": 4875,
+            "line_end": 4875,
+            "quote": "E   AssertionError: assert equals failed",
+            "why": "The test 'test_mutation_hook_safe_session_reuse_routes_mapped_tis_under_prohibit_commit' raised an AssertionError, indicating a regression in the repository code."
+          },
+          {
+            "job_name": "Low dep tests:core / core:LowestDeps:14:3.10:Core...Serialization",
+            "log_path": "14_Low dep testscore _ coreLowestDeps143.10Core...Serialization.txt",
+            "line_start": 4198,
+            "line_end": 4198,
+            "quote": "E   AssertionError: assert equals failed",
+            "why": "The same unit test failed under the lowest\u2011dependency configuration, confirming the failure originates from the repository code, not external dependencies."
+          }
+        ],
+        "suggested_fix": "Investigate the task\u2011mapping and queue\u2011assignment logic introduced in the PR; ensure that mapped task instances are assigned the expected 'high_queue' as asserted by the test."
+      }
+    },
+    {
+      "fixture": "black__34987498448",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 8821,
+      "burned": 0,
+      "requests": 5,
+      "cached": false,
+      "seconds": 49.7,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The job detected style differences between the stable baseline and the PR, causing a failure; this is a regression.",
+        "reasoning": "The 'compare / assert-no-changes' job loads the stable and PR analysis JSONs and expects them to be identical. The log shows that 86 changes were detected, leading to an error exit (code 1). This deterministic failure demonstrates that the PR unintentionally altered the stable code style, which is a regression in the repository's code rather than an infra, flaky, or dependency issue.",
+        "evidence": [
+          {
+            "job_name": "compare / assert-no-changes",
+            "log_path": "1_compare _ assert-no-changes.txt",
+            "line_start": 552,
+            "line_end": 554,
+            "quote": "Differences found.\nPlease verify you didn't change the stable code style unintentionally!\n##[error]Process completed with exit code 1.",
+            "why": "The job asserts that the stable and PR analyses are identical; detecting differences triggers an error exit, indicating a regression introduced by the PR."
+          }
+        ],
+        "suggested_fix": "Review the changes reported in the diff (86 changes) and ensure they do not unintentionally modify the stable code style; revert or adjust the offending modifications."
+      }
+    },
+    {
+      "fixture": "black__34987498453",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.99,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 30968,
+      "burned": 0,
+      "requests": 8,
+      "cached": false,
+      "seconds": 330.4,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.99,
+        "summary": "Black's test_expression_diff fails because Black exits with code 123 instead of 0, indicating a regression introduced by recent formatting logic changes.",
+        "reasoning": "The failure occurs in tests/test_black.py::BlackTestCase::test_expression_diff, which expects Black to exit cleanly (code 0) when invoked with --diff on a specific input. The log shows an AssertionError: 123 != 0, indicating Black returned a non-zero exit code due to recent changes in src/black/linegen.py. Both attempts on this commit failed, and no pass history exists, so the failure is deterministic and caused by a code change in the repository, classifying it as a regression.",
+        "evidence": [
+          {
+            "job_name": "test (3.15, windows-11-arm)",
+            "log_path": "2_test (3.15, windows-11-arm).txt",
+            "line_start": 1378,
+            "line_end": 1379,
+            "quote": ">           self.assertEqual(result.exit_code, 0)\nE           AssertionError: 123 != 0",
+            "why": "The test asserts that Black's exit code should be 0 but the actual exit code is 123, causing an AssertionError."
+          }
+        ],
+        "suggested_fix": "Investigate the new logic added in _prefer_split_rhs_oop_over_rhs (src/black/linegen.py) to ensure it does not cause Black to exit with error code 123 for the case exercised by test_expression_diff, and adjust the condition or handling accordingly."
+      }
+    },
+    {
+      "fixture": "black__34987498587",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 7921,
+      "burned": 0,
+      "requests": 3,
+      "cached": false,
+      "seconds": 79.7,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "The changelog check failed because the PR\u2019s number (#5407) is missing from CHANGES.md, causing the job to exit with an error.",
+        "reasoning": "The CI job runs a grep on CHANGES.md for the PR number (#5407). The log shows the script printed a message asking to add '(#5407)' to CHANGES.md and then exited with code 1. This deterministic failure is due to the repository's own source not meeting the required changelog entry, which is a regression introduced by the PR. No external factors or flakiness are involved.",
+        "evidence": [
+          {
+            "job_name": "check",
+            "log_path": "0_check.txt",
+            "line_start": 168,
+            "line_end": 169,
+            "quote": "Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)\n##[error]Process completed with exit code 1.",
+            "why": "The check script exited with error because CHANGES.md lacks an entry referencing PR #5407, causing the job to fail."
+          }
+        ],
+        "suggested_fix": "Add a line containing '(#5407)' to CHANGES.md (or apply the 'ci: skip news' label if the change does not need a changelog entry)."
+      }
+    },
+    {
+      "fixture": "core__35489352701",
+      "label": null,
+      "predicted": "dependency",
+      "correct": null,
+      "confidence": 0.86,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 18874,
+      "burned": 0,
+      "requests": 7,
+      "cached": false,
+      "seconds": 212.8,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.86,
+        "summary": "The job failed because it could not fetch a manifest file from an external service (astral-sh/versions), causing the Python setup step to error out.",
+        "reasoning": "The failure occurs during the 'Set up Python 3.14.5 and restore venv' step when the job tries to fetch a manifest file from an external URL (astral-sh/versions). The log shows a fetch error, which aborts the job before any code is built or tests run. This points to an external service or unpinned reference being unavailable, matching the definition of a dependency failure. No code changes or test failures are involved, and there is no evidence of flaky behavior across runs, so the appropriate category is 'dependency'.",
+        "evidence": [
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "19_Run tests Python 3.14.5 (4).txt",
+            "line_start": 853,
+            "line_end": 853,
+            "quote": "Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...",
+            "why": "The job attempts to download a manifest from an external URL, showing reliance on an external service."
+          },
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "19_Run tests Python 3.14.5 (4).txt",
+            "line_start": 854,
+            "line_end": 854,
+            "quote": "##[error]fetch failed",
+            "why": "The fetch of the external manifest failed, causing the setup step to abort, indicating a dependency failure."
+          }
+        ],
+        "suggested_fix": "Check the availability of https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson and consider pinning the manifest or adding retry logic to mitigate transient fetch failures."
+      }
+    },
+    {
+      "fixture": "core__35499654396",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 3,
+      "verified": 3,
+      "faults": {},
+      "tokens": 11233,
+      "burned": 0,
+      "requests": 4,
+      "cached": false,
+      "seconds": 80.6,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "Deterministic test failures in cloud component migration tests (extra 'user_id' field) indicate a code regression introduced in this PR.",
+        "reasoning": "The job failed deterministically because two internal tests (test_migrating_pipelines for TTS and STT) raised AssertionError exceptions. The failure logs contain the exact assertion mismatches, and the diff snippet reveals an extra 'user_id' field that the tests did not expect. This indicates a code regression: a recent change altered the pipeline migration output, breaking existing test expectations. No evidence points to flaky behavior, infra problems, or external dependencies.",
+        "evidence": [
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "5_Run tests Python 3.14.5 (4).txt",
+            "line_start": 2778,
+            "line_end": 2778,
+            "quote": "FAILED tests/components/cloud/test_tts.py::test_migrating_pipelines - AssertionError: assert {'conversatio...guage_2', ...} == {'conversatio...guage_2', ...}",
+            "why": "The TTS migration test raised an AssertionError, causing the pytest step to exit with failure."
+          },
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "5_Run tests Python 3.14.5 (4).txt",
+            "line_start": 2801,
+            "line_end": 2801,
+            "quote": "FAILED tests/components/cloud/test_stt.py::test_migrating_pipelines - AssertionError: assert {'conversatio...guage_2', ...} == {'conversatio...guage_2', ...}",
+            "why": "The STT migration test also raised an AssertionError, confirming a deterministic failure."
+          },
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "5_Run tests Python 3.14.5 (4).txt",
+            "line_start": 2820,
+            "line_end": 2820,
+            "quote": "+     'user_id': None,",
+            "why": "The diff shows an unexpected 'user_id': None field in the migrated pipeline data, which is the root cause of the assertion mismatches."
+          }
+        ],
+        "suggested_fix": "Adjust the migration logic to omit the 'user_id' field or update the expected test data to include it, ensuring the migrated pipeline matches the test expectations."
+      }
+    },
+    {
+      "fixture": "core__35505915015",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 5690,
+      "burned": 0,
+      "requests": 3,
+      "cached": false,
+      "seconds": 76.9,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The CI failed because the hassfest quality check reported missing quality scale rules for the xiaomi_weather integration, a regression in the repository's code.",
+        "reasoning": "The failing job is 'Check hassfest', which runs repository quality checks. The log shows an explicit error from the QUALITY_SCALE rule for the xiaomi_weather integration. This indicates a problem in the repository's own source (missing required metadata), which classifies as a regression. There is no indication of nondeterminism, infrastructure issues, or external dependency changes.",
+        "evidence": [
+          {
+            "job_name": "Check hassfest",
+            "log_path": "8_Check hassfest.txt",
+            "line_start": 1021,
+            "line_end": 1023,
+            "quote": "* [ERROR] [QUALITY_SCALE] Quality scale tier bronze requires quality scale rules to be met:\n  brands: todo\n  dependency-transparency: todo",
+            "why": "The hassfest quality check failed for the xiaomi_weather integration, causing the job to exit with an error."
+          }
+        ],
+        "suggested_fix": "Add the required quality scale metadata (e.g., brands and dependency-transparency entries) to the xiaomi_weather integration to satisfy the bronze tier requirements."
+      }
+    },
+    {
+      "fixture": "fastapi__35503211274",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 24390,
+      "burned": 0,
+      "requests": 6,
+      "cached": false,
+      "seconds": 142.2,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "Coverage check failed because overall coverage dropped to 99% (required 100%).",
+        "reasoning": "The job 'coverage-combine' runs 'uv run coverage report --fail-under=100'. The logs show that overall coverage is 99% (line 2831) and explicitly report a coverage failure because the total is less than the required 100% (line 2834). This deterministic failure is caused by a drop in test coverage, i.e., a regression in the repository's code/test suite.",
+        "evidence": [
+          {
+            "job_name": "coverage-combine",
+            "log_path": "1_coverage-combine.txt",
+            "line_start": 2831,
+            "line_end": 2831,
+            "quote": "fastapi/dependencies/utils.py                                                                528      1    99%   265",
+            "why": "Shows that utils.py has one missed line, causing overall coverage to be 99%."
+          },
+          {
+            "job_name": "coverage-combine",
+            "log_path": "1_coverage-combine.txt",
+            "line_start": 2834,
+            "line_end": 2834,
+            "quote": "Coverage failure: total of 99 is less than fail-under=100",
+            "why": "Indicates the coverage check failed because total coverage is below the required 100% threshold."
+          }
+        ],
+        "suggested_fix": "Add or improve tests to cover the uncovered line in fastapi/dependencies/utils.py so that total coverage reaches 100%, or adjust the coverage threshold if appropriate."
+      }
+    },
+    {
+      "fixture": "fastapi__35503211282",
+      "label": null,
+      "predicted": "dependency",
+      "correct": null,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 17896,
+      "burned": 0,
+      "requests": 5,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.85,
+        "summary": "The CI failure is caused by DeprecationWarnings from anyio's BlockingPortal alias, an external dependency change, resulting in 894 test errors and job failure.",
+        "reasoning": "The job fails because many tests error out due to DeprecationWarnings from anyio's BlockingPortal alias. This alias was deprecated in anyio, an external dependency, and the warnings are treated as errors by the test suite. The repository's code and the pull request diff do not modify any of the affected imports, indicating the break originates from the updated anyio package rather than a regression in the repo's own code. Therefore the failure is best categorized as a dependency issue.",
+        "evidence": [
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 4205,
+            "line_end": 4206,
+            "quote": "    warnings.warn(\nE   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+            "why": "The anyio library emits a DeprecationWarning about the BlockingPortal alias, showing a change in an external dependency."
+          },
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 17773,
+            "line_end": 17773,
+            "quote": "================ 193 passed, 5 skipped, 894 errors in 19.97s ==================",
+            "why": "Pytest reports 894 errors, caused by the DeprecationWarnings, leading the job to exit with a failure."
+          }
+        ],
+        "suggested_fix": "Pin the anyio version to a release before the BlockingPortal alias deprecation (e.g., <4.2) or upgrade starlette/fastapi to a version that uses the new anyio.from_thread.BlockingPortal import, so that the DeprecationWarnings no longer appear."
+      }
+    },
+    {
+      "fixture": "fastapi__35503857223",
+      "label": null,
+      "predicted": "dependency",
+      "correct": null,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 32086,
+      "burned": 0,
+      "requests": 7,
+      "cached": false,
+      "seconds": 151.8,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.85,
+        "summary": "The CI fails because anyio's BlockingPortal alias now emits a DeprecationWarning treated as an error, causing hundreds of test errors; pinning or updating the anyio dependency should resolve it.",
+        "reasoning": "The failure is caused by a DeprecationWarning emitted from anyio (an external dependency) that is treated as an error by the test runner, resulting in hundreds of errors and a job failure. The warning originates from a site\u2011packages path, not the repository code, indicating the root cause is a change in an unpinned external package. The same workflow has been failing on recent commits, supporting a dependency break rather than a code regression or flaky behavior.",
+        "evidence": [
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 4209,
+            "line_end": 4209,
+            "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+            "why": "Shows a DeprecationWarning from the external anyio package being raised as an error."
+          },
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 17773,
+            "line_end": 17773,
+            "quote": "================ 193 passed, 5 skipped, 894 errors in 20.50s ==================",
+            "why": "Indicates that many test errors occurred, causing the job to fail."
+          }
+        ],
+        "suggested_fix": "Pin the anyio version to a pre\u2011deprecation release (e.g., anyio<4) or upgrade Starlette/fastapi to versions compatible with the new anyio, or configure the test suite to ignore this DeprecationWarning."
+      }
+    },
+    {
+      "fixture": "httpx__35071320524",
+      "label": null,
+      "predicted": "dependency",
+      "correct": null,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 30022,
+      "burned": 0,
+      "requests": 10,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.85,
+        "summary": "CI fails at the twine check step with an InvalidDistribution error, indicating a packaging metadata issue likely caused by a recent change in external packaging dependencies.",
+        "reasoning": "The only failure observed in the CI logs is the twine check error, which reports an InvalidDistribution caused by an unsupported metadata version '2.5'. The PR diff only adds a client parameter and does not modify packaging configuration. Therefore the break originates from a change in external packaging dependencies (e.g., a new hatchling or twine version) rather than the repository's own code, classifying the failure as a dependency regression.",
+        "evidence": [
+          {
+            "job_name": "Python 3.10",
+            "log_path": "4_Python 3.10.txt",
+            "line_start": 517,
+            "line_end": 518,
+            "quote": "Checking dist/httpx-0.28.1-py3-none-any.whl: ERROR    InvalidDistribution: Invalid distribution metadata: '2.5' is not a valid metadata version",
+            "why": "Shows the twine check step fails due to invalid distribution metadata, indicating a packaging error caused by external tooling."
+          }
+        ],
+        "suggested_fix": "Pin the packaging dependencies (such as hatchling and twine) to a version known to generate valid metadata, or update the project's packaging configuration to be compatible with the newer metadata validation."
+      }
+    },
+    {
+      "fixture": "langchain__34329491939",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 2018,
+      "burned": 0,
+      "requests": 2,
+      "cached": false,
+      "seconds": 31.1,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The CI step checks that CLAUDE.md and AGENTS.md are identical; the logs show they differ, causing the job to exit with an error, indicating a regression in the repository's source.",
+        "reasoning": "The workflow includes a step that asserts CLAUDE.md and AGENTS.md must be identical. The log explicitly reports that they are out of sync and prints a diff, followed by a non\u2011zero exit code, causing the job to fail. This is a deterministic break in the repository's own source files, not an infrastructure or external dependency issue, and there is no indication of non\u2011determinism. Hence it is a regression.",
+        "evidence": [
+          {
+            "job_name": "verify files are identical",
+            "log_path": "0_verify files are identical.txt",
+            "line_start": 143,
+            "line_end": 143,
+            "quote": "\u274c CLAUDE.md and AGENTS.md are out of sync!",
+            "why": "Shows the step detected a mismatch and marked the job as failed."
+          },
+          {
+            "job_name": "verify files are identical",
+            "log_path": "0_verify files are identical.txt",
+            "line_start": 148,
+            "line_end": 149,
+            "quote": "378c378,383",
+            "why": "Displays the diff output confirming that CLAUDE.md and AGENTS.md contain different lines."
+          }
+        ],
+        "suggested_fix": "Update CLAUDE.md and AGENTS.md so their contents match, or adjust the sync check if they are intended to diverge."
+      }
+    },
+    {
+      "fixture": "langchain__34503536672",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.94,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 28992,
+      "burned": 0,
+      "requests": 7,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.94,
+        "summary": "A core unit test fails with an AssertionError because only one FakeTracer run is recorded instead of two, likely due to a regression in generator callback handling.",
+        "reasoning": "The CI run fails because a unit test in libs/core (test_runnable_gen_context_config) raises an AssertionError: it expects two tracer runs but only sees one. The accompanying warning shows a ValueError in the FakeTracer callback, indicating a regression in the runnable generator's callback handling. The failure is deterministic and originates from the repository's code, not from external services or flaky behavior. No prior successful run of this commit is recorded, and the failure is not due to infra or dependency changes, so it is classified as a regression.",
+        "evidence": [
+          {
+            "job_name": "test (libs/core, 3.12) / Python 3.12",
+            "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+            "line_start": 506,
+            "line_end": 506,
+            "quote": "E       AssertionError: assert 1 == 2",
+            "why": "The test expected two tracer runs but only one was recorded, causing an AssertionError."
+          },
+          {
+            "job_name": "test (libs/core, 3.12) / Python 3.12",
+            "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+            "line_start": 512,
+            "line_end": 512,
+            "quote": "WARNING  langchain_core.callbacks.manager:manager.py:341 Error in FakeTracer.on_chain_end callback: ValueError('generator already executing')",
+            "why": "A runtime error in the FakeTracer callback prevents proper tracking of generator runs, leading to the missing second run."
+          }
+        ],
+        "suggested_fix": "Investigate and fix the generator runnable's callback handling so that FakeTracer correctly records each chain execution, ensuring that two runs are captured as expected."
+      }
+    },
+    {
+      "fixture": "langchain__34531198857",
+      "label": null,
+      "predicted": "infra",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 3,
+      "verified": 3,
+      "faults": {},
+      "tokens": 22282,
+      "burned": 0,
+      "requests": 6,
+      "cached": false,
+      "seconds": 143.1,
+      "error": null,
+      "verdict": {
+        "category": "infra",
+        "confidence": 0.96,
+        "summary": "The CI job failed because a network request to PyPI was reset, causing a ConnectionError and a non-zero exit; this is an infrastructure/network outage rather than a code regression.",
+        "reasoning": "The 'Detect Changes & Set Matrix' job crashes while executing a script that queries PyPI for minimal dependency versions. The traceback ends with a ConnectionResetError and a requests.exceptions.ConnectionError, indicating a network failure when contacting an external service. The job then exits with a non-zero status. This failure is not due to a code regression or test assertion, but to an external service outage or CI network issue, which matches the definition of an 'infra' failure.",
+        "evidence": [
+          {
+            "job_name": "Detect Changes & Set Matrix",
+            "log_path": "7_Detect Changes & Set Matrix.txt",
+            "line_start": 242,
+            "line_end": 242,
+            "quote": "ConnectionResetError: [Errno 104] Connection reset by peer",
+            "why": "Shows the script failed due to a network connection reset when contacting PyPI"
+          },
+          {
+            "job_name": "Detect Changes & Set Matrix",
+            "log_path": "7_Detect Changes & Set Matrix.txt",
+            "line_start": 332,
+            "line_end": 332,
+            "quote": "requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
+            "why": "Indicates the request to PyPI failed, causing the job to error"
+          },
+          {
+            "job_name": "Detect Changes & Set Matrix",
+            "log_path": "7_Detect Changes & Set Matrix.txt",
+            "line_start": 333,
+            "line_end": 333,
+            "quote": "##[error]Process completed with exit code 1.",
+            "why": "Signals the job failed because of the earlier connection error"
+          }
+        ],
+        "suggested_fix": "Add retry logic or caching for the PyPI version lookup, or make the step tolerant of temporary network failures (e.g., retry with backoff), to mitigate CI infra outages."
+      }
+    },
+    {
+      "fixture": "pandas__35489338041",
       "label": null,
       "predicted": null,
       "correct": null,
@@ -81,11 +654,64 @@
       "cited": 0,
       "verified": 0,
       "faults": {},
-      "tokens": 0,
-      "requests": 0,
+      "tokens": 7755,
+      "burned": 7755,
+      "requests": 3,
       "cached": false,
-      "seconds": 1.6,
-      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198411, Requested 2194. Please try again in 4m21.36s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/",
+      "seconds": 53.5,
+      "error": "413: Request too large for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8020, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bil",
+      "verdict": null
+    },
+    {
+      "fixture": "pandas__35496694897",
+      "label": null,
+      "predicted": "infra",
+      "correct": null,
+      "confidence": 0.92,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 13215,
+      "burned": 0,
+      "requests": 3,
+      "cached": false,
+      "seconds": 41.1,
+      "error": null,
+      "verdict": {
+        "category": "infra",
+        "confidence": 0.92,
+        "summary": "The Linux-32-bit jobs fail at checkout because they cannot find the PR merge ref (refs/pull/69122/merge), indicating an infrastructure problem with the GitHub ref.",
+        "reasoning": "The failure occurs during the checkout step, where the job attempts to fetch the PR's merge ref (refs/pull/69122/merge). The fetch returns a fatal error indicating the remote ref cannot be found. This prevents the repository from being checked out, and no code compilation or tests are run. Since the error originates from the CI environment's inability to locate the PR merge ref, it is classified as an infrastructure issue rather than a flaky test, regression, or dependency problem.",
+        "evidence": [
+          {
+            "job_name": "Linux-32-bit",
+            "log_path": "35_Linux-32-bit.txt",
+            "line_start": 196,
+            "line_end": 197,
+            "quote": "+ git fetch origin refs/pull/69122/merge:my_ref_name\nfatal: couldn't find remote ref refs/pull/69122/merge",
+            "why": "The git fetch command fails because the PR merge ref does not exist, causing the checkout step to abort"
+          }
+        ],
+        "suggested_fix": "Update the checkout script to fetch the PR head (refs/pull/ID/head) if the merge ref is unavailable, or ensure the PR merge ref is created by adjusting repository settings or avoiding merge-ref fetch for this job."
+      }
+    },
+    {
+      "fixture": "pandas__35499323117",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 8345,
+      "burned": 8345,
+      "requests": 3,
+      "cached": false,
+      "seconds": 52.6,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198205, Requested 9057. Please try again in 52m17.184s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
       "verdict": null
     }
   ]
