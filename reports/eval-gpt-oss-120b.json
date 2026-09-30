@@ -1,18 +1,18 @@
 {
   "model": "groq:openai/gpt-oss-120b",
   "max_lines": 300,
-  "started_at": "2026-09-28T22:25:23.130273+00:00",
-  "seconds": 6.3,
-  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197090, Requested 3891. Please try again in 7m3.792s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
-  "fixtures": 27,
-  "answered": 26,
+  "started_at": "2026-09-30T21:43:53.481125+00:00",
+  "seconds": 1450.9,
+  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196395, Requested 5313. Please try again in 12m17.856s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
+  "fixtures": 31,
+  "answered": 28,
   "oversized": [],
   "citations": {
-    "cited": 44,
-    "verified": 40,
-    "rate": 0.9090909090909091,
-    "sound_verdicts": 23,
-    "sound_verdict_rate": 0.8846153846153846,
+    "cited": 48,
+    "verified": 44,
+    "rate": 0.9166666666666666,
+    "sound_verdicts": 25,
+    "sound_verdict_rate": 0.8928571428571429,
     "faults": {
       "quote not in the cited lines": 4
     }
@@ -26,32 +26,32 @@
     "abstentions": 0
   },
   "routing": {
-    "auto_post": 0,
-    "human_review": 26,
+    "auto_post": 1,
+    "human_review": 27,
     "unsound_auto_posts": [],
     "wrong_auto_posts": [],
     "threshold_sweep": [
       {
         "threshold": 0.5,
-        "auto_posted": 0,
+        "auto_posted": 1,
         "correct": 0,
         "unsound": 0
       },
       {
         "threshold": 0.6,
-        "auto_posted": 0,
+        "auto_posted": 1,
         "correct": 0,
         "unsound": 0
       },
       {
         "threshold": 0.7,
-        "auto_posted": 0,
+        "auto_posted": 1,
         "correct": 0,
         "unsound": 0
       },
       {
         "threshold": 0.8,
-        "auto_posted": 0,
+        "auto_posted": 1,
         "correct": 0,
         "unsound": 0
       },
@@ -70,10 +70,10 @@
     ]
   },
   "cost": {
-    "tokens": 485123,
-    "tokens_spent": 5848,
-    "burned": 5848,
-    "requests": 2
+    "tokens": 648058,
+    "tokens_spent": 168783,
+    "burned": 108683,
+    "requests": 46
   },
   "scores": [
     {
@@ -1113,6 +1113,90 @@
     {
       "fixture": "pydantic-ai__35441580741",
       "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.86,
+      "route": "auto_post",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 35576,
+      "burned": 0,
+      "requests": 9,
+      "cached": false,
+      "seconds": 251.2,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.86,
+        "summary": "A test in test_display failed with an AssertionError, causing the CI run to be red; this is a regression.",
+        "reasoning": "The 'check' job reports a failure in the required test job. The detailed test job log shows a single failing test (test_the_banner_asks_the_terminal_itself_how_wide_it_is) with an AssertionError. This deterministic failure is not attributed to infrastructure or flaky behavior (no evidence of intermittent outcomes). Therefore the CI run failed due to a regression introduced by recent changes.",
+        "evidence": [
+          {
+            "job_name": "check",
+            "log_path": "3_check.txt",
+            "line_start": 202,
+            "line_end": 202,
+            "quote": "\ud83d\udcdd test \u2192 \u274c failure [required to succeed]",
+            "why": "Indicates that the required test job failed, causing the overall CI run to be red."
+          },
+          {
+            "job_name": "test on 3.14 (pydantic-evals)",
+            "log_path": "33_test on 3.14 (pydantic-evals).txt",
+            "line_start": 738,
+            "line_end": 738,
+            "quote": "\u2502  tests/test_display.py  \u2502  test_the_banner_asks_the_terminal_itself_how_wide_it_is  \u2502  580            \u2502  600         \u2502  AssertionError  \u2502",
+            "why": "Shows a specific test failure (AssertionError), confirming a regression in the code or test suite."
+          }
+        ],
+        "suggested_fix": null
+      }
+    },
+    {
+      "fixture": "pydantic-ai__35453419958",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 24524,
+      "burned": 0,
+      "requests": 8,
+      "cached": false,
+      "seconds": 226.5,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "Pyright type-checking fails in test_tools.py because calls to tool_plain lack matching overloads, causing the quality checks job (and the overall CI run) to fail.",
+        "reasoning": "The quality checks job runs pyright across the repository. The logs show two type-check errors in tests/test_tools.py where calls to tool_plain have no matching overloads. Pyright exits with an error, causing the make target to fail, which makes the quality checks job exit with a non-zero status. This deterministic failure originates from recent code changes (new tests and modifications to _griffe.py) that expose missing overload definitions, indicating a regression in the repository's code rather than a flaky, infra, or dependency issue.",
+        "evidence": [
+          {
+            "job_name": "quality checks",
+            "log_path": "26_quality checks.txt",
+            "line_start": 1291,
+            "line_end": 1291,
+            "quote": "  /home/runner/work/pydantic-ai/pydantic-ai/tests/test_tools.py:1111:13 - error: No overloads for \"tool_plain\" match the provided arguments",
+            "why": "Pyright reports a type-check error for a call to tool_plain at line 1111 in test_tools.py, causing the quality checks job to fail"
+          },
+          {
+            "job_name": "quality checks",
+            "log_path": "26_quality checks.txt",
+            "line_start": 1293,
+            "line_end": 1293,
+            "quote": "  /home/runner/work/pydantic-ai/pydantic-ai/tests/test_tools.py:1125:13 - error: No overloads for \"tool_plain\" match the provided arguments",
+            "why": "A second Pyright type-check error for a tool_plain call at line 1125 also fails the job"
+          }
+        ],
+        "suggested_fix": "Add or adjust overload definitions for tool_plain to accept the arguments used in the new tests, or modify the tests to match existing overload signatures, so that pyright type-checking passes."
+      }
+    },
+    {
+      "fixture": "pydantic-ai__35495282377",
+      "label": null,
       "predicted": null,
       "correct": null,
       "confidence": null,
@@ -1120,12 +1204,48 @@
       "cited": 0,
       "verified": 0,
       "faults": {},
-      "tokens": 5848,
-      "burned": 5848,
-      "requests": 2,
+      "tokens": 23377,
+      "burned": 23377,
+      "requests": 12,
       "cached": false,
-      "seconds": 2.2,
-      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197090, Requested 3891. Please try again in 7m3.792s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+      "seconds": 441.7,
+      "error": "UsageLimitExceeded: The next request would exceed the request_limit of 12. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-conc",
+      "verdict": null
+    },
+    {
+      "fixture": "pydantic__35248454086",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 66364,
+      "burned": 66364,
+      "requests": 12,
+      "cached": false,
+      "seconds": 439.6,
+      "error": "UsageLimitExceeded: The next request would exceed the request_limit of 12. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-conc",
+      "verdict": null
+    },
+    {
+      "fixture": "pydantic__35411255497",
+      "label": "regression",
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 18942,
+      "burned": 18942,
+      "requests": 5,
+      "cached": false,
+      "seconds": 87.8,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196395, Requested 5313. Please try again in 12m17.856s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
       "verdict": null
     }
   ]

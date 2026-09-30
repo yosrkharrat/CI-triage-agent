@@ -1,20 +1,27 @@
 {
   "model": "groq:openai/gpt-oss-20b",
   "max_lines": 300,
-  "started_at": "2026-09-28T22:25:29.905998+00:00",
-  "seconds": 20.2,
-  "stopped_early": "rate limited by openai/gpt-oss-20b: 429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197029, Requested 3936. Please try again in 6m56.88s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
-  "fixtures": 18,
-  "answered": 17,
-  "oversized": [],
+  "started_at": "2026-09-30T21:43:53.481125+00:00",
+  "seconds": 1416.7,
+  "stopped_early": "rate limited by openai/gpt-oss-20b: 429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197476, Requested 8309. Please try again in 41m39.12s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+  "fixtures": 28,
+  "answered": 20,
+  "oversized": [
+    "polars__35498835979",
+    "polars__35501439993",
+    "prefect__33784290671",
+    "prefect__33784333154",
+    "prefect__33832652720",
+    "pydantic-ai__35441580741"
+  ],
   "citations": {
-    "cited": 23,
-    "verified": 13,
-    "rate": 0.5652173913043478,
+    "cited": 29,
+    "verified": 15,
+    "rate": 0.5172413793103449,
     "sound_verdicts": 9,
-    "sound_verdict_rate": 0.5294117647058824,
+    "sound_verdict_rate": 0.45,
     "faults": {
-      "quote not in the cited lines": 10
+      "quote not in the cited lines": 14
     }
   },
   "categories": {
@@ -27,7 +34,7 @@
   },
   "routing": {
     "auto_post": 6,
-    "human_review": 11,
+    "human_review": 14,
     "unsound_auto_posts": [
       "black__34987498453",
       "pandas__35489338041"
@@ -73,10 +80,10 @@
     ]
   },
   "cost": {
-    "tokens": 220076,
-    "tokens_spent": 2137,
-    "burned": 2137,
-    "requests": 2
+    "tokens": 346006,
+    "tokens_spent": 119680,
+    "burned": 91802,
+    "requests": 52
   },
   "scores": [
     {
@@ -425,7 +432,7 @@
       "burned": 0,
       "requests": 4,
       "cached": true,
-      "seconds": 0.3,
+      "seconds": 0.2,
       "error": null,
       "verdict": {
         "category": "dependency",
@@ -731,12 +738,270 @@
       "cited": 0,
       "verified": 0,
       "faults": {},
-      "tokens": 2137,
-      "burned": 2137,
-      "requests": 2,
+      "tokens": 6366,
+      "burned": 6366,
+      "requests": 9,
       "cached": false,
-      "seconds": 18.7,
-      "error": "429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197029, Requested 3936. Please try again in 6m56.88s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+      "seconds": 282.6,
+      "error": "UnexpectedModelBehavior: Exceeded maximum output retries (5)",
+      "verdict": null
+    },
+    {
+      "fixture": "poetry__35364542297",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.9,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 6524,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 1.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.9,
+        "summary": "Fix the _required_locked_packages function to not return an int; instead raise a cleo CLI error after printing the error message. This resolves the TypeError and mypy failure.",
+        "reasoning": "The pytest TypeError and mypy type error both point to the same source: the _required_locked_packages method returns the integer 1 in its exception handler, breaking the expected set return type. This bug introduced a regression in the repo's own source. Adjusting the function to raise a cleo CLI error instead of returning 1 fixes the issue.",
+        "evidence": [
+          {
+            "job_name": "Windows (Python 3.11) / pytest",
+            "log_path": "45_Windows (Python 3.11) _ pytest.txt",
+            "line_start": 7203,
+            "line_end": 7205,
+            "quote": "  >           if locked not in required_locked_packages and not show_all:\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE           TypeError: argument of type 'int' is not iterable",
+            "why": "Shows TypeError because required_locked_packages is int due to _required_locked_packages returning 1."
+          },
+          {
+            "job_name": "Windows (Python 3.11) / mypy",
+            "log_path": "41_Windows (Python 3.11) _ mypy.txt",
+            "line_start": 473,
+            "line_end": 474,
+            "quote": "src\\poetry\\console\\commands\\show.py:298: error: Incompatible return value type (got \"int\", expected \"set[Package]\")  [return-value]\nFound 1 error in 1 file (checked 380 source files)",
+            "why": "mypy reports returning int where a set is expected, caused by the return 1 in _required_locked_packages."
+          }
+        ],
+        "suggested_fix": "In poetry/console/commands/show.py, replace the `return 1` inside the SolverProblemError except block with raising a `cleo.exceptions.CliError()` after printing the error message, and import `CliError` at the top. This preserves the intended exit code while keeping the return type a set."
+      }
+    },
+    {
+      "fixture": "poetry__35455975872",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.92,
+      "route": "human_review",
+      "cited": 3,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 2
+      },
+      "tokens": 27878,
+      "burned": 0,
+      "requests": 10,
+      "cached": false,
+      "seconds": 423.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.92,
+        "summary": "The Windows Python\u00a03.15 job failed due to a deterministic assertion error in tests/utils/env/test_env.py, indicating a regression in the env utilities. Fix by revising the subprocess handling for full pipes or adjusting test timeouts.",
+        "reasoning": "The Windows job reports a single test failure in tests/utils/env/test_env.py::test_call_does_not_block_on_full_pipe[sys.stdout]. The failure manifests as an assertion error (E assert ([])), and the log shows the test was marked FAILED. This points to a regression in the project\u2019s own code (the env utilities or their tests), rather than an infrastructure or external dependency issue. There is no evidence of flaky behavior or infrastructure failure, and the test failure is deterministic.",
+        "evidence": [
+          {
+            "job_name": "Windows (Python 3.15) / pytest",
+            "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+            "line_start": 7313,
+            "line_end": 7313,
+            "quote": "[gw0] [ 41%] FAILED tests/utils/env/test_env.py::test_call_does_not_block_on_full_pipe[sys.stdout]",
+            "why": "Indicates the specific test that failed in the Windows Python 3.15 job."
+          },
+          {
+            "job_name": "Windows (Python 3.15) / pytest",
+            "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+            "line_start": 7309,
+            "line_end": 7309,
+            "quote": "E       assert ([])",
+            "why": "Shows the assertion failure in the test, proving a logic error in the env code."
+          },
+          {
+            "job_name": "Windows (Python 3.15) / pytest",
+            "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+            "line_start": 7311,
+            "line_end": 7311,
+            "quote": "D:\\\\a\\\\poetry\\\\poetry\\\\tests\\\\utils\\\\env\\\\test_env.py:263: AssertionError",
+            "why": "Confirms that the assertion failed at the expected line, indicating a regression in the tested code."
+          }
+        ],
+        "suggested_fix": "Update the test or env utilities to handle full stdout pipes correctly on Windows, e.g., increase the thread.join timeout or adjust subprocess buffering to prevent blocking."
+      }
+    },
+    {
+      "fixture": "polars__35498835979",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 10382,
+      "burned": 10382,
+      "requests": 5,
+      "cached": false,
+      "seconds": 113.9,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8598, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "polars__35499202405",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.9,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 0,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 1863,
+      "burned": 0,
+      "requests": 3,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.9,
+        "summary": "Build failure due to a compile error in the repository\u2019s own code: pyo3\u2011polars references UnknownKind::Float incorrectly, causing a regression.",
+        "reasoning": "The log shows a Rust compilation error within the repository\u2019s own crates (pyo3\u2011polars), specifically a mismatch between how UnknownKind::Float is used and how it is defined. The error occurs in the current commit\u2019s code and is deterministic, indicating a regression in the repo\u2019s source rather than a flaky test or infrastructure issue.",
+        "evidence": [
+          {
+            "job_name": "clippy-nightly",
+            "log_path": "0_clippy-nightly.txt",
+            "line_start": 1206,
+            "line_end": 1209,
+            "quote": "1206 |     error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n1207 |    --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n1208 |     |\n1209 | 390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {",
+            "why": "The compiler reports a type\u2011mismatch error in the repo\u2019s own pyo3\u2011polars crate, showing the source code refers to UnknownKind::Float as a unit variant but the definition is a tuple variant. This indicates a breaking change in the repository\u2019s source code that causes the build to fail."
+          }
+        ],
+        "suggested_fix": "Update pyo3\u2011polars/src/types.rs to match the current definition of UnknownKind::Float (e.g., use the tuple\u2011variant pattern or import the correct variant)."
+      }
+    },
+    {
+      "fixture": "polars__35501439993",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 10131,
+      "burned": 10131,
+      "requests": 4,
+      "cached": false,
+      "seconds": 107.3,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8556, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "prefect__33784290671",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 19363,
+      "burned": 19363,
+      "requests": 5,
+      "cached": false,
+      "seconds": 124.1,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8054, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "prefect__33784333154",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 7985,
+      "burned": 7985,
+      "requests": 4,
+      "cached": false,
+      "seconds": 66.0,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8093, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "prefect__33832652720",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 12281,
+      "burned": 12281,
+      "requests": 4,
+      "cached": false,
+      "seconds": 95.1,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8008, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "pydantic-ai__35441580741",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 10582,
+      "burned": 10582,
+      "requests": 4,
+      "cached": false,
+      "seconds": 55.8,
+      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8155, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+      "verdict": null
+    },
+    {
+      "fixture": "pydantic-ai__35453419958",
+      "label": null,
+      "predicted": null,
+      "correct": null,
+      "confidence": null,
+      "route": null,
+      "cited": 0,
+      "verified": 0,
+      "faults": {},
+      "tokens": 14712,
+      "burned": 14712,
+      "requests": 7,
+      "cached": false,
+      "seconds": 145.8,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197476, Requested 8309. Please try again in 41m39.12s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
       "verdict": null
     }
   ]

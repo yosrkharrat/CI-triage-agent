@@ -110,23 +110,28 @@ report is re-derived from stored verdicts for exactly that reason.
 
 ### Where the numbers stand
 
-Three free-tier sweeps so far, each stopped by Groq's daily token cap and
+Four free-tier sweeps so far, each stopped by Groq's daily token cap and
 resumed from the verdict cache. Citation verification needs no labels, so it
 already covers every fixture that has been answered:
 
 | model | fixtures answered | citations verified | verdicts with every citation sound | auto-posts resting on an invented quote |
 | --- | --- | --- | --- | --- |
-| `gpt-oss-120b` | 26 | 40 / 44 (91%) | 23 / 26 | 0 |
-| `gpt-oss-20b`  | 17 | 13 / 23 (57%) | 9 / 17  | 2 |
+| `gpt-oss-120b` | 28 | 44 / 48 (92%) | 25 / 28 | 0 |
+| `gpt-oss-20b`  | 20 | 15 / 29 (52%) | 9 / 20  | 2 |
 
 The smaller model invents evidence for close to half of what it cites, and two
 of its confident verdicts would have gone onto a pull request quoting lines that
 are not in the log. The service holds that at zero by refusing them.
 
-The larger model auto-posted nothing, and not for lack of confidence: it attaches
-a `suggested_fix` to every verdict, and a proposed code change always routes to
-a human. That is the policy working as written, but it means every one of its
-verdicts lands in the review queue, which is why the queue now has a way out.
+The larger model auto-posted one verdict of 28, and not for lack of confidence:
+it attaches a `suggested_fix` to nearly every verdict, and a proposed code
+change always routes to a human. That is the policy working as written, but it
+means almost all of its verdicts land in the review queue, which is why the
+queue now has a way out.
+
+Six 20b fixtures fail with a 413: its free tier allows 8k tokens a minute, and
+a multi-turn triage of a large log outgrows that before it outgrows the daily
+cap.
 
 ### What this corpus can and cannot teach
 
