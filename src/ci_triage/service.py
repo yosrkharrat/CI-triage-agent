@@ -23,6 +23,11 @@ than the eval's routing on one point: **a verdict whose citations do not all
 verify is never posted**, whatever its confidence. The eval reports those as
 `unsound_auto_posts` — comments quoting a line that is not in the log. Here that
 number is held at zero by construction, and the verdict waits for review instead.
+
+A verdict waiting for review is moved on by a person, through
+`POST /runs/{id}/approve` or `/reject`. Approval does not lift the rule above: a
+reviewer can vouch for a category or a proposed fix, but not for a quote the log
+does not contain, so a verdict with a failed citation can only be rejected.
 """
 
 from __future__ import annotations
@@ -41,10 +46,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from fastapi import FastAPI, Header, HTTPException, Request
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from ci_triage.github import AppAuth, GitHubClient, GitHubError, load_fixture, save_fixture
-from ci_triage.models import Route, WorkflowRun
+from ci_triage.models import Route, Verdict, WorkflowRun
 from ci_triage.store import RunRecord, Status, Store
 
 if TYPE_CHECKING:
@@ -80,6 +85,10 @@ class Settings:
     app_id: str | None = None
     app_private_key: str | None = field(default=None, repr=False)
     trace: bool = False
+    #: Bearer token for the review endpoints. Unset, they are switched off:
+    #: approving posts on a pull request, so it must not be open to anyone who
+    #: can reach /runs.
+    review_token: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -101,6 +110,7 @@ class Settings:
             app_id=os.environ.get("GITHUB_APP_ID") or None,
             app_private_key=key,
             trace=bool(os.environ.get("LOGFIRE_TOKEN")),
+            review_token=os.environ.get("CI_TRIAGE_REVIEW_TOKEN") or None,
         )
 
 
@@ -136,26 +146,28 @@ def _fence(text: str) -> str:
     return "`" * max(3, longest + 1)
 
 
-def render_comment(run: WorkflowRun, result: TriageResult) -> str:
+def render_comment(run: WorkflowRun, v: Verdict, *, approved_by: str | None = None) -> str:
     """The PR comment for one verdict.
 
     Every quote is shown with its coordinates, and the footer says why the
     comment exists at all — because each of those quotes was found at the place
     it claims to be. A reader who doubts the verdict can check it in one click.
+
+    Only called for a verdict whose citations all verified, so the evidence
+    shown is the verdict's own. A suggested fix only reaches a comment through
+    a reviewer, and the footer names them.
     """
-    v = result.verdict
     lines = [
         comment_marker(run.id),
         f"### CI triage: **{v.category.value}** (confidence {v.confidence:.2f})",
         "",
         v.summary,
         "",
-        f"<details><summary>Evidence — {len(result.checks)} citation(s), "
+        f"<details><summary>Evidence — {len(v.evidence)} citation(s), "
         "each verified against the log</summary>",
         "",
     ]
-    for check in result.checks:
-        ev = check.evidence
+    for ev in v.evidence:
         span = f"line {ev.line_start}" if ev.line_start == ev.line_end else (
             f"lines {ev.line_start}-{ev.line_end}"
         )
@@ -169,13 +181,18 @@ def render_comment(run: WorkflowRun, result: TriageResult) -> str:
             fence,
             "",
         ]
-    lines += [
-        "</details>",
-        "",
+    lines += ["</details>", ""]
+    if v.suggested_fix:
+        lines += ["**Suggested fix**", "", v.suggested_fix, ""]
+    why = (
+        f"after review by @{approved_by}"
+        if approved_by
+        else "because its confidence cleared the threshold"
+    )
+    lines.append(
         f"<sub>[run {run.id}, attempt {run.run_attempt}]({run.html_url}) · posted by ci-triage "
-        "because its confidence cleared the threshold and every quoted line was found "
-        "where it says it is.</sub>",
-    ]
+        f"{why}, and every quoted line was found where it says it is.</sub>"
+    )
     return "\n".join(lines)
 
 
@@ -281,7 +298,7 @@ def process(record: RunRecord, store: Store, pipeline: Pipeline, settings: Setti
         return Status.FAILED
 
     run, _, _ = load_fixture(fixture)
-    body = render_comment(run, result)
+    body = render_comment(run, result.verdict)
 
     def done(status: Status, **kw: str | None) -> Status:
         store.finish(
@@ -316,6 +333,68 @@ def process(record: RunRecord, store: Store, pipeline: Pipeline, settings: Setti
         url = " ".join(urls)
     log.info("run %s (%s#%s): %s — %s", record.id, record.repo, record.run_id, status.value, reason)
     return done(status, reason=reason, comment_url=url)
+
+
+class ReviewConflict(Exception):
+    """A review action that the run's current state does not allow."""
+
+
+def approve(
+    record: RunRecord,
+    reviewer: str,
+    note: str | None,
+    store: Store,
+    pipeline: Pipeline,
+    settings: Settings,
+) -> RunRecord:
+    """Post a verdict a human has approved, or say why it cannot be.
+
+    The same outcomes as the worker's, with the reviewer standing in for the
+    routing policy — and only for it. The evidence rule still holds, and so do
+    the dry-run switch and the need for an open pull request.
+    """
+    if record.status is not Status.AWAITING_REVIEW:
+        raise ReviewConflict(f"run {record.id} is {record.status.value}, not awaiting review")
+    if not record.evidence_ok or record.verdict is None or record.fixture is None:
+        raise ReviewConflict(
+            f"run {record.id} cites a line that failed verification; it can be rejected, not posted"
+        )
+    claimed = store.claim_review(record.id, Status.APPROVED, reviewer=reviewer, note=note)
+    if claimed is None:
+        raise ReviewConflict(f"run {record.id} was reviewed by someone else first")
+
+    run, _, _ = load_fixture(Path(record.fixture))
+    body = render_comment(run, Verdict.model_validate(record.verdict), approved_by=reviewer)
+    reason = f"approved by {reviewer}"
+    try:
+        pulls = pipeline.pulls(claimed, run)
+        if not pulls:
+            status, reason = Status.NO_PR, f"{reason}; no open pull request for this commit"
+            url = None
+        elif not settings.post_comments:
+            status, reason = Status.DRY_RUN, f"{reason}; CI_TRIAGE_POST_COMMENTS is off"
+            url = None
+        else:
+            status = Status.POSTED
+            url = " ".join(pipeline.post(claimed, n, body, comment_marker(run.id)) for n in pulls)
+    except Exception as exc:
+        log.exception("run %s: posting an approved verdict failed", record.id)
+        store.settle(record.id, Status.FAILED, reason=reason, comment=body, error=f"posting: {exc}")
+    else:
+        store.settle(record.id, status, reason=reason, comment=body, comment_url=url)
+    log.info("run %s approved by %s", record.id, reviewer)
+    updated = store.get(record.id)
+    assert updated is not None
+    return updated
+
+
+def reject(record: RunRecord, reviewer: str, note: str | None, store: Store) -> RunRecord:
+    """Close a verdict without posting it."""
+    rejected = store.claim_review(record.id, Status.REJECTED, reviewer=reviewer, note=note)
+    if rejected is None:
+        raise ReviewConflict(f"run {record.id} is {record.status.value}, not awaiting review")
+    log.info("run %s rejected by %s", record.id, reviewer)
+    return rejected
 
 
 class Worker:
@@ -372,6 +451,13 @@ class Worker:
 
 class _Installation(BaseModel):
     id: int
+
+
+class ReviewRequest(BaseModel):
+    #: Shown in the posted comment as an @-mention, so held to the shape of a
+    #: GitHub login rather than trusted as free text.
+    reviewer: str = Field(pattern=r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+    note: str | None = Field(default=None, max_length=2000)
 
 
 class WorkflowRunEvent(BaseModel):
@@ -458,5 +544,37 @@ def create_app(
         if record is None:
             raise HTTPException(404, "no such run")
         return record.to_json()
+
+    def _reviewable(run: int, authorization: str | None) -> RunRecord:
+        if not settings.review_token:
+            raise HTTPException(503, "review is switched off: set CI_TRIAGE_REVIEW_TOKEN")
+        expected = f"Bearer {settings.review_token}".encode()
+        if not hmac.compare_digest((authorization or "").encode(), expected):
+            raise HTTPException(401, "bad review token")
+        record = store.get(run)
+        if record is None:
+            raise HTTPException(404, "no such run")
+        return record
+
+    # Plain `def`, so FastAPI runs them on a thread: approving calls GitHub.
+    @app.post("/runs/{run}/approve")
+    def approve_run(
+        run: int, review: ReviewRequest, authorization: str | None = Header(None)
+    ) -> dict:
+        record = _reviewable(run, authorization)
+        try:
+            return approve(record, review.reviewer, review.note, store, worker.pipeline, settings).to_json()
+        except ReviewConflict as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/runs/{run}/reject")
+    def reject_run(
+        run: int, review: ReviewRequest, authorization: str | None = Header(None)
+    ) -> dict:
+        record = _reviewable(run, authorization)
+        try:
+            return reject(record, review.reviewer, review.note, store).to_json()
+        except ReviewConflict as exc:
+            raise HTTPException(409, str(exc)) from None
 
     return app

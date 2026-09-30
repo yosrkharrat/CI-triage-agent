@@ -9,6 +9,7 @@
     ci-triage ls                   list fixtures and their labels
     ci-triage backfill             add history.json to older fixtures
     ci-triage serve                run the webhook service for live runs
+    ci-triage review               approve or reject verdicts awaiting a human
 """
 
 from __future__ import annotations
@@ -632,6 +633,79 @@ def serve(
     mode = "[green]posting comments[/green]" if settings.post_comments else "[yellow]dry run[/yellow]"
     console.print(f"serving on http://{host}:{port} — {mode}; runs recorded in {settings.db_path}")
     uvicorn.run(application, host=host, port=port)
+
+
+@app.command()
+def review(
+    run: int | None = typer.Argument(None, help="Service run id; omit to list the queue"),
+    approve: bool = typer.Option(False, "--approve", help="Post the verdict"),
+    reject: bool = typer.Option(False, "--reject", help="Close it without posting"),
+    reviewer: str | None = typer.Option(None, "--as", help="Your GitHub login, named in the comment"),
+    note: str | None = typer.Option(None, help="Why, kept with the run"),
+    url: str = typer.Option("http://127.0.0.1:8000", envvar="CI_TRIAGE_URL", help="The running service"),
+) -> None:
+    """Work through verdicts the service routed to a human.
+
+    With no run id, lists the queue. With one, shows the verdict and the comment
+    it would post; add --approve or --reject (with --as) to decide it. Talks to
+    a running `ci-triage serve`, and needs the same CI_TRIAGE_REVIEW_TOKEN.
+    """
+    load_dotenv(".env.local")
+    load_dotenv(".env")
+    if approve and reject:
+        raise typer.BadParameter("--approve or --reject, not both")
+    token = os.environ.get("CI_TRIAGE_REVIEW_TOKEN", "")
+
+    with httpx.Client(base_url=url, timeout=60) as http:
+        try:
+            if run is None:
+                rows = http.get("/runs", params={"status": "awaiting_review", "limit": 500})
+                rows.raise_for_status()
+                table = Table("id", "repo", "run", "category", "conf", "evidence", "why")
+                for r in rows.json():
+                    v = r["verdict"] or {}
+                    table.add_row(
+                        str(r["id"]),
+                        r["repo"],
+                        str(r["run_id"]),
+                        v.get("category", "—"),
+                        f"{v['confidence']:.2f}" if v else "—",
+                        "[green]verified[/green]" if r["evidence_ok"] else "[red]failed[/red]",
+                        (r["reason"] or "")[:60],
+                    )
+                console.print(table)
+                return
+
+            if not (approve or reject):
+                r = http.get(f"/runs/{run}")
+                r.raise_for_status()
+                record = r.json()
+                console.print(
+                    f"[bold]run {record['id']}[/bold] {record['repo']} — {record['status']}: "
+                    f"{record['reason'] or ''}\n{record['html_url']}\n"
+                )
+                console.print(record["comment"] or "[yellow]no verdict yet[/yellow]", markup=False)
+                return
+
+            if not reviewer:
+                raise typer.BadParameter("--as is required to approve or reject")
+            action = "approve" if approve else "reject"
+            r = http.post(
+                f"/runs/{run}/{action}",
+                json={"reviewer": reviewer, "note": note},
+                headers={"Authorization": f"Bearer {token}"},
+            )
+        except httpx.TransportError as exc:
+            console.print(f"[red]cannot reach the service at {url}: {exc}[/red]")
+            raise typer.Exit(1) from None
+
+    if r.is_error:
+        console.print(f"[red]{r.status_code}: {r.json().get('detail', r.text)}[/red]")
+        raise typer.Exit(1)
+    record = r.json()
+    console.print(f"run {record['id']}: [bold]{record['status']}[/bold] — {record['reason']}")
+    if record["comment_url"]:
+        console.print(record["comment_url"])
 
 
 if __name__ == "__main__":

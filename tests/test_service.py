@@ -13,7 +13,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 
@@ -36,6 +35,7 @@ from ci_triage.store import RunRecord, Status, Store
 FIXTURE = Path("fixtures/sweep__30005725094")
 pytestmark = pytest.mark.skipif(not FIXTURE.exists(), reason="fixture not captured")
 SECRET = "s3cret"
+TOKEN = "r3view"
 
 
 def _result(*, ok: bool = True, confidence: float = 0.9, fix: str | None = None) -> TriageResult:
@@ -103,9 +103,12 @@ def _post(client: TestClient, payload: dict, *, event: str = "workflow_run", sec
 
 @pytest.fixture
 def make(tmp_path: Path):
-    def _make(pipeline: FakePipeline, *, post_comments: bool = True):
+    def _make(pipeline: FakePipeline, *, post_comments: bool = True, review_token: str | None = TOKEN):
         settings = Settings(
-            webhook_secret=SECRET, post_comments=post_comments, db_path=tmp_path / "db.sqlite"
+            webhook_secret=SECRET,
+            post_comments=post_comments,
+            db_path=tmp_path / "db.sqlite",
+            review_token=review_token,
         )
         app = create_app(settings, pipeline=pipeline, start_worker=False)
         return TestClient(app), app.state.store, app.state.worker
@@ -291,7 +294,7 @@ def test_a_deferred_run_comes_back_when_due(tmp_path: Path):
 
 def test_comment_quotes_each_citation_with_its_coordinates():
     run = WorkflowRun.model_validate_json((FIXTURE / "run.json").read_text())
-    body = render_comment(run, _result())
+    body = render_comment(run, _result().verdict)
     assert "**infra**" in body and "0.90" in body
     assert "`2_build (ubuntu-22.04).txt` lines 10-12" in body
     assert "Resource not accessible by integration" in body
@@ -301,11 +304,124 @@ def test_comment_quotes_each_citation_with_its_coordinates():
 def test_a_quote_containing_backticks_cannot_break_out_of_its_fence():
     assert _fence("plain") == "```"
     assert _fence("a ``` b") == "````"
-    result = _result()
-    ev = result.checks[0].evidence.model_copy(update={"quote": "```\n## injected heading"})
-    check = replace(result.checks[0], evidence=ev)
+    verdict = _result().verdict
+    ev = verdict.evidence[0].model_copy(update={"quote": "```\n## injected heading"})
     body = render_comment(
         WorkflowRun.model_validate_json((FIXTURE / "run.json").read_text()),
-        replace(result, checks=(check,)),
+        verdict.model_copy(update={"evidence": [ev]}),
     )
     assert "````text\n```\n## injected heading\n````" in body
+
+
+# -- the review gate -------------------------------------------------------
+
+
+def _awaiting(make, result: TriageResult, **kw):
+    """A run that went through the worker and was routed to a human."""
+    pipeline = FakePipeline(result)
+    client, store, worker = make(pipeline, **kw)
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    assert store.get(rid).status is Status.AWAITING_REVIEW
+    return client, store, pipeline, rid
+
+
+def _review(client: TestClient, rid: int, action: str, *, token: str = TOKEN, **body):
+    return client.post(
+        f"/runs/{rid}/{action}",
+        json={"reviewer": "octocat", **body},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+
+def test_approving_a_proposed_fix_posts_it_and_names_the_reviewer(make):
+    client, store, pipeline, rid = _awaiting(make, _result(fix="add `permissions: contents: write`"))
+    r = _review(client, rid, "approve", note="checked the workflow file")
+    assert r.status_code == 200
+    assert r.json()["status"] == "posted"
+
+    [(number, body, marker)] = pipeline.posted
+    assert number == 7 and body.startswith(marker)
+    assert "**Suggested fix**" in body and "contents: write" in body
+    assert "after review by @octocat" in body
+
+    record = store.get(rid)
+    assert record.reviewed_by == "octocat"
+    assert record.review_note == "checked the workflow file"
+    assert record.verdict["category"] == "infra"  # the verdict survives the review
+    assert record.comment == body
+
+
+def test_a_reviewer_cannot_vouch_for_a_quote_that_is_not_in_the_log(make):
+    client, store, pipeline, rid = _awaiting(make, _result(ok=False, confidence=0.99))
+    r = _review(client, rid, "approve")
+    assert r.status_code == 409
+    assert "rejected, not posted" in r.json()["detail"]
+    assert pipeline.posted == []
+    assert store.get(rid).status is Status.AWAITING_REVIEW
+
+    assert _review(client, rid, "reject", note="invented quote").json()["status"] == "rejected"
+
+
+def test_a_run_is_reviewed_once(make):
+    client, _, pipeline, rid = _awaiting(make, _result(confidence=0.4))
+    assert _review(client, rid, "approve").status_code == 200
+    assert _review(client, rid, "approve").status_code == 409
+    assert _review(client, rid, "reject").status_code == 409
+    assert len(pipeline.posted) == 1
+
+
+def test_approval_respects_the_dry_run_switch(make):
+    client, store, pipeline, rid = _awaiting(make, _result(confidence=0.4), post_comments=False)
+    assert _review(client, rid, "approve").json()["status"] == "dry_run"
+    assert pipeline.posted == []
+    assert "after review by @octocat" in store.get(rid).comment
+
+
+def test_a_run_that_was_posted_cannot_be_approved_again(make):
+    pipeline = FakePipeline(_result())
+    client, _, worker = make(pipeline)
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    assert _review(client, rid, "approve").status_code == 409
+
+
+@pytest.mark.parametrize(
+    ("token", "review_token", "code"),
+    [("wrong", TOKEN, 401), (TOKEN, None, 503)],
+)
+def test_review_needs_the_token(make, token, review_token, code):
+    client, store, pipeline, rid = _awaiting(make, _result(confidence=0.4), review_token=review_token)
+    assert _review(client, rid, "approve", token=token).status_code == code
+    assert pipeline.posted == []
+    assert store.get(rid).status is Status.AWAITING_REVIEW
+
+
+def test_reviewer_must_look_like_a_github_login(make):
+    client, _, _, rid = _awaiting(make, _result(confidence=0.4))
+    r = client.post(
+        f"/runs/{rid}/approve",
+        json={"reviewer": "x](http://evil) ping @everyone"},
+        headers={"Authorization": f"Bearer {TOKEN}"},
+    )
+    assert r.status_code == 422
+
+
+def test_a_database_from_before_review_gains_its_columns(tmp_path: Path):
+    import sqlite3
+
+    path = tmp_path / "old.sqlite"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE runs (id INTEGER PRIMARY KEY, repo TEXT NOT NULL, run_id INTEGER NOT NULL,"
+        " run_attempt INTEGER NOT NULL, installation INTEGER, delivery TEXT, html_url TEXT NOT NULL,"
+        " status TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, not_before TEXT,"
+        " received_at TEXT NOT NULL, updated_at TEXT NOT NULL, fixture TEXT, verdict TEXT,"
+        " route TEXT, reason TEXT, evidence_ok INTEGER, comment TEXT, comment_url TEXT, error TEXT,"
+        " UNIQUE (repo, run_id, run_attempt))"
+    )
+    db.commit()
+    db.close()
+    store = Store(path)
+    rid = store.enqueue(repo="o/r", run_id=1, run_attempt=1, html_url="u")
+    assert store.get(rid).reviewed_by is None

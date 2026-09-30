@@ -12,7 +12,9 @@ That split is what makes three things hold:
   `running` on the next start, and is put back in the queue. Re-running it is
   cheap: the verdict cache means a model that already answered is not asked again.
 * **A review queue for free.** A verdict that may not be posted stays here as
-  `awaiting_review`, with everything a human needs to decide on it.
+  `awaiting_review`, with everything a human needs to decide on it. A reviewer
+  moves it on exactly once: `claim_review` is a compare-and-set, so two people
+  approving the same run at the same moment cannot both post it.
 
 SQLite rather than Postgres because the service runs as one process with one
 worker. The schema is plain enough to move when that stops being true.
@@ -43,6 +45,12 @@ class Status(str, Enum):
     AWAITING_REVIEW = "awaiting_review"
     #: Postable, but no open pull request to post it on.
     NO_PR = "no_pr"
+    #: A human approved it and it is being posted. A row left here means the
+    #: process died mid-post; the comment is keyed on a marker, so approving
+    #: the run again edits rather than duplicates it.
+    APPROVED = "approved"
+    #: A human decided it should not be posted.
+    REJECTED = "rejected"
     FAILED = "failed"
 
 
@@ -68,10 +76,17 @@ CREATE TABLE IF NOT EXISTS runs (
     comment       TEXT,
     comment_url   TEXT,
     error         TEXT,
+    reviewed_by   TEXT,
+    reviewed_at   TEXT,
+    review_note   TEXT,
     UNIQUE (repo, run_id, run_attempt)
 );
 CREATE INDEX IF NOT EXISTS runs_status ON runs (status, received_at);
 """
+
+#: Columns added after the first schema, and so missing from a database the
+#: service created before them. `CREATE TABLE IF NOT EXISTS` will not add them.
+_ADDED_COLUMNS = {"reviewed_by": "TEXT", "reviewed_at": "TEXT", "review_note": "TEXT"}
 
 
 def _now() -> str:
@@ -100,6 +115,9 @@ class RunRecord:
     comment: str | None
     comment_url: str | None
     error: str | None
+    reviewed_by: str | None
+    reviewed_at: str | None
+    review_note: str | None
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -135,6 +153,10 @@ class Store:
         self._lock = threading.Lock()
         with self._conn() as db:
             db.executescript(_SCHEMA)
+            have = {r["name"] for r in db.execute("PRAGMA table_info(runs)")}
+            for name, kind in _ADDED_COLUMNS.items():
+                if name not in have:
+                    db.execute(f"ALTER TABLE runs ADD COLUMN {name} {kind}")
 
     @contextmanager
     def _conn(self) -> Iterator[sqlite3.Connection]:
@@ -231,6 +253,41 @@ class Store:
                     _now(),
                     run,
                 ),
+            )
+
+    def claim_review(
+        self, run: int, to: Status, *, reviewer: str, note: str | None = None
+    ) -> RunRecord | None:
+        """Move a run out of `awaiting_review`, recording who did it.
+
+        Returns the updated row, or None when the run was not awaiting review —
+        including when another reviewer got there first.
+        """
+        now = _now()
+        with self._conn() as db:
+            row = db.execute(
+                "UPDATE runs SET status = ?, reviewed_by = ?, reviewed_at = ?, review_note = ?,"
+                " updated_at = ? WHERE id = ? AND status = ? RETURNING *",
+                (to.value, reviewer, now, note, now, run, Status.AWAITING_REVIEW.value),
+            ).fetchone()
+        return RunRecord._from_row(row) if row else None
+
+    def settle(
+        self,
+        run: int,
+        status: Status,
+        *,
+        reason: str,
+        comment: str | None = None,
+        comment_url: str | None = None,
+        error: str | None = None,
+    ) -> None:
+        """Record where an approved run ended up, keeping its verdict intact."""
+        with self._conn() as db:
+            db.execute(
+                "UPDATE runs SET status = ?, reason = ?, comment = COALESCE(?, comment),"
+                " comment_url = ?, error = ?, updated_at = ? WHERE id = ?",
+                (status.value, reason, comment, comment_url, error, _now(), run),
             )
 
     def get(self, run: int) -> RunRecord | None:

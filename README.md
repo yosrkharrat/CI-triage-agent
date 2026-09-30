@@ -6,7 +6,8 @@ that prove it. Low-confidence verdicts route to a human instead of being posted.
 
 **Status: in progress.** Capture, the agent, its evidence checking and the eval
 harness work end to end against 43 captured runs, and a webhook service runs the
-same agent on live runs. The dashboard and the sandbox are not built yet.
+same agent on live runs, with a review gate for the verdicts it will not post on
+its own. The dashboard and the sandbox are not built yet.
 
 ## The idea it is built around
 
@@ -40,6 +41,7 @@ ci-triage triage <fixture>    run the agent, print and check its verdict
 ci-triage label <fixture>     record human ground truth for the eval set
 ci-triage eval                score the agent over the whole corpus
 ci-triage serve               triage live runs as GitHub reports them
+ci-triage review              approve or reject what the service would not post
 ```
 
 A captured run is the unit of work. The agent's three tools — `get_logs`,
@@ -104,6 +106,26 @@ tightening the evidence check or moving the confidence threshold re-scores every
 verdict already paid for without spending anything. The threshold sweep in the
 report is re-derived from stored verdicts for exactly that reason.
 
+### Where the numbers stand
+
+Three free-tier sweeps so far, each stopped by Groq's daily token cap and
+resumed from the verdict cache. Citation verification needs no labels, so it
+already covers every fixture that has been answered:
+
+| model | fixtures answered | citations verified | verdicts with every citation sound | auto-posts resting on an invented quote |
+| --- | --- | --- | --- | --- |
+| `gpt-oss-120b` | 26 | 40 / 44 (91%) | 23 / 26 | 0 |
+| `gpt-oss-20b`  | 17 | 13 / 23 (57%) | 9 / 17  | 2 |
+
+The smaller model invents evidence for close to half of what it cites, and two
+of its confident verdicts would have gone onto a pull request quoting lines that
+are not in the log. The service holds that at zero by refusing them.
+
+The larger model auto-posted nothing, and not for lack of confidence: it attaches
+a `suggested_fix` to every verdict, and a proposed code change always routes to
+a human. That is the policy working as written, but it means every one of its
+verdicts lands in the review queue, which is why the queue now has a way out.
+
 ### What this corpus can and cannot teach
 
 `flaky` is defined here as one commit producing both outcomes, which puts a hard
@@ -154,6 +176,7 @@ takes failed `workflow_run` deliveries, captures each run to disk exactly as
 | `dry_run` | the same, while posting is switched off (the default) |
 | `awaiting_review` | low confidence, `unknown`, a proposed fix, or any citation that failed |
 | `no_pr` | postable, but the commit has no open pull request |
+| `rejected` | a reviewer closed it without posting |
 
 The rule that matters is the second half of the first row. The eval reports
 auto-posts carrying a failed citation as a liability; the service does not
@@ -167,10 +190,30 @@ interrupted by a restart is picked up again on the next start. A run that hits
 the model's quota waits and retries instead of failing. Every verdict, posted
 or not, is at `GET /runs` along with the comment it would have posted.
 
+A verdict in `awaiting_review` is moved on by a person:
+
+```bash
+uv run ci-triage review                                   # the queue
+uv run ci-triage review 12                                # one verdict, and the comment it would post
+uv run ci-triage review 12 --approve --as octocat         # post it, naming you in the footer
+uv run ci-triage review 12 --reject --as octocat --note "wrong job"
+```
+
+Behind those are `POST /runs/{id}/approve` and `/reject`, which need
+`CI_TRIAGE_REVIEW_TOKEN` as a bearer token and are switched off until it is set.
+A reviewer stands in for the routing policy and nothing else. Approval can post
+a low-confidence verdict or a proposed fix, which then appears in the comment,
+but it cannot post a verdict whose citations failed verification: a person can
+vouch for a judgement, not for a quote the log does not contain. Those can only
+be rejected. Approval still respects the dry-run switch and still needs an open
+pull request, and a run is decided once, so two reviewers acting at the same
+moment cannot both post it.
+
 ```bash
 echo 'GITHUB_WEBHOOK_SECRET=...' >> .env.local     # required; unsigned requests get 401
 echo 'GITHUB_APP_ID=...' >> .env.local             # or rely on GITHUB_TOKEN
 echo 'GITHUB_APP_PRIVATE_KEY_FILE=app.pem' >> .env.local
+echo 'CI_TRIAGE_REVIEW_TOKEN=...' >> .env.local    # enables approve / reject
 uv run ci-triage serve                             # dry run; add CI_TRIAGE_POST_COMMENTS=1 to post
 ```
 
@@ -190,7 +233,5 @@ uv.
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- A human approval action for `awaiting_review` verdicts; the queue exists,
-  the button does not
 - Sandbox tool to reproduce a failure and test a patch
 - Dashboard streaming a triage run as it happens
