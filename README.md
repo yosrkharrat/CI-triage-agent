@@ -7,8 +7,8 @@ that prove it. Low-confidence verdicts route to a human instead of being posted.
 **Status: in progress.** Capture, the agent, its evidence checking and the eval
 harness work end to end against 43 captured runs, and a webhook service runs the
 same agent on live runs, with a review gate for the verdicts it will not post on
-its own. The agent can reproduce a failure in a sandbox when asked to. The
-dashboard is not built yet.
+its own. The agent can reproduce a failure in a sandbox when asked to, and a
+dashboard streams a triage as it happens.
 
 ## The idea it is built around
 
@@ -224,6 +224,29 @@ write**, and a subscription to the **Workflow run** event. The service binds to
 localhost; expose it with a tunnel (`cloudflared`, `ngrok`) rather than a
 public interface, since `/runs` has no authentication.
 
+## The dashboard
+
+`dashboard/` is a Next.js app on the Vercel AI SDK. Its setup is in
+[dashboard/README.md](dashboard/README.md).
+
+- **Watch a triage.** A run's page streams the agent as it works: its
+  reasoning, each tool call as it is made and filled in when it returns, and
+  a verdict card that marks every citation *verified* or *not in log*. It is
+  the same agent the eval scores, streamed in the AI SDK's UI message protocol
+  by pydantic-ai's own adapter, and its answer lands in the same verdict
+  cache.
+- **Ask about the incident.** Next to it is a second agent, in TypeScript,
+  for questions like "would this fail again?". Its tools are typed with Zod on
+  the TypeScript side and served by the Python agent's own Pydantic-typed tools
+  on the other, so the two agents read exactly the same evidence.
+- **Decide the queue.** The review queue lists what the service would not
+  post. A run's page re-checks each citation against the capture, so a
+  reviewer sees *which* quote failed, and it will not offer to approve one that
+  did.
+
+The review token stays on the Next.js server; the browser only talks to the
+app.
+
 ## Reproducing a failure
 
 A verdict says why a run is red; a reproduction checks it. `ci-triage
@@ -269,4 +292,3 @@ uv.
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- Dashboard streaming a triage run as it happens
