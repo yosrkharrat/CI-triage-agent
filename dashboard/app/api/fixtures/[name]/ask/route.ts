@@ -12,6 +12,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { agentJson, env } from "@/lib/agent";
+import { explainModelError } from "@/lib/model-errors";
 import type { FixtureDetail } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -81,6 +82,13 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/fixtures/[n
   });
 
   return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream, originalMessages: messages }),
+    stream: toUIMessageStream({
+      stream: result.stream,
+      originalMessages: messages,
+      onError: (error) => {
+        console.error("ask agent:", error);
+        return explainModelError(error, MODEL);
+      },
+    }),
   });
 }

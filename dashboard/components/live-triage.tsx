@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { isTool, ToolCard } from "@/components/tool-card";
 import { VerdictCard } from "@/components/verdict-card";
+import { explainModelError } from "@/lib/model-errors";
 import type { CheckedVerdict } from "@/lib/types";
 
 const MODELS = ["groq:openai/gpt-oss-120b", "groq:openai/gpt-oss-20b"];
@@ -62,9 +63,7 @@ export function LiveTriage({ name }: { name: string }) {
 
       {error && (
         <p className="rounded-md bg-bad-bg px-3 py-2 text-sm text-bad">
-          {error.message.includes("429") || /rate limit/i.test(error.message)
-            ? "The model's free-tier quota is used up for now. Try the other model, or come back later."
-            : error.message}
+          {explainModelError(error, model)}
         </p>
       )}
 

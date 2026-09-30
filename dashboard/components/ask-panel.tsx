@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useState } from "react";
 
+import { Markdown } from "@/components/markdown";
 import { isTool, ToolCard } from "@/components/tool-card";
 
 const SUGGESTIONS = [
@@ -54,9 +55,7 @@ export function AskPanel({ name }: { name: string }) {
                     {part.text}
                   </p>
                 ) : (
-                  <p key={i} className="whitespace-pre-wrap text-sm leading-relaxed">
-                    {part.text}
-                  </p>
+                  <Markdown key={i}>{part.text}</Markdown>
                 );
               }
               if (isTool(part)) return <ToolCard key={part.toolCallId} part={part} compact />;
