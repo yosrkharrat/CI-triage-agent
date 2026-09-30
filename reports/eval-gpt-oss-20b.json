@@ -1,26 +1,20 @@
 {
   "model": "groq:openai/gpt-oss-20b",
   "max_lines": 300,
-  "started_at": "2026-09-26T16:49:10.984958+00:00",
-  "seconds": 1408.9,
-  "stopped_early": "rate limited by openai/gpt-oss-20b: 429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196478, Requested 6635. Please try again in 22m24.816s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billin",
-  "fixtures": 14,
-  "answered": 7,
-  "oversized": [
-    "black__34987498587",
-    "core__35499654396",
-    "fastapi__35503211274",
-    "fastapi__35503211282",
-    "fastapi__35503857223"
-  ],
+  "started_at": "2026-09-28T22:25:29.905998+00:00",
+  "seconds": 20.2,
+  "stopped_early": "rate limited by openai/gpt-oss-20b: 429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197029, Requested 3936. Please try again in 6m56.88s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+  "fixtures": 18,
+  "answered": 17,
+  "oversized": [],
   "citations": {
-    "cited": 9,
-    "verified": 4,
-    "rate": 0.4444444444444444,
-    "sound_verdicts": 3,
-    "sound_verdict_rate": 0.42857142857142855,
+    "cited": 23,
+    "verified": 13,
+    "rate": 0.5652173913043478,
+    "sound_verdicts": 9,
+    "sound_verdict_rate": 0.5294117647058824,
     "faults": {
-      "quote not in the cited lines": 5
+      "quote not in the cited lines": 10
     }
   },
   "categories": {
@@ -32,56 +26,57 @@
     "abstentions": 0
   },
   "routing": {
-    "auto_post": 3,
-    "human_review": 4,
+    "auto_post": 6,
+    "human_review": 11,
     "unsound_auto_posts": [
-      "black__34987498453"
+      "black__34987498453",
+      "pandas__35489338041"
     ],
     "wrong_auto_posts": [],
     "threshold_sweep": [
       {
         "threshold": 0.5,
-        "auto_posted": 3,
+        "auto_posted": 6,
         "correct": 0,
-        "unsound": 1
+        "unsound": 2
       },
       {
         "threshold": 0.6,
-        "auto_posted": 3,
+        "auto_posted": 6,
         "correct": 0,
-        "unsound": 1
+        "unsound": 2
       },
       {
         "threshold": 0.7,
-        "auto_posted": 3,
+        "auto_posted": 6,
         "correct": 0,
-        "unsound": 1
+        "unsound": 2
       },
       {
         "threshold": 0.8,
-        "auto_posted": 3,
+        "auto_posted": 6,
         "correct": 0,
-        "unsound": 1
+        "unsound": 2
       },
       {
         "threshold": 0.9,
-        "auto_posted": 3,
+        "auto_posted": 6,
         "correct": 0,
-        "unsound": 1
+        "unsound": 2
       },
       {
         "threshold": 0.95,
-        "auto_posted": 0,
+        "auto_posted": 2,
         "correct": 0,
-        "unsound": 0
+        "unsound": 1
       }
     ]
   },
   "cost": {
-    "tokens": 120172,
-    "tokens_spent": 120172,
-    "burned": 44861,
-    "requests": 51
+    "tokens": 220076,
+    "tokens_spent": 2137,
+    "burned": 2137,
+    "requests": 2
   },
   "scores": [
     {
@@ -99,8 +94,8 @@
       "tokens": 22424,
       "burned": 0,
       "requests": 7,
-      "cached": false,
-      "seconds": 181.6,
+      "cached": true,
+      "seconds": 0.5,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -141,8 +136,8 @@
       "tokens": 2030,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 58.4,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -177,8 +172,8 @@
       "tokens": 22914,
       "burned": 0,
       "requests": 6,
-      "cached": false,
-      "seconds": 222.4,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -201,20 +196,46 @@
     {
       "fixture": "black__34987498587",
       "label": null,
-      "predicted": null,
+      "predicted": "infra",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
-      "faults": {},
-      "tokens": 0,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 7438,
       "burned": 0,
-      "requests": 0,
-      "cached": false,
-      "seconds": 33.8,
-      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8738, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
-      "verdict": null
+      "requests": 6,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "infra",
+        "confidence": 0.95,
+        "summary": "CI failed because the PR was not referenced in CHANGES.md; add the PR reference or a skip label to pass the check.",
+        "reasoning": "The job logs show a grep command searching for the PR number (#5407) in CHANGES.md. It fails, leading to an explicit error message and the job exiting with code 1. This is a deterministic CI policy check, not a compile or runtime failure in the repository code, nor an external dependency change. Therefore the failure is due to a CI workflow requirement, categorised as an infra issue.",
+        "evidence": [
+          {
+            "job_name": "check",
+            "log_path": "0_check.txt",
+            "line_start": 160,
+            "line_end": 163,
+            "quote": "##[group]Run grep -Pz \"\\\\((\\\\n\\\\s*)?#5407(\\\\n\\\\s*)?\\\\)\" CHANGES.md || \\\ngrep -Pz \"\\\\((\\\\n\\\\s*)?#5407(\\\\n\\\\s*)?\\\\)\" CHANGES.md || \\\n(echo \"Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)\" && \\\nexit 1)",
+            "why": "Shows the CI step grepping for the PR reference in CHANGES.md and exiting with an error when not found."
+          },
+          {
+            "job_name": "check",
+            "log_path": "0_check.txt",
+            "line_start": 168,
+            "line_end": 168,
+            "quote": "Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)",
+            "why": "Explicit error message indicating the missing changelog entry that caused the job to fail."
+          }
+        ],
+        "suggested_fix": "Add a line containing '(#5407)' to CHANGES.md for this PR, or add the 'ci: skip news' label to bypass the check."
+      }
     },
     {
       "fixture": "core__35489352701",
@@ -229,8 +250,8 @@
       "tokens": 5189,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 26.1,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "dependency",
@@ -253,20 +274,36 @@
     {
       "fixture": "core__35499654396",
       "label": null,
-      "predicted": null,
+      "predicted": "regression",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
       "faults": {},
-      "tokens": 1869,
-      "burned": 1869,
-      "requests": 1,
-      "cached": false,
-      "seconds": 7.1,
-      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8738, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
-      "verdict": null
+      "tokens": 5840,
+      "burned": 0,
+      "requests": 3,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "CI fails because the `Pipeline` model now includes a `user_id` field, causing test assertions to fail on the JSON output that contains the new key. The regression should be fixed by excluding `user_id` from JSON when unset or updating the tests accordingly.",
+        "reasoning": "The test failure occurs in tests/components/cloud/test_stt.py and test_tts.py where the migrated pipeline JSON is compared against an expected dictionary. The log shows the actual dictionary includes an extra key `'user_id': None` that is not present in the expected dictionary. This discrepancy is due to recent changes in `homeassistant/components/assist_pipeline/models.py` that added a `user_id` field to the `Pipeline` dataclass and included it in `to_json()`. Since the test expectations were not updated to account for this new field, the JSON output no longer matches the expected structure, causing an AssertionError. The change is in the repository\u2019s own code, not in external dependencies or CI infrastructure, making it a regression.",
+        "evidence": [
+          {
+            "job_name": "Run tests Python 3.14.5 (4)",
+            "log_path": "5_Run tests Python 3.14.5 (4).txt",
+            "line_start": 2805,
+            "line_end": 2805,
+            "quote": "   {'user_id': None}",
+            "why": "Shows that the test expected a dictionary without the 'user_id' key, but the actual output includes it."
+          }
+        ],
+        "suggested_fix": "Modify `Pipeline.to_json()` to omit the `'user_id'` key when its value is `None` (e.g., `if self.user_id is not None: result['user_id'] = self.user_id`) or update the tests to expect the new key."
+      }
     },
     {
       "fixture": "core__35505915015",
@@ -283,8 +320,8 @@
       "tokens": 3712,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 49.0,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -307,56 +344,114 @@
     {
       "fixture": "fastapi__35503211274",
       "label": null,
-      "predicted": null,
+      "predicted": "regression",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
       "faults": {},
-      "tokens": 1976,
-      "burned": 1976,
-      "requests": 1,
-      "cached": false,
-      "seconds": 16.1,
-      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 9558, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
-      "verdict": null
+      "tokens": 8479,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "FastAPI CI fails because coverage dropped to 99% and the job expects 100% coverage.",
+        "reasoning": "The failure originates from the coverage-combine job, which checks that overall test coverage meets a 100% threshold. The log shows a coverage report line stating that total coverage was 99% and is thus insufficient. This failure is due to the repository\u2019s own test coverage metrics, not an external service or environment issue, so it is a regression.",
+        "evidence": [
+          {
+            "job_name": "coverage-combine",
+            "log_path": "1_coverage-combine.txt",
+            "line_start": 2834,
+            "line_end": 2834,
+            "quote": "Coverage failure: total of 99 is less than fail-under=100",
+            "why": "The coverage report indicates total coverage is 99%, below the required 100% threshold, causing the job to fail"
+          }
+        ],
+        "suggested_fix": "Adjust the fail-under threshold to a realistic value (e.g., 95%) or add missing tests to increase coverage to 100%."
+      }
     },
     {
       "fixture": "fastapi__35503211282",
       "label": null,
-      "predicted": null,
+      "predicted": "dependency",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
       "faults": {},
-      "tokens": 5865,
-      "burned": 5865,
-      "requests": 2,
-      "cached": false,
-      "seconds": 65.7,
-      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8764, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
-      "verdict": null
+      "tokens": 31059,
+      "burned": 0,
+      "requests": 11,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.85,
+        "summary": "The CI failure is caused by a DeprecationWarning from anyio that is treated as an error during test collection, stemming from a recent dependency update. The repository code itself is unchanged. Pinning or updating the affected dependencies resolves the issue.",
+        "reasoning": "The test suite fails with many DeprecationWarning errors originating from anyio. The diff for the pull request only modifies a test file unrelated to this issue, indicating that the repository\u2019s own code has not changed. The failure pattern is consistent across many tests that import the same module, and the warning is a result of a recent dependency update (anyio or starlette) that deprecates the alias used in the code. Because the error arises solely from external packages, it is a dependency\u2010related regression.",
+        "evidence": [
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 4209,
+            "line_end": 4209,
+            "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+            "why": "Shows that the failure is caused by a DeprecationWarning emitted by anyio during import of starlette.testclient, which is turned into an error by the test runner."
+          }
+        ],
+        "suggested_fix": "Pin anyio to a version that still supports the deprecated alias, or upgrade starlette (or other dependent packages) to a version that no longer imports anyio.abc.BlockingPortal."
+      }
     },
     {
       "fixture": "fastapi__35503857223",
       "label": null,
-      "predicted": null,
+      "predicted": "dependency",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
-      "faults": {},
-      "tokens": 21009,
-      "burned": 21009,
-      "requests": 5,
-      "cached": false,
-      "seconds": 108.9,
-      "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 11940, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bil",
-      "verdict": null
+      "confidence": 0.9,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 12098,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "dependency",
+        "confidence": 0.9,
+        "summary": "FastAPI's test suite failed because anyio deprecated the BlockingPortal alias, turning Pytest's DeprecationWarnings into errors. Pinning anyio or updating dependencies resolves the issue.",
+        "reasoning": "The log shows Pytest encountering DeprecationWarnings about anyio.abc.BlockingPortal being deprecated, which Pytest treats as errors (E). This is caused by a recent change in the anyio library, not by repository code changes. Thus the failure is due to a dependency change.",
+        "evidence": [
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 4210,
+            "line_end": 4210,
+            "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+            "why": "Shows Pytest treating the DeprecationWarning as an error, indicating a failure due to a changed external dependency."
+          },
+          {
+            "job_name": "test-redistribute",
+            "log_path": "1_test-redistribute.txt",
+            "line_start": 17749,
+            "line_end": 17749,
+            "quote": "ERROR tests/test_union_forms.py - DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+            "why": "Demonstrates that multiple tests fail as DeprecationWarnings are treated as errors."
+          }
+        ],
+        "suggested_fix": "Pin anyio to a version that still provides the BlockingPortal alias (e.g., <4.0) or update starlette/tests to use anyio.from_thread.BlockingPortal. The simplest fix is to pin anyio in the dev dependencies."
+      }
     },
     {
       "fixture": "httpx__35071320524",
@@ -371,8 +466,8 @@
       "tokens": 17084,
       "burned": 0,
       "requests": 10,
-      "cached": false,
-      "seconds": 363.1,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "dependency",
@@ -395,20 +490,36 @@
     {
       "fixture": "langchain__34329491939",
       "label": null,
-      "predicted": null,
+      "predicted": "regression",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
+      "confidence": 0.95,
+      "route": "auto_post",
+      "cited": 1,
+      "verified": 1,
       "faults": {},
-      "tokens": 2194,
-      "burned": 2194,
-      "requests": 1,
-      "cached": false,
-      "seconds": 27.3,
-      "error": "400: Parsing failed. The model generated output that could not be parsed. Please adjust your prompt. See 'failed_generation' for more details.",
-      "verdict": null
+      "tokens": 9851,
+      "burned": 0,
+      "requests": 3,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "The CI step fails because CLAUDE.md and AGENTS.md are out of sync \u2013 the repository\u2019s own source violates the expected invariant, making this a regression.",
+        "reasoning": "The job \"verify files are identical\" runs a diff to ensure CLAUDE.md and AGENTS.md contain exactly the same text. The log indicates the diff output, confirming that the two files differ at line 378, thus triggering the failure. Since the failure is due to the repo\u2019s own source files not matching an invariant, it is a regression, not an infra or dependency issue.",
+        "evidence": [
+          {
+            "job_name": "verify files are identical",
+            "log_path": "0_verify files are identical.txt",
+            "line_start": 143,
+            "line_end": 149,
+            "quote": "\u274c CLAUDE.md and AGENTS.md are out of sync!\n\nThese files must contain identical content.\nDifferences:\n\n378c378,383\n< See [AGENTS.md](AGENTS.md) for OpenWiki agent instructions.",
+            "why": "The log shows that CLAUDE.md and AGENTS.md differ, causing the CI step to fail."
+          }
+        ],
+        "suggested_fix": null
+      }
     },
     {
       "fixture": "langchain__34503536672",
@@ -425,8 +536,8 @@
       "tokens": 1958,
       "burned": 0,
       "requests": 2,
-      "cached": false,
-      "seconds": 46.6,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -457,6 +568,162 @@
     {
       "fixture": "langchain__34531198857",
       "label": null,
+      "predicted": "infra",
+      "correct": null,
+      "confidence": 0.92,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 7684,
+      "burned": 0,
+      "requests": 2,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "infra",
+        "confidence": 0.92,
+        "summary": "The CI failure is caused by a network connection reset when the job tries to download package metadata from PyPI; this points to an infrastructure/network issue rather than a code or dependency bug.",
+        "reasoning": "The Detect Changes & Set Matrix job fails while executing a helper script that pulls package metadata from PyPI. The traceback ends in a urllib3 ConnectionResetError and a requests.exceptions.ConnectionError, both caused by a \u201cConnection reset by peer\u201d from the remote side. This is an external network failure rather than a code defect, so the failure is due to CI infrastructure (network/runner). The CI Success job fails only because the preceding job did not complete successfully.",
+        "evidence": [
+          {
+            "job_name": "Detect Changes & Set Matrix",
+            "log_path": "7_Detect Changes & Set Matrix.txt",
+            "line_start": 242,
+            "line_end": 242,
+            "quote": "ConnectionResetError: [Errno 104] Connection reset by peer",
+            "why": "Shows a network connection reset while trying to query PyPI, indicating an external infrastructure issue"
+          },
+          {
+            "job_name": "Detect Changes & Set Matrix",
+            "log_path": "7_Detect Changes & Set Matrix.txt",
+            "line_start": 331,
+            "line_end": 331,
+            "quote": "requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
+            "why": "Confirms the requests library failed to establish a connection to PyPI, a clear infrastructure/network error"
+          }
+        ],
+        "suggested_fix": "Retry the job, verify network connectivity to PyPI, or add retry logic / caching for package metadata."
+      }
+    },
+    {
+      "fixture": "pandas__35489338041",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.95,
+      "route": "auto_post",
+      "cited": 2,
+      "verified": 0,
+      "faults": {
+        "quote not in the cited lines": 2
+      },
+      "tokens": 14465,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "Timedelta multiplication with a float ndarray subclass now triggers a RuntimeWarning on Windows, causing two tests to fail\u2014a regression due to recent changes in pandas' datetime handling.",
+        "reasoning": "The logs show that the test 'test_td_mul_ndarray_subclass' for f4 and f8 dtypes raises a RuntimeWarning during multiplication, which PyTest treats as an error, causing two test failures only on the windows-2025 runner. The failure was not present before and no other job or OS shows this issue, so the failure is caused by recent code changes (e.g., adjustments in np_datetime or timedeltas) that introduced the warning. Since this is a deterministic failure tied to code changes and not an infrastructure or flaky issue, it is classified as a regression.",
+        "evidence": [
+          {
+            "job_name": "python-dev",
+            "log_path": "32_python-dev (windows-2025).txt",
+            "line_start": 1749,
+            "line_end": 1749,
+            "quote": "1749 | E       RuntimeWarning: invalid value encountered in multiply",
+            "why": "The test triggers a RuntimeWarning during multiplication, causing the test to fail."
+          },
+          {
+            "job_name": "python-dev",
+            "log_path": "32_python-dev (windows-2025).txt",
+            "line_start": 1803,
+            "line_end": 1803,
+            "quote": "1803 | FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f4] - RuntimeWarning: invalid value encountered in multiply",
+            "why": "The test suite reports this test as failed due to the RuntimeWarning, indicating the regression."
+          }
+        ],
+        "suggested_fix": null
+      }
+    },
+    {
+      "fixture": "pandas__35496694897",
+      "label": null,
+      "predicted": "flaky",
+      "correct": null,
+      "confidence": 0.9,
+      "route": "auto_post",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 10468,
+      "burned": 0,
+      "requests": 3,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "flaky",
+        "confidence": 0.9,
+        "summary": "CI checkout step intermittently fails on Linux 32\u2011bit due to missing PR merge ref; the same commit sometimes passes, indicating flaky environment behavior.",
+        "reasoning": "The checkout step failed during a git fetch: the runner attempted to fetch the merge reference for the pull request (`refs/pull/69122/merge`) but received `fatal: couldn't find remote ref`. This indicates an intermittent failure of the CI environment to obtain that reference. Test history confirms that the same commit succeeded in a later attempt and failed in an earlier one, satisfying the definition of flakiness. The failure is not due to repository code changes or an external dependency, but to the CI environment\u2019s inconsistent behavior, so the appropriate category is `flaky`.\n",
+        "evidence": [
+          {
+            "job_name": "Linux-32-bit",
+            "log_path": "35_Linux-32-bit.txt",
+            "line_start": 196,
+            "line_end": 197,
+            "quote": "+ git fetch origin refs/pull/69122/merge:my_ref_name\nfatal: couldn't find remote ref refs/pull/69122/merge",
+            "why": "The git fetch failed, causing checkout to fail."
+          }
+        ],
+        "suggested_fix": null
+      }
+    },
+    {
+      "fixture": "pandas__35499323117",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 35246,
+      "burned": 0,
+      "requests": 8,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.85,
+        "summary": "The documentation build failed due to 12 warnings treated as errors, likely caused by the recent code changes; fix the warnings to restore a passing build.",
+        "reasoning": "The log shows the docs build finishing with 12 warnings that are treated as errors, resulting in a non\u2011zero exit status. This indicates that changes in the commit introduced warnings into the documentation build process, which is a regression in the repo\u2019s own source or documentation. No evidence of external dependency changes or infrastructure issues appears in the logs, and the failure is deterministic across the single job run, so the most appropriate classification is a regression.",
+        "evidence": [
+          {
+            "job_name": "Doc Build and Upload",
+            "log_path": "0_Doc Build and Upload.txt",
+            "line_start": 2313,
+            "line_end": 2313,
+            "quote": "build finished with problems, 12 warnings (with warnings treated as errors).",
+            "why": "The documentation build emitted 12 warnings that were treated as errors, causing the job to exit with code 1 \u2013 a typical indicator of a repository regression in the docs build."
+          }
+        ],
+        "suggested_fix": "Investigate the Sphinx warnings that triggered the failure (likely unresolved references, duplicate labels, or build issues caused by the recent code changes) and resolve them\u2014e.g., by updating or correcting the affected documentation, adjusting the docstring references, or suppressing the warnings if appropriate."
+      }
+    },
+    {
+      "fixture": "poetry__35343948952",
+      "label": null,
       "predicted": null,
       "correct": null,
       "confidence": null,
@@ -464,12 +731,12 @@
       "cited": 0,
       "verified": 0,
       "faults": {},
-      "tokens": 11948,
-      "burned": 11948,
-      "requests": 7,
+      "tokens": 2137,
+      "burned": 2137,
+      "requests": 2,
       "cached": false,
-      "seconds": 202.6,
-      "error": "429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196478, Requested 6635. Please try again in 22m24.816s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billin",
+      "seconds": 18.7,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197029, Requested 3936. Please try again in 6m56.88s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
       "verdict": null
     }
   ]

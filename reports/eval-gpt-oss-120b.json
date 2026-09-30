@@ -1,22 +1,20 @@
 {
   "model": "groq:openai/gpt-oss-120b",
   "max_lines": 300,
-  "started_at": "2026-09-26T16:49:10.984953+00:00",
-  "seconds": 1446.5,
-  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198205, Requested 9057. Please try again in 52m17.184s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
-  "fixtures": 17,
-  "answered": 15,
-  "oversized": [
-    "pandas__35489338041"
-  ],
+  "started_at": "2026-09-28T22:25:23.130273+00:00",
+  "seconds": 6.3,
+  "stopped_early": "rate limited by openai/gpt-oss-120b: 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197090, Requested 3891. Please try again in 7m3.792s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+  "fixtures": 27,
+  "answered": 26,
+  "oversized": [],
   "citations": {
-    "cited": 26,
-    "verified": 25,
-    "rate": 0.9615384615384616,
-    "sound_verdicts": 14,
-    "sound_verdict_rate": 0.9333333333333333,
+    "cited": 44,
+    "verified": 40,
+    "rate": 0.9090909090909091,
+    "sound_verdicts": 23,
+    "sound_verdict_rate": 0.8846153846153846,
     "faults": {
-      "quote not in the cited lines": 1
+      "quote not in the cited lines": 4
     }
   },
   "categories": {
@@ -29,7 +27,7 @@
   },
   "routing": {
     "auto_post": 0,
-    "human_review": 15,
+    "human_review": 26,
     "unsound_auto_posts": [],
     "wrong_auto_posts": [],
     "threshold_sweep": [
@@ -72,10 +70,10 @@
     ]
   },
   "cost": {
-    "tokens": 287228,
-    "tokens_spent": 193598,
-    "burned": 16100,
-    "requests": 60
+    "tokens": 485123,
+    "tokens_spent": 5848,
+    "burned": 5848,
+    "requests": 2
   },
   "scores": [
     {
@@ -133,8 +131,8 @@
       "tokens": 8821,
       "burned": 0,
       "requests": 5,
-      "cached": false,
-      "seconds": 49.7,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -167,8 +165,8 @@
       "tokens": 30968,
       "burned": 0,
       "requests": 8,
-      "cached": false,
-      "seconds": 330.4,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -201,8 +199,8 @@
       "tokens": 7921,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 79.7,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -235,8 +233,8 @@
       "tokens": 18874,
       "burned": 0,
       "requests": 7,
-      "cached": false,
-      "seconds": 212.8,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "dependency",
@@ -277,8 +275,8 @@
       "tokens": 11233,
       "burned": 0,
       "requests": 4,
-      "cached": false,
-      "seconds": 80.6,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -327,8 +325,8 @@
       "tokens": 5690,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 76.9,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -361,8 +359,8 @@
       "tokens": 24390,
       "burned": 0,
       "requests": 6,
-      "cached": false,
-      "seconds": 142.2,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -447,8 +445,8 @@
       "tokens": 32086,
       "burned": 0,
       "requests": 7,
-      "cached": false,
-      "seconds": 151.8,
+      "cached": true,
+      "seconds": 0.2,
       "error": null,
       "verdict": {
         "category": "dependency",
@@ -523,8 +521,8 @@
       "tokens": 2018,
       "burned": 0,
       "requests": 2,
-      "cached": false,
-      "seconds": 31.1,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "regression",
@@ -607,8 +605,8 @@
       "tokens": 22282,
       "burned": 0,
       "requests": 6,
-      "cached": false,
-      "seconds": 143.1,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "infra",
@@ -647,20 +645,44 @@
     {
       "fixture": "pandas__35489338041",
       "label": null,
-      "predicted": null,
+      "predicted": "regression",
       "correct": null,
-      "confidence": null,
-      "route": null,
-      "cited": 0,
-      "verified": 0,
+      "confidence": 0.93,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
       "faults": {},
-      "tokens": 7755,
-      "burned": 7755,
-      "requests": 3,
-      "cached": false,
-      "seconds": 53.5,
-      "error": "413: Request too large for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8020, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bil",
-      "verdict": null
+      "tokens": 24858,
+      "burned": 0,
+      "requests": 6,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.93,
+        "summary": "Unit tests fail on Windows python-dev jobs due to a RuntimeWarning in `test_td_mul_ndarray_subclass`, indicating a regression in Timedelta multiplication handling.",
+        "reasoning": "The failure occurs in the pandas scalar timedelta arithmetic test, where a RuntimeWarning is raised during multiplication of a Timedelta with an ndarray subclass for float dtypes. This error appears identically across all five python-dev (windows-2025) jobs, indicating a deterministic regression rather than a flaky or infrastructure issue. The recent code diff modifies the low\u2011level datetime handling functions (e.g., changing the signature of get_unit_count_from_dtype), which likely introduced the warning. No history of a passing run for this commit exists, and recent runs on other commits show occasional failures but not the same deterministic pattern, supporting the regression classification.",
+        "evidence": [
+          {
+            "job_name": "python-dev (windows-2025)",
+            "log_path": "32_python-dev (windows-2025).txt",
+            "line_start": 1803,
+            "line_end": 1803,
+            "quote": "FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f4] - RuntimeWarning: invalid value encountered in multiply",
+            "why": "The test `test_td_mul_ndarray_subclass[f4]` fails with a RuntimeWarning, showing a deterministic error in the code."
+          },
+          {
+            "job_name": "python-dev (windows-2025)",
+            "log_path": "32_python-dev (windows-2025).txt",
+            "line_start": 1804,
+            "line_end": 1804,
+            "quote": "FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f8] - RuntimeWarning: invalid value encountered in multiply",
+            "why": "The test `test_td_mul_ndarray_subclass[f8]` also fails with the same RuntimeWarning, confirming the failure across multiple dtypes."
+          }
+        ],
+        "suggested_fix": "Update the Timedelta multiplication implementation in pandas/_libs/tslibs/np_datetime.pyx (and related functions) to correctly handle ndarray subclasses without emitting an invalid\u2011value RuntimeWarning, or adjust the test expectations if the warning is now intentional."
+      }
     },
     {
       "fixture": "pandas__35496694897",
@@ -675,8 +697,8 @@
       "tokens": 13215,
       "burned": 0,
       "requests": 3,
-      "cached": false,
-      "seconds": 41.1,
+      "cached": true,
+      "seconds": 0.0,
       "error": null,
       "verdict": {
         "category": "infra",
@@ -699,6 +721,398 @@
     {
       "fixture": "pandas__35499323117",
       "label": null,
+      "predicted": "flaky",
+      "correct": null,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 20732,
+      "burned": 0,
+      "requests": 5,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "flaky",
+        "confidence": 0.95,
+        "summary": "The documentation build failed due to warnings treated as errors, and the same commit sometimes passes and sometimes fails, indicating a flaky failure.",
+        "reasoning": "The logs show the documentation build terminated with an error due to warnings being treated as errors. Test history for commit 60cf4f5b shows both a successful and a failed run of the same job, indicating the failure is non-deterministic. This matches the definition of a flaky failure.",
+        "evidence": [
+          {
+            "job_name": "Doc Build and Upload",
+            "log_path": "0_Doc Build and Upload.txt",
+            "line_start": 2313,
+            "line_end": 2314,
+            "quote": "build finished with problems, 12 warnings (with warnings treated as errors).\n##[error]Process completed with exit code 1.",
+            "why": "The documentation build failed because warnings were treated as errors, causing the job to exit with code 1."
+          }
+        ],
+        "suggested_fix": "Identify and fix the underlying Sphinx warnings or configure the documentation build to not treat warnings as errors, making the build deterministic."
+      }
+    },
+    {
+      "fixture": "poetry__35343948952",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.95,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 0,
+      "faults": {
+        "quote not in the cited lines": 2
+      },
+      "tokens": 8588,
+      "burned": 0,
+      "requests": 2,
+      "cached": true,
+      "seconds": 0.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.95,
+        "summary": "The export tests fail because the generated pylock.toml lacks the expected version marker line, causing AssertionErrors across all platforms \u2013 a regression introduced by recent changes.",
+        "reasoning": "All failing jobs are from the poetry-plugin-export test suite, where test_exporter_pylock_toml.py asserts that the generated pylock.toml contains a marker line for the Python version constraint. The logs show AssertionError indicating the expected 'marker = \"python_version >= \\\"3.6\\\"\"' line is not present. This deterministic failure across multiple OSes and Python versions points to a regression in the repository's code, likely introduced by the recent bump of poetry-core, rather than an infrastructure or flaky issue.",
+        "evidence": [
+          {
+            "job_name": "Windows (Python 3.10) / pytest (poetry-plugin-export)",
+            "log_path": "39_Windows (Python 3.10) _ pytest (poetry-plugin-export).txt",
+            "line_start": 918,
+            "line_end": 918,
+            "quote": "E               assert 'marker = \"python_version >= \\\"3.6\\\"\"' in ['lock-version = \"1.0\"', 'created-by = \"poetry-plugin-export\"', '', '[[packages]]', 'name = \"foo\"', 'version = \"1.0\"', ...]",
+            "why": "The test asserts that a marker line should be present in the generated pylock.toml, but it is missing, causing an AssertionError."
+          },
+          {
+            "job_name": "macOS aarch64 (Python 3.11) / pytest (poetry-plugin-export)",
+            "log_path": "42_macOS aarch64 (Python 3.11) _ pytest (poetry-plugin-export).txt",
+            "line_start": 924,
+            "line_end": 924,
+            "quote": "E               assert 'marker = \"python_version >= \\\"3.6\\\"\"' in ['lock-version = \"1.0\"', 'created-by = \"poetry-plugin-export\"', '', '[[packages]]', 'name = \"foo\"', 'version = \"1.0\"', ...]",
+            "why": "The same assertion fails on macOS, confirming the missing marker line across platforms."
+          }
+        ],
+        "suggested_fix": "Adjust the plugin-export code to include version markers in the generated pylock.toml (or update the test expectations if the new behavior is intentional)."
+      }
+    },
+    {
+      "fixture": "poetry__35364542297",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 8631,
+      "burned": 0,
+      "requests": 2,
+      "cached": true,
+      "seconds": 1.3,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The CI run fails due to a regression in show.py: mypy reports a return type mismatch and pytest raises a TypeError when iterating over an int.",
+        "reasoning": "Both mypy and pytest failures point to a bug in src/poetry/console/commands/show.py: a function returns an int where a set[Package] is expected, causing a static type error, and at runtime an integer is being iterated over, causing a TypeError. These deterministic failures occur across many jobs and OS/Python matrix entries, indicating a regression in the repository code rather than flaky behavior, CI infra problems, or external dependency changes.",
+        "evidence": [
+          {
+            "job_name": "Windows (Python 3.11) / mypy",
+            "log_path": "41_Windows (Python 3.11) _ mypy.txt",
+            "line_start": 473,
+            "line_end": 473,
+            "quote": "src\\poetry\\console\\commands\\show.py:298: error: Incompatible return value type (got \"int\", expected \"set[Package]\")  [return-value]",
+            "why": "Shows that the mypy type check fails due to an incorrect return type in the show command"
+          },
+          {
+            "job_name": "Windows (Python 3.11) / pytest",
+            "log_path": "45_Windows (Python 3.11) _ pytest.txt",
+            "line_start": 7211,
+            "line_end": 7211,
+            "quote": "E           TypeError: argument of type 'int' is not iterable",
+            "why": "Shows that pytest execution triggers a TypeError in the show command, indicating a runtime regression"
+          }
+        ],
+        "suggested_fix": "Fix the return type of the function in src/poetry/console/commands/show.py to return a set[Package] and ensure that locked_packages elements are iterable (e.g., adjust logic to handle integer IDs appropriately)."
+      }
+    },
+    {
+      "fixture": "poetry__35455975872",
+      "label": null,
+      "predicted": "infra",
+      "correct": null,
+      "confidence": 0.94,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 21265,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 0.2,
+      "error": null,
+      "verdict": {
+        "category": "infra",
+        "confidence": 0.94,
+        "summary": "The run fails because the `Status` job executes `false`, which always exits with code\u202f1, a misconfigured workflow step, making this an infra failure.",
+        "reasoning": "The CI run is red because the `Status` job includes an explicit step that runs the `false` command. This command invariably returns exit code 1, which the log records as an error. This is a clear misconfiguration of the workflow rather than a code defect, fitting the definition of an infra failure. While another job also failed due to a test assertion, the deterministic failure of the `Status` job alone is sufficient to classify the overall run as an infrastructure/workflow configuration issue.",
+        "evidence": [
+          {
+            "job_name": "Status",
+            "log_path": "0_Status.txt",
+            "line_start": 30,
+            "line_end": 30,
+            "quote": "false",
+            "why": "The step runs the `false` command, which always exits with a non\u2011zero status, guaranteeing job failure."
+          },
+          {
+            "job_name": "Status",
+            "log_path": "0_Status.txt",
+            "line_start": 33,
+            "line_end": 33,
+            "quote": "##[error]Process completed with exit code 1.",
+            "why": "The job reports a process exit code of 1, confirming that the step caused the job to fail."
+          }
+        ],
+        "suggested_fix": "Remove or replace the `false` command in the `Status` job with the intended logic or condition, ensuring the step can succeed when appropriate."
+      }
+    },
+    {
+      "fixture": "polars__35498835979",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.96,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 25670,
+      "burned": 0,
+      "requests": 6,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.96,
+        "summary": "The clippy-nightly job fails due to a compile error: `UnknownKind::Float` is now a tuple variant, but the code matches it as a unit variant, indicating a regression.",
+        "reasoning": "The clippy-nightly job aborts with a Rust compile error E0532: the code attempts to match `UnknownKind::Float` as a unit variant, but the type was changed to a tuple variant (it now carries a payload). This mismatch leads to a deterministic compilation failure, indicating a regression introduced by recent code changes. No flaky behavior, infra issues, or external dependency changes are evident.",
+        "evidence": [
+          {
+            "job_name": "clippy-nightly",
+            "log_path": "4_clippy-nightly.txt",
+            "line_start": 1206,
+            "line_end": 1210,
+            "quote": "error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n   --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n     |\n390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {\n    |                                                   ^^^^^^^^^^^^^^^^^^",
+            "why": "Shows that the pyo3-polars crate fails to compile because the pattern matches a tuple variant `UnknownKind::Float` as if it were a unit variant, causing a compile error"
+          }
+        ],
+        "suggested_fix": "Update the pattern in `pyo3-polars/src/types.rs` to match the new tuple variant, e.g., `DataType::Unknown(UnknownKind::Float(_))`, or adjust handling of the payload accordingly."
+      }
+    },
+    {
+      "fixture": "polars__35499202405",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.94,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 17931,
+      "burned": 0,
+      "requests": 10,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.94,
+        "summary": "The clippy-nightly job failed due to a compile error in pyo3-polars (invalid pattern match on `UnknownKind::Float`), indicating a regression in the code.",
+        "reasoning": "The clippy-nightly job aborts with rustc error E0532 while compiling the pyo3-polars crate. This is a deterministic compile\u2011time failure caused by a code change that no longer matches the definition of `UnknownKind::Float`. Such a compile error indicates a regression in the repository's source code, not an infrastructure or flaky issue.",
+        "evidence": [
+          {
+            "job_name": "clippy-nightly",
+            "log_path": "0_clippy-nightly.txt",
+            "line_start": 1206,
+            "line_end": 1209,
+            "quote": "error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n   --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n    |\n390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {",
+            "why": "shows a compilation error (E0532) in the pyo3-polars crate caused by an invalid pattern match, which caused the clippy-nightly job to fail"
+          }
+        ],
+        "suggested_fix": "Update the match arm to use the correct tuple pattern, e.g., `DataType::Unknown(UnknownKind::Float(_))`, or import the appropriate unit variant."
+      }
+    },
+    {
+      "fixture": "polars__35501439993",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.85,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 27909,
+      "burned": 0,
+      "requests": 7,
+      "cached": true,
+      "seconds": 0.2,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.85,
+        "summary": "A pytest-xdist worker crashed during the test_sink_to_file test, indicating a regression in Polars' lazyframe CSV sinking after recent decimal handling changes.",
+        "reasoning": "The logs record a worker crash (node down, worker gw2 crashed) during the test_sink_to_file test. This crash is triggered after recent changes to decimal handling in the repository (see the diff). The crash is a direct consequence of the repository's code, not an external service or configuration issue, and there is no evidence of flaky behavior for this commit. Therefore the failure is a regression introduced by the recent code changes.",
+        "evidence": [
+          {
+            "job_name": "test-python",
+            "log_path": "3_test-python (ubuntu-latest, 3.14, 100000).txt",
+            "line_start": 11477,
+            "line_end": 11479,
+            "quote": ".....................................................................[gw2] node down: Not properly terminated\nF\nworker gw2 crashed and worker restarting disabled",
+            "why": "Shows that a pytest-xdist worker crashed during execution, causing the job to abort."
+          },
+          {
+            "job_name": "test-python",
+            "log_path": "3_test-python (ubuntu-latest, 3.14, 100000).txt",
+            "line_start": 11481,
+            "line_end": 11484,
+            "quote": "=================================== FAILURES ===================================\n__________________________ tests/unit/io/test_sink.py __________________________\n[gw2] linux -- Python 3.14.7 /home/runner/work/polars/polars/py-polars/.venv/bin/python\nworker 'gw2' crashed while running 'tests/unit/io/test_sink.py::test_sink_to_file[scan_csv-sink_csv]'",
+            "why": "Indicates that the test suite failed because the worker process terminated unexpectedly."
+          }
+        ],
+        "suggested_fix": "Investigate the panic/termination in the Polars lazyframe sink_csv implementation, especially the handling of decimal literals introduced by the recent changes. Add a reproducing test if needed, and fix the underlying Rust code to prevent the worker crash."
+      }
+    },
+    {
+      "fixture": "prefect__33784290671",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.87,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 2,
+      "faults": {},
+      "tokens": 12457,
+      "burned": 0,
+      "requests": 3,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.87,
+        "summary": "The job fails during the smoke test because the client cannot connect to the server, raising an httpx.ConnectError.",
+        "reasoning": "The log shows the smoke test invoking a client request to read a work pool, which results in an httpx.ConnectError indicating the client could not reach the server. Recent runs of this workflow on other commits succeeded, implying the CI environment and dependencies are functional. Therefore the failure is due to a regression introduced in the code (e.g., server startup or client configuration change) rather than infra or flaky issues.",
+        "evidence": [
+          {
+            "job_name": "Build and run prefect-client",
+            "log_path": "0_Build and run prefect-client.txt",
+            "line_start": 2958,
+            "line_end": 2958,
+            "quote": "await client.read_work_pool(\"smoke-test\")",
+            "why": "The smoke test attempts to read a work pool, initiating a client request that later fails."
+          },
+          {
+            "job_name": "Build and run prefect-client",
+            "log_path": "0_Build and run prefect-client.txt",
+            "line_start": 2981,
+            "line_end": 2981,
+            "quote": "httpx.ConnectError: All connection attempts failed",
+            "why": "The client request fails to connect, causing the job to exit with an error."
+          }
+        ],
+        "suggested_fix": "Check recent changes affecting server startup or client configuration; ensure the test server is started and reachable before the client attempts to read the work pool."
+      }
+    },
+    {
+      "fixture": "prefect__33784333154",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.97,
+      "route": "human_review",
+      "cited": 1,
+      "verified": 1,
+      "faults": {},
+      "tokens": 23230,
+      "burned": 0,
+      "requests": 5,
+      "cached": true,
+      "seconds": 0.5,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.97,
+        "summary": "Adding a computed `url` field to ReceivedEvent introduced an unexpected `url` key in its JSON output, breaking the `test_json_representation` test across several CI jobs.",
+        "reasoning": "The recent commit adds a computed property `url` to the ReceivedEvent model, which inserts a `url` entry into the event's JSON representation. The failing test `test_json_representation` expects the event dict without this key. The log excerpt shows the actual output containing a `+ 'url': ...` line, leading to an AssertionError. The failure occurs identically across multiple jobs, indicating a deterministic break introduced by the code change, which classifies as a regression.",
+        "evidence": [
+          {
+            "job_name": "Server Tests - python:3.13, postgres:14",
+            "log_path": "69_Server Tests - python3.13, postgres14.txt",
+            "line_start": 3349,
+            "line_end": 3353,
+            "quote": "        'id': '5367d292-aa40-4439-a590-2a5b8d19b8a9',\n        'follows': None,\n        'received': '2021-02-03T04:05:06.000078Z',\n  +     'url': 'http://localhost:52579/events/event/2021-02-03/5367d292-aa40-4439-a590-2a5b8d19b8a9',\n    }",
+            "why": "Shows that the ReceivedEvent JSON includes an unexpected 'url' field, causing the test assertion to fail."
+          }
+        ],
+        "suggested_fix": "Remove or conditionally include the `url` computed field, or update the test to expect the `url` key if the new behavior is intended."
+      }
+    },
+    {
+      "fixture": "prefect__33832652720",
+      "label": null,
+      "predicted": "regression",
+      "correct": null,
+      "confidence": 0.86,
+      "route": "human_review",
+      "cited": 2,
+      "verified": 1,
+      "faults": {
+        "quote not in the cited lines": 1
+      },
+      "tokens": 16876,
+      "burned": 0,
+      "requests": 4,
+      "cached": true,
+      "seconds": 0.0,
+      "error": null,
+      "verdict": {
+        "category": "regression",
+        "confidence": 0.86,
+        "summary": "The unit test suite failed due to a timeout in TestWorkerChannelCleanupDispatcher.test_multiple_workers_receive_distinct_messages, indicating a regression in the code.",
+        "reasoning": "A single test in the suite timed out, causing the entire job to exit with an error. This indicates a deterministic failure likely caused by a code change that introduced a deadlock or performance regression, rather than an external service or flaky behavior. No evidence shows non-deterministic outcomes for this commit, and the failure is reproducible across the matrix, fitting the definition of a regression.",
+        "evidence": [
+          {
+            "job_name": "Canonical Tests: group 16/18 - python:3.12, postgres:14",
+            "log_path": "1_Canonical Tests group 16_18 - python3.12, postgres14.txt",
+            "line_start": 3302,
+            "line_end": 3302,
+            "quote": "E               Failed: Timeout (>90.0s) from pytest-timeout.",
+            "why": "The test timed out, causing the job to fail."
+          },
+          {
+            "job_name": "Canonical Tests: group 16/18 - python:3.12, postgres:14",
+            "log_path": "1_Canonical Tests group 16_18 - python3.12, postgres14.txt",
+            "line_start": 3528,
+            "line_end": 3528,
+            "quote": "FAILED tests/server/orchestration/api/test_worker_channel_cleanup_dispatcher.py::TestWorkerChannelCleanupDispatcher::test_multiple_workers_receive_distinct_messages - Failed: Timeout (>90.0s) from pytest-timeout.",
+            "why": "The summary confirms a timeout failure for a specific test."
+          }
+        ],
+        "suggested_fix": "Investigate the WorkerChannelCleanupDispatcher implementation for deadlocks or long waits introduced by recent changes, and adjust the synchronization logic or increase the timeout if appropriate."
+      }
+    },
+    {
+      "fixture": "pydantic-ai__35441580741",
+      "label": null,
       "predicted": null,
       "correct": null,
       "confidence": null,
@@ -706,12 +1120,12 @@
       "cited": 0,
       "verified": 0,
       "faults": {},
-      "tokens": 8345,
-      "burned": 8345,
-      "requests": 3,
+      "tokens": 5848,
+      "burned": 5848,
+      "requests": 2,
       "cached": false,
-      "seconds": 52.6,
-      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198205, Requested 9057. Please try again in 52m17.184s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
+      "seconds": 2.2,
+      "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197090, Requested 3891. Please try again in 7m3.792s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
       "verdict": null
     }
   ]
