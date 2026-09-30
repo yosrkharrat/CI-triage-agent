@@ -583,5 +583,5 @@ def create_app(
         except ReviewConflict as exc:
             raise HTTPException(409, str(exc)) from None
 
-    app.include_router(dashboard_router(settings))
+    app.include_router(dashboard_router(settings, store))
     return app

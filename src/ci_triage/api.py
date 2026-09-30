@@ -11,6 +11,7 @@ one of these routes spends model quota and the rest serve logs.
     GET  /api/fixtures/{name}/diff         the second agent in the dashboard asks
     GET  /api/fixtures/{name}/history      its questions through these
     POST /api/fixtures/{name}/triage     a triage run, streamed as it happens
+    GET  /api/runs/{id}/verdict          a live run's verdict, each citation re-checked
 
 The stream speaks the Vercel AI SDK's UI message protocol, through pydantic-ai's
 own adapter, so the browser renders each tool call as the agent makes it. It is
@@ -40,6 +41,7 @@ if TYPE_CHECKING:
 
     from ci_triage.models import Verdict
     from ci_triage.service import Settings
+    from ci_triage.store import Store
 
 #: Where the corpus and the eval reports live, relative to the service's cwd.
 FIXTURES = Path("fixtures")
@@ -103,7 +105,11 @@ def _verdict_payload(ctx: Any, verdict: Verdict, usage: Any = None) -> dict:
 
 
 def dashboard_router(
-    settings: Settings, *, fixtures: Path | None = None, reports: Path | None = None
+    settings: Settings,
+    store: Store | None = None,
+    *,
+    fixtures: Path | None = None,
+    reports: Path | None = None,
 ) -> APIRouter:
     fixtures = fixtures or FIXTURES
     reports = reports or REPORTS
@@ -220,5 +226,22 @@ def dashboard_router(
                     yield event
 
         return adapter.streaming_response(adapter.transform_stream(events(), on_complete=on_complete))
+
+    @router.get("/runs/{run}/verdict")
+    def run_verdict(run: int) -> dict:
+        """A queued verdict with each citation checked again against its capture.
+
+        The run's row keeps only whether every citation held. A reviewer
+        deciding on it needs to see which one did not, and the stored comment
+        cannot show that: it is written as the comment that would be posted.
+        """
+        from ci_triage.models import Verdict
+        from ci_triage.tools import TriageContext
+
+        record = store.get(run) if store is not None else None
+        if record is None or record.verdict is None or record.fixture is None:
+            raise HTTPException(404, "no verdict for that run")
+        ctx = TriageContext(Path(record.fixture))
+        return {"model": settings.model or "", **_verdict_payload(ctx, Verdict.model_validate(record.verdict))}
 
     return router

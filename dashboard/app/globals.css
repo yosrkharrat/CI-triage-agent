@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fbfbfa;
+  --panel: #ffffff;
+  --sunken: #f3f3f1;
+  --line: #e4e4e0;
+  --fg: #1b1b19;
+  --muted: #6b6b66;
+  --accent: #2f5bd3;
+
+  --ok: #1f7a4d;
+  --ok-bg: #e5f4ec;
+  --bad: #b3261e;
+  --bad-bg: #fbe9e7;
+  --warn: #8a5a00;
+  --warn-bg: #fdf1d8;
+
+  --cat-regression: #b3261e;
+  --cat-flaky: #8a5a00;
+  --cat-infra: #2f5bd3;
+  --cat-dependency: #7a3fb5;
+  --cat-unknown: #6b6b66;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111110;
+    --panel: #191918;
+    --sunken: #0c0c0b;
+    --line: #2c2c2a;
+    --fg: #ececea;
+    --muted: #9a9a94;
+    --accent: #8aa8ff;
+
+    --ok: #5fcf96;
+    --ok-bg: #12291d;
+    --bad: #ff8a80;
+    --bad-bg: #3a1714;
+    --warn: #f0c060;
+    --warn-bg: #33270d;
+
+    --cat-regression: #ff8a80;
+    --cat-flaky: #f0c060;
+    --cat-infra: #8aa8ff;
+    --cat-dependency: #c79bff;
+    --cat-unknown: #9a9a94;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-sunken: var(--sunken);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Log excerpts and tool output: long lines scroll, never wrap mid-token. */
+.log {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow: auto;
+  tab-size: 4;
+}

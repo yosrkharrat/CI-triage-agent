@@ -31,3 +31,35 @@ jobs:
       # corpus skip themselves. None of them call a model or GitHub.
       - name: Test
         run: uv run pytest -q -rs
+
+  dashboard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: dashboard/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: dashboard/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      # PageProps / RouteContext are generated from the route tree.
+      - run: pnpm exec next typegen
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build

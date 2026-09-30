@@ -128,3 +128,22 @@ def test_a_live_triage_streams_tool_calls_then_the_checks(client: TestClient, tm
     # Watched once, answered for good: `triage()` now finds it in the cache.
     result = agent_mod.triage(FIXTURE, model=verdict["data"]["model"])
     assert result.cached
+
+
+def test_a_queued_verdict_comes_back_with_each_citation_rechecked(client: TestClient):
+    from ci_triage.models import Evidence, FailureCategory, Verdict
+    from ci_triage.store import Status
+
+    store = client.app.state.store  # type: ignore[attr-defined]
+    invented = Evidence(job_name="j", log_path="2_build (ubuntu-22.04).txt", line_start=1, line_end=1,
+                        quote="a line that is nowhere in this log", why="w")  # fmt: skip
+    verdict = Verdict(category=FailureCategory.INFRA, confidence=0.9, summary="s", reasoning="r", evidence=[invented])
+    rid = store.enqueue(repo="o/r", run_id=1, run_attempt=1, html_url="u")
+    store.claim_next()
+    store.finish(rid, Status.AWAITING_REVIEW, fixture=str(FIXTURE), verdict=verdict.model_dump(mode="json"),
+                 evidence_ok=False)  # fmt: skip
+
+    body = client.get(f"/api/runs/{rid}/verdict", headers=AUTH).json()
+    assert body["evidence_ok"] is False
+    assert [c["ok"] for c in body["checks"]] == [False]
+    assert client.get("/api/runs/999/verdict", headers=AUTH).status_code == 404
