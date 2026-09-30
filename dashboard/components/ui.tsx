@@ -59,9 +59,9 @@ export function ErrorPanel({ title, detail }: { title: string; detail: string })
       <p className="font-medium">{title}</p>
       <p className="mt-1 text-sm text-muted">{detail}</p>
       <p className="mt-4 text-sm text-muted">
-        Start the service with <code className="font-mono">uv run ci-triage serve</code>, and give the
-        dashboard the same <code className="font-mono">CI_TRIAGE_REVIEW_TOKEN</code> in{" "}
-        <code className="font-mono">dashboard/.env.local</code>.
+        Start the service with <code className="font-mono">uv run ci-triage serve</code>. Both it and the
+        dashboard read <code className="font-mono">CI_TRIAGE_REVIEW_TOKEN</code> from the repo root&apos;s{" "}
+        <code className="font-mono">.env.local</code>.
       </p>
     </div>
   );

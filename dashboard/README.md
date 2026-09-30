@@ -4,12 +4,18 @@ Watch the agent triage a failed run as it happens, ask a second agent about the
 incident, and decide the verdicts the service would not post on its own.
 
 ```bash
-uv run ci-triage serve          # from the repo root; needs CI_TRIAGE_REVIEW_TOKEN
+# in the repo root's .env.local, next to GROQ_API_KEY:
+#   CI_TRIAGE_REVIEW_TOKEN=<anything long and random>
+#   GITHUB_WEBHOOK_SECRET=<anything, for local use>
+uv run ci-triage serve          # from the repo root
 cd dashboard
-cp .env.example .env.local      # same CI_TRIAGE_REVIEW_TOKEN, plus GROQ_API_KEY
 pnpm install
 pnpm dev                        # http://localhost:3000
 ```
+
+The service and the dashboard read the same root `.env.local`, so the token is
+set once. `dashboard/.env.local` is only for overriding a key for the
+dashboard; an empty value there is ignored rather than shadowing the root one.
 
 | page | what it shows |
 | --- | --- |

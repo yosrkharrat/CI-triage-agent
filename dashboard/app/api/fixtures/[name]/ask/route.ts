@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { createGroq } from "@ai-sdk/groq";
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
@@ -11,12 +11,12 @@ import {
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 
-import { agentJson } from "@/lib/agent";
+import { agentJson, env } from "@/lib/agent";
 import type { FixtureDetail } from "@/lib/types";
 
 export const maxDuration = 120;
 
-const MODEL = process.env.CI_TRIAGE_ASK_MODEL ?? "openai/gpt-oss-120b";
+const MODEL = env("CI_TRIAGE_ASK_MODEL") ?? "openai/gpt-oss-120b";
 
 /**
  * "Ask about this incident": a second agent, next to the one that triages.
@@ -31,6 +31,7 @@ export async function POST(req: NextRequest, ctx: RouteContext<"/api/fixtures/[n
   const { messages }: { messages: UIMessage[] } = await req.json();
   const base = `/api/fixtures/${encodeURIComponent(name)}`;
 
+  const groq = createGroq({ apiKey: env("GROQ_API_KEY") });
   const result = streamText({
     model: groq(MODEL),
     instructions: [
