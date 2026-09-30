@@ -10,6 +10,7 @@
     ci-triage backfill             add history.json to older fixtures
     ci-triage serve                run the webhook service for live runs
     ci-triage review               approve or reject verdicts awaiting a human
+    ci-triage reproduce <fixture>  rerun the failing step in a sandbox, and try a patch
 """
 
 from __future__ import annotations
@@ -165,6 +166,10 @@ def triage(
     refresh: bool = typer.Option(
         False, "--refresh", help="Ignore any cached verdict and ask the model again"
     ),
+    sandbox: str | None = typer.Option(
+        None, "--sandbox", help="Let the agent reproduce the failure: 'docker' (or 'local', unisolated)"
+    ),
+    image: str | None = typer.Option(None, help="Container image for --sandbox docker"),
 ) -> None:
     """Run the agent over a captured run and print its verdict.
 
@@ -188,8 +193,15 @@ def triage(
     # harness is model-agnostic, and a check that named one provider would
     # refuse to run every other one.
     try:
+        from ci_triage.sandbox import make_sandbox
+
         result = run_triage(
-            path, model=model or MODEL, max_lines=max_lines, trace=trace, cache=not refresh
+            path,
+            model=model or MODEL,
+            max_lines=max_lines,
+            trace=trace,
+            cache=not refresh,
+            sandbox=make_sandbox(sandbox, image=image) if sandbox else None,
         )
     except UserError as exc:
         console.print(f"[red]{exc}[/red]")
@@ -706,6 +718,58 @@ def review(
     console.print(f"run {record['id']}: [bold]{record['status']}[/bold] — {record['reason']}")
     if record["comment_url"]:
         console.print(record["comment_url"])
+
+
+@app.command()
+def reproduce(
+    fixture: str = typer.Argument(..., help="Fixture directory or name"),
+    command: str | None = typer.Option(
+        None, "--command", "-c", help="Shell to run; defaults to the script of the step that failed"
+    ),
+    patch: Path | None = typer.Option(None, help="A unified diff to try against the failure"),
+    backend: str = typer.Option("docker", help="'docker', or 'local' to run unisolated"),
+    image: str | None = typer.Option(None, help="Container image; needs bash and git"),
+) -> None:
+    """Rerun a captured run's failure at its commit, and optionally try a patch.
+
+    Runs the command as committed first; only a failure that reproduces is worth
+    patching. With --patch, runs it again with the patch applied and says
+    whether the patch turns it green.
+
+    The sandbox has the repository and nothing of the job's setup, so the
+    failing step's script is only a starting point. For most Python projects
+    something like `-c "pip install -e .[test] && pytest tests/test_x.py"` is
+    the command that actually reproduces.
+    """
+    from ci_triage.sandbox import make_sandbox, try_patch
+    from ci_triage.tools import TriageContext
+
+    path = _resolve(fixture)
+    ctx = TriageContext(path)
+    cmd = command or ctx.failing_command()
+    if not cmd:
+        console.print(
+            "[red]the failing step ran an action, not a command[/red] — pass one with --command"
+        )
+        raise typer.Exit(1)
+    if backend == "local":
+        console.print("[yellow]local backend: the repository's code runs unisolated on this machine[/yellow]")
+    try:
+        sandbox = make_sandbox(backend, image=image)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from None
+
+    url = f"https://github.com/{ctx.run.repository.full_name}"
+    console.print(f"reproducing [bold]{path.name}[/bold] at {ctx.run.head_sha[:12]} in {sandbox.describe()}")
+    console.print(f"$ {cmd}\n", markup=False, highlight=False)
+    try:
+        trial = try_patch(sandbox, url, ctx.run.head_sha, cmd, patch.read_text() if patch else None)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+    console.print(trial.render(), markup=False, highlight=False)
+    if patch is not None and not trial.fixed:
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

@@ -606,3 +606,55 @@ def test_a_run_that_never_answers_is_stopped_by_the_request_limit(tmp_path, monk
     with pytest.raises(UsageLimitExceeded):
         triage(FIXTURE, cache=False)
     assert len(calls) == agent_mod.REQUEST_LIMIT
+
+
+# -- the sandbox ------------------------------------------------------------
+
+
+class _FakeSandbox:
+    def __init__(self):
+        self.calls: list[tuple[str, str, str, str | None]] = []
+
+    def describe(self) -> str:
+        return "fake"
+
+    def run(self, repo_url, sha, command, patch=None):
+        from ci_triage.sandbox import Reproduction
+
+        self.calls.append((repo_url, sha, command, patch))
+        return Reproduction(command, sha, patch is not None, 1, False, 0.1, "FAILED test_x")
+
+
+def test_the_sandbox_tool_is_only_there_when_asked_for():
+    assert "reproduce" not in build_agent()._function_toolset.tools
+    assert "reproduce" in build_agent(sandbox=True)._function_toolset.tools
+
+
+def test_a_sandbox_changes_the_key_and_no_sandbox_keeps_it():
+    """Offline verdicts already paid for must keep their keys."""
+    plain = _cache_key(TriageContext(FIXTURE), MODEL)
+    assert _cache_key(TriageContext(FIXTURE, sandbox=None), MODEL) == plain
+    assert _cache_key(TriageContext(FIXTURE, sandbox=_FakeSandbox()), MODEL) != plain
+
+
+def test_the_agent_can_reproduce_at_the_runs_commit(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path)
+    _stub_agent(monkeypatch, call_tools=["reproduce"])
+    # With no command given, the tool replays the step that failed.
+    monkeypatch.setattr(TriageContext, "failing_command", lambda self: "cargo test")
+    sandbox = _FakeSandbox()
+
+    result = triage(FIXTURE, sandbox=sandbox)
+    ctx = TriageContext(FIXTURE)
+    [(url, sha, command, _)] = sandbox.calls
+    assert command in {"cargo test", "a"}  # the stub may or may not pass one
+    assert url == f"https://github.com/{ctx.run.repository.full_name}"
+    assert sha == ctx.run.head_sha
+    assert len(result.reproductions) == 1
+    assert "reproduced:" in result.render()
+
+
+def test_the_failing_step_of_this_fixture_is_an_action():
+    # sweep's release job failed inside tauri-action: nothing to rerun, and the
+    # tool says so rather than inventing a command.
+    assert TriageContext(FIXTURE).failing_command() is None

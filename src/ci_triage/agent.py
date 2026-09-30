@@ -40,6 +40,9 @@ from ci_triage.models import Evidence, Route, Verdict, category_guide, route
 from ci_triage.tools import NO_DIFF, TriageContext
 
 if TYPE_CHECKING:
+    from ci_triage.sandbox import Reproduction, Sandbox
+
+if TYPE_CHECKING:
     from pydantic_ai.models.anthropic import AnthropicModelSettings
     from pydantic_ai.models.groq import GroqModelSettings
 
@@ -316,9 +319,14 @@ def drop_reasoning(messages: list[ModelMessage]) -> list[ModelMessage]:
 
 
 def build_agent(
-    model: str | Model = MODEL, *, retries: int = RETRIES
+    model: str | Model = MODEL, *, retries: int = RETRIES, sandbox: bool = False
 ) -> Agent[TriageContext, Verdict]:
     """Construct the agent. Tools are bound to the fixture passed as `deps`.
+
+    With `sandbox`, a fourth tool can run a command at the run's commit. It is
+    left off the agent otherwise rather than registered and refused, so the
+    offline agent — the one the eval scores — is shown exactly the tools it
+    always was.
 
     `defer_model_check` keeps construction free of credentials, so the prompt,
     the tool schemas and the output type can all be tested without an API key
@@ -358,6 +366,32 @@ def build_agent(
         """
         return ctx.deps.metered(ctx.deps.test_history())
 
+    if sandbox:
+
+        @agent.tool
+        def reproduce(
+            ctx: RunContext[TriageContext], command: str | None = None, patch: str | None = None
+        ) -> str:
+            """Run a command at the failing commit in an isolated sandbox.
+
+            Use it to check a hypothesis the logs leave open — above all, whether
+            a failure recurs (a regression) or not (flaky) — or to check that a
+            fix you intend to suggest turns the command green. It costs minutes,
+            so run it at most a couple of times. Its output cannot be cited as
+            evidence; citations still come from `get_logs`.
+
+            Args:
+                command: Shell to run from the repository root. Omit to rerun
+                    the script of the step that failed. The sandbox has only
+                    the repository, not the job's setup steps, so prefer the
+                    narrowest command that shows the failure.
+                patch: A unified diff to apply first, relative to the root.
+            """
+            cmd = command or ctx.deps.failing_command()
+            if not cmd:
+                return "The failing step ran an action, not a command; pass `command`."
+            return ctx.deps.metered(ctx.deps.reproduce(cmd, patch))
+
     return agent
 
 
@@ -393,6 +427,9 @@ class TriageResult:
     checks: tuple[EvidenceCheck, ...]
     usage: RunUsage | None = None
     cached: bool = False
+    #: What the agent ran in the sandbox on the way to this verdict. Empty when
+    #: there was no sandbox, or the verdict came from the cache.
+    reproductions: tuple[Reproduction, ...] = ()
 
     @property
     def evidence_ok(self) -> bool:
@@ -414,6 +451,9 @@ class TriageResult:
                 lines.append(f"          {check.reason}")
         if self.verdict.suggested_fix:
             lines += ["", f"suggested fix: {self.verdict.suggested_fix}"]
+        for r in self.reproductions:
+            what = "patched" if r.patched else "as committed"
+            lines += ["", f"reproduced: {r.command!r} {what} — {r.outcome()}"]
         if self.usage is not None:
             u = self.usage
             total = (u.input_tokens or 0) + (u.output_tokens or 0)
@@ -469,7 +509,7 @@ def _cache_key(ctx: TriageContext, model: str) -> str:
     work on a few hundred KB — nothing next to the request it avoids.
     """
     h = hashlib.sha256()
-    parts = (
+    parts: tuple[str, ...] = (
         ctx.fixture.name,
         model,
         # What the tools show after the first call depends on the run budget,
@@ -481,6 +521,11 @@ def _cache_key(ctx: TriageContext, model: str) -> str:
         ctx.get_diff(),
         ctx.test_history(),
     )
+    # A sandbox gives the agent a tool, and so a different question. Appended
+    # only when there is one, so every offline verdict keeps the key it was
+    # paid for under.
+    if ctx.sandbox is not None:
+        parts += (f"sandbox={ctx.sandbox.describe()}",)
     for part in parts:
         h.update(part.encode())
         h.update(b"\x00")
@@ -605,6 +650,7 @@ def triage(
     max_lines: int = 300,
     trace: bool = False,
     cache: bool = True,
+    sandbox: Sandbox | None = None,
 ) -> TriageResult:
     """Triage one captured run end to end.
 
@@ -614,7 +660,7 @@ def triage(
     answered, for free. That split matters on a free tier: the expensive half is
     the half that does not change when you improve the cheap half.
     """
-    ctx = TriageContext(Path(fixture), max_lines=max_lines)
+    ctx = TriageContext(Path(fixture), max_lines=max_lines, sandbox=sandbox)
     if trace:
         enable_tracing()
 
@@ -624,7 +670,7 @@ def triage(
         verdict, usage = hit
         cached = True
     else:
-        agent = build_agent(model)
+        agent = build_agent(model, sandbox=sandbox is not None)
         # What earlier attempts spent. The verdict's cost is every attempt it
         # took, not only the one that answered.
         spent: RunUsage | None = None
@@ -650,5 +696,11 @@ def triage(
 
     destination, reason = route(verdict)
     return TriageResult(
-        verdict, destination, reason, check_evidence(ctx, verdict), usage=usage, cached=cached
+        verdict,
+        destination,
+        reason,
+        check_evidence(ctx, verdict),
+        usage=usage,
+        cached=cached,
+        reproductions=tuple(ctx.reproductions),
     )

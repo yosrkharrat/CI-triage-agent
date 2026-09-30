@@ -7,7 +7,8 @@ that prove it. Low-confidence verdicts route to a human instead of being posted.
 **Status: in progress.** Capture, the agent, its evidence checking and the eval
 harness work end to end against 43 captured runs, and a webhook service runs the
 same agent on live runs, with a review gate for the verdicts it will not post on
-its own. The dashboard and the sandbox are not built yet.
+its own. The agent can reproduce a failure in a sandbox when asked to. The
+dashboard is not built yet.
 
 ## The idea it is built around
 
@@ -42,6 +43,7 @@ ci-triage label <fixture>     record human ground truth for the eval set
 ci-triage eval                score the agent over the whole corpus
 ci-triage serve               triage live runs as GitHub reports them
 ci-triage review              approve or reject what the service would not post
+ci-triage reproduce <fixture> rerun the failure in a sandbox, and try a patch on it
 ```
 
 A captured run is the unit of work. The agent's three tools — `get_logs`,
@@ -222,6 +224,40 @@ write**, and a subscription to the **Workflow run** event. The service binds to
 localhost; expose it with a tunnel (`cloudflared`, `ngrok`) rather than a
 public interface, since `/runs` has no authentication.
 
+## Reproducing a failure
+
+A verdict says why a run is red; a reproduction checks it. `ci-triage
+reproduce` fetches exactly the run's commit into a throwaway container, runs a
+command there, and with `--patch` runs it again with the patch applied:
+
+```bash
+uv run ci-triage reproduce pandas__35496694897 \
+    -c "pip install -e . && pytest pandas/tests/io/test_x.py" --patch fix.diff
+# reproduced, and the patch fixes it
+```
+
+Without `-c` it replays the script of the step that failed, read out of the
+job's log. That is only a starting point, since the container has the
+repository and none of the job's setup steps, and a failing `uses:` step has no
+script to replay.
+
+The same thing is a fourth tool for the agent, `reproduce`, behind
+`triage --sandbox docker` or `CI_TRIAGE_SANDBOX=docker` for the service. It is
+off by default and never used by the eval. A reproduction reaches the network
+and a live repository, and the eval's premise is a triage that is offline and
+asks the same question next month. Sandboxed verdicts are cached under their own
+key, so they never mix with offline ones. A reproduction also cannot be cited:
+evidence still has to be a quote from the captured log, so the citation check
+means what it did.
+
+The container runs as a non-root user with every capability dropped, no
+privilege escalation, a read-only root filesystem, and caps on memory, CPU and
+process count. It has network, because fetching the commit and installing
+dependencies need it. The inputs reach the script as environment variables and
+the patch on stdin, never spliced into its text. `--backend local` runs the same
+script unisolated, for testing it without Docker; do not point it at code you
+did not write.
+
 ## Built with
 
 Python 3.12 · [Pydantic AI](https://ai.pydantic.dev) for the agent loop and tool
@@ -233,5 +269,4 @@ uv.
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- Sandbox tool to reproduce a failure and test a patch
 - Dashboard streaming a triage run as it happens

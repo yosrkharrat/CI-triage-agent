@@ -36,10 +36,14 @@ import re
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from ci_triage.github import load_fixture, load_history, log_path_for_job
 from ci_triage.logs import LogExcerpt, excerpt
 from ci_triage.models import FixtureMeta, Job, RunHistory, WorkflowRun
+
+if TYPE_CHECKING:
+    from ci_triage.sandbox import Reproduction, Sandbox
 
 #: What `get_diff` says when there is no diff. A fixed, greppable phrase: the
 #: prompt names it, and the eval harness checks the agent did not treat it as
@@ -254,8 +258,13 @@ class TriageContext:
         max_lines: int = 300,
         max_chars: int = LOG_CHARS,
         run_chars: int = RUN_CHARS,
+        sandbox: Sandbox | None = None,
     ):
         self.fixture = Path(fixture)
+        #: Where `reproduce` runs. None — the default, and always in an eval —
+        #: keeps a triage offline and the tool off the agent.
+        self.sandbox = sandbox
+        self.reproductions: list[Reproduction] = []
         self.max_lines = max_lines
         self.max_chars = max_chars
         self.run_chars = run_chars
@@ -525,6 +534,28 @@ class TriageContext:
 
     def reset_meter(self) -> None:
         self.spent_chars = 0
+
+    def failing_command(self) -> str | None:
+        """The script of the step that failed, from the first failed job that ran one."""
+        from ci_triage.sandbox import failing_step
+
+        for job in self.failed_jobs:
+            log = log_path_for_job(self.fixture, job)
+            if log is None:
+                continue
+            step = failing_step(log.read_text(encoding="utf-8", errors="replace"))
+            if step is not None and step.script:
+                return step.script
+        return None
+
+    def reproduce(self, command: str, patch: str | None = None) -> str:
+        """Run `command` at the run's commit in the sandbox, patched or not."""
+        if self.sandbox is None:
+            return "No sandbox is configured for this run."
+        url = f"https://github.com/{self.run.repository.full_name}"
+        r = self.sandbox.run(url, self.run.head_sha, command, patch)
+        self.reproductions.append(r)
+        return r.render()
 
     # -- helpers -----------------------------------------------------------
 

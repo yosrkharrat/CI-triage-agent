@@ -89,6 +89,10 @@ class Settings:
     #: approving posts on a pull request, so it must not be open to anyone who
     #: can reach /runs.
     review_token: str | None = field(default=None, repr=False)
+    #: `docker` lets the agent reproduce a failure before answering. Off by
+    #: default: it runs a stranger's code, if contained, on this machine.
+    sandbox: str | None = None
+    sandbox_image: str | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -111,6 +115,8 @@ class Settings:
             app_private_key=key,
             trace=bool(os.environ.get("LOGFIRE_TOKEN")),
             review_token=os.environ.get("CI_TRIAGE_REVIEW_TOKEN") or None,
+            sandbox=os.environ.get("CI_TRIAGE_SANDBOX") or None,
+            sandbox_image=os.environ.get("CI_TRIAGE_SANDBOX_IMAGE") or None,
         )
 
 
@@ -256,8 +262,11 @@ class GitHubPipeline:
 
     def triage(self, fixture: Path) -> TriageResult:
         from ci_triage.agent import MODEL, triage
+        from ci_triage.sandbox import make_sandbox
 
-        return triage(fixture, model=self.settings.model or MODEL, trace=self.settings.trace)
+        s = self.settings
+        sandbox = make_sandbox(s.sandbox, image=s.sandbox_image) if s.sandbox else None
+        return triage(fixture, model=s.model or MODEL, trace=s.trace, sandbox=sandbox)
 
     def pulls(self, record: RunRecord, run: WorkflowRun) -> list[int]:
         if run.pull_requests:
