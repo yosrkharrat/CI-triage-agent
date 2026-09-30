@@ -48,6 +48,7 @@ from typing import TYPE_CHECKING, Protocol
 from fastapi import FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, Field, ValidationError
 
+from ci_triage.api import dashboard_router, require_token
 from ci_triage.github import AppAuth, GitHubClient, GitHubError, load_fixture, save_fixture
 from ci_triage.models import Route, Verdict, WorkflowRun
 from ci_triage.store import RunRecord, Status, Store
@@ -555,11 +556,7 @@ def create_app(
         return record.to_json()
 
     def _reviewable(run: int, authorization: str | None) -> RunRecord:
-        if not settings.review_token:
-            raise HTTPException(503, "review is switched off: set CI_TRIAGE_REVIEW_TOKEN")
-        expected = f"Bearer {settings.review_token}".encode()
-        if not hmac.compare_digest((authorization or "").encode(), expected):
-            raise HTTPException(401, "bad review token")
+        require_token(settings, authorization)
         record = store.get(run)
         if record is None:
             raise HTTPException(404, "no such run")
@@ -586,4 +583,5 @@ def create_app(
         except ReviewConflict as exc:
             raise HTTPException(409, str(exc)) from None
 
+    app.include_router(dashboard_router(settings))
     return app
