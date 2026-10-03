@@ -13,6 +13,8 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import threading
+from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 
@@ -22,8 +24,10 @@ from fastapi.testclient import TestClient
 from ci_triage.agent import EvidenceCheck, TriageResult
 from ci_triage.models import Evidence, FailureCategory, Route, Verdict, WorkflowRun
 from ci_triage.service import (
+    ReviewConflict,
     Settings,
     _fence,
+    approve,
     comment_marker,
     create_app,
     decide,
@@ -369,6 +373,95 @@ def test_a_run_is_reviewed_once(make):
     assert _review(client, rid, "approve").status_code == 409
     assert _review(client, rid, "reject").status_code == 409
     assert len(pipeline.posted) == 1
+
+
+# -- concurrency -------------------------------------------------------------
+#
+# Every racer below gets its own `Store`, and so its own lock: nothing in Python
+# serialises them, and whatever holds the line is SQLite's. A test that shared
+# one `Store` across threads would pass on `Store._lock` alone and prove nothing
+# about a second process, or a second host.
+
+
+def _race(calls: list[Callable[[], object]]) -> list[object]:
+    """Start every call at the same moment; return what each returned or raised."""
+    start = threading.Barrier(len(calls))
+    out: list[object] = [None] * len(calls)
+
+    def run(i: int) -> None:
+        start.wait()
+        try:
+            out[i] = calls[i]()
+        except Exception as exc:
+            out[i] = exc
+
+    threads = [threading.Thread(target=run, args=(i,)) for i in range(len(calls))]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout=30)
+    return out
+
+
+def test_two_reviewers_approving_at_the_same_moment_post_once(make):
+    client, store, pipeline, rid = _awaiting(make, _result(confidence=0.4))
+    settings = client.app.state.settings
+    # Both start from the same read of the run, as two people with the same page
+    # open would — so both pass `approve`'s own status check, and only the
+    # compare-and-set in `claim_review` stands between them and a second post.
+    snapshot = store.get(rid)
+    reviewers = ["alice", "bob"]
+    outcomes = _race([
+        lambda who=who: approve(snapshot, who, None, Store(store.path), pipeline, settings)
+        for who in reviewers
+    ])
+
+    won = [who for who, o in zip(reviewers, outcomes, strict=True) if isinstance(o, RunRecord)]
+    lost = [o for o in outcomes if isinstance(o, ReviewConflict)]
+    assert len(won) == 1 and len(lost) == 1, outcomes
+    assert "someone else first" in str(lost[0])
+    assert len(pipeline.posted) == 1
+    assert "after review by @" + won[0] in pipeline.posted[0][1]
+    record = store.get(rid)
+    assert record.status is Status.POSTED and record.reviewed_by == won[0]
+
+
+def test_of_many_simultaneous_reviews_exactly_one_lands(tmp_path: Path):
+    path = tmp_path / "db.sqlite"
+    stores = [Store(path) for _ in range(8)]
+    for n in range(25):
+        rid = stores[0].enqueue(repo="o/r", run_id=n, run_attempt=1, html_url="u")
+        stores[0].finish(rid, Status.AWAITING_REVIEW)
+        # Half approve and half reject, so the loser is not always the same verb.
+        results = _race([
+            lambda s=s, i=i, rid=rid: s.claim_review(
+                rid, Status.APPROVED if i % 2 else Status.REJECTED, reviewer=f"r{i}"
+            )
+            for i, s in enumerate(stores)
+        ])
+        winners = [r for r in results if isinstance(r, RunRecord)]
+        assert len(winners) == 1, results
+        assert all(r is None for r in results if r is not winners[0])
+        assert stores[0].get(rid).reviewed_by == winners[0].reviewed_by
+
+
+def test_concurrent_workers_never_claim_the_same_run(tmp_path: Path):
+    path = tmp_path / "db.sqlite"
+    stores = [Store(path) for _ in range(8)]
+    queued = {
+        stores[0].enqueue(repo="o/r", run_id=n, run_attempt=1, html_url="u") for n in range(50)
+    }
+
+    def drain(s: Store) -> list[int]:
+        got = []
+        while (record := s.claim_next()) is not None:
+            got.append(record.id)
+        return got
+
+    claimed = [rid for got in _race([lambda s=s: drain(s) for s in stores]) for rid in got]
+    assert len(claimed) == len(set(claimed)), "a run was claimed twice"
+    assert set(claimed) == queued
+    assert all(stores[0].get(rid).attempts == 1 for rid in queued)
 
 
 def test_approval_respects_the_dry_run_switch(make):

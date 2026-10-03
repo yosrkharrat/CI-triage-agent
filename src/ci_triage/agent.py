@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import threading
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -566,7 +567,13 @@ def _store_verdict(key: str, verdict: Verdict, usage: RunUsage | None) -> None:
             "output_tokens": usage.output_tokens,
             "requests": usage.requests,
         }
-    (CACHE_DIR / f"{key}.json").write_text(json.dumps(blob, indent=2))
+    # Written aside and renamed into place, so a reader never sees half a file.
+    # Two workers answering the same key write the same question's answer, so
+    # whichever rename lands last is as good as the other.
+    path = CACHE_DIR / f"{key}.json"
+    tmp = path.with_suffix(f".{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp.write_text(json.dumps(blob, indent=2))
+    os.replace(tmp, path)
 
 
 #: Attribute the partial usage of a failed run is attached to, on the exception

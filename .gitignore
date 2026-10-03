@@ -35,6 +35,7 @@ fixtures/sweep__30005725094/logs.zip
 # state for one deployment, not part of the eval corpus: a capture worth keeping
 # is moved into fixtures/ and labelled like any other.
 .ci-triage/
+.ci-triage-serve.log
 
 # Eval reports are the opposite: `reports/*.json` is a result, tied to one model
 # and one prompt revision, and is what the numbers in the README are read from.

@@ -46,8 +46,9 @@ class Status(str, Enum):
     #: Postable, but no open pull request to post it on.
     NO_PR = "no_pr"
     #: A human approved it and it is being posted. A row left here means the
-    #: process died mid-post; the comment is keyed on a marker, so approving
-    #: the run again edits rather than duplicates it.
+    #: process died mid-post. The comment is keyed on a marker, so posting it
+    #: again would edit rather than duplicate it — but nothing does yet:
+    #: `claim_review` only leaves `awaiting_review`, so such a row is stuck.
     APPROVED = "approved"
     #: A human decided it should not be posted.
     REJECTED = "rejected"
@@ -191,7 +192,14 @@ class Store:
             return cur.lastrowid if cur.rowcount else None
 
     def claim_next(self) -> RunRecord | None:
-        """Take the oldest queued run that is due, marking it running."""
+        """Take the oldest queued run that is due, marking it running.
+
+        The status is checked again outside the subquery. SQLite does not need
+        it — a write statement holds the database's write lock from its first
+        read — but a database that re-checks only the outer WHERE of a row it
+        waited on, as Postgres does under READ COMMITTED, would otherwise let
+        two workers claim the same row.
+        """
         now = _now()
         with self._conn() as db:
             row = db.execute(
@@ -199,8 +207,9 @@ class Store:
                 " WHERE id = (SELECT id FROM runs WHERE status = ?"
                 "   AND (not_before IS NULL OR not_before <= ?)"
                 "   ORDER BY received_at LIMIT 1)"
+                " AND status = ?"
                 " RETURNING *",
-                (Status.RUNNING.value, now, Status.QUEUED.value, now),
+                (Status.RUNNING.value, now, Status.QUEUED.value, now, Status.QUEUED.value),
             ).fetchone()
         return RunRecord._from_row(row) if row else None
 
