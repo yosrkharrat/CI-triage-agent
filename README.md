@@ -1,10 +1,58 @@
 # CI triage agent
 
+[![CI](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
+![tests](https://img.shields.io/badge/tests-214%20passing-brightgreen)
+
 An agent that reads a failed GitHub Actions run and decides *why* it is red —
 `flaky`, `regression`, `infra`, `dependency` or `unknown` — citing the log lines
-that prove it. Low-confidence verdicts route to a human instead of being posted.
+that prove it. Every citation is checked against the real log, and a verdict
+resting on a quote the log does not contain is never posted.
 
-**Status: in progress.** Capture, the agent, its evidence checking and the eval
+## At a glance
+
+| | |
+| --- | --- |
+| **The question** | Can an LLM agent's diagnosis be trusted, without a human reading every answer? |
+| **The answer it is built on** | A model can write a confident, wrong verdict. It cannot fake a quote at line numbers that do not contain it. So every citation is verified mechanically, and that gives a hallucination metric that needs no labels. |
+| **Corpus** | 43 real failed runs captured from open-source repos (pandas, pydantic, …): logs, diff and test history, ~370 MB |
+| **Result so far** | `gpt-oss-120b`: **92%** of citations verified (44 / 48). `gpt-oss-20b`: **52%** (15 / 29), and 2 of its confident verdicts would have posted an invented quote. The service blocks those. |
+| **What runs** | CLI + eval harness · FastAPI webhook service for a GitHub App · human review queue · sandbox that reproduces a failure and tests a patch · Next.js dashboard that streams a triage live |
+| **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 214 tests, ruff + mypy in CI |
+
+```mermaid
+flowchart LR
+    GH[GitHub Actions<br/>failed run] -->|webhook| SVC[FastAPI service<br/>SQLite queue]
+    GH -->|ci-triage fetch| FX[(Captured run<br/>logs · diff · history)]
+    SVC --> FX
+    FX --> AG[Agent<br/>get_logs · get_diff · test_history]
+    AG --> V[Verdict + citations]
+    V --> CHK{Every citation<br/>found in the log?}
+    CHK -->|yes, confident| POST[Comment on the PR]
+    CHK -->|no, or low confidence| REV[Human review queue]
+    V --> EV[Eval harness<br/>citation rate · accuracy]
+```
+
+### Try it in two minutes
+
+```bash
+uv sync
+echo 'GITHUB_TOKEN=...' >> .env.local
+echo 'GROQ_API_KEY=...'  >> .env.local    # free tier is enough
+uv run ci-triage fetch https://github.com/owner/repo/actions/runs/123456
+uv run ci-triage triage repo__123456      # prints the verdict and checks each citation
+uv run ci-triage eval --cached-only       # re-score the stored verdicts, at no cost
+```
+
+**Contents:** [The idea](#the-idea-it-is-built-around) ·
+[How it works](#how-it-works) · [Scoring it](#scoring-it) ·
+[Live runs](#running-it-on-live-runs) · [Data model](#the-data-model) ·
+[Dashboard](#the-dashboard) · [Reproducing a failure](#reproducing-a-failure) ·
+[At scale](#what-changes-at-scale) · [Not done yet](#not-done-yet)
+
+## Status
+
+**In progress.** Capture, the agent, its evidence checking and the eval
 harness work end to end against 43 captured runs, and a webhook service runs the
 same agent on live runs, with a review gate for the verdicts it will not post on
 its own. The agent can reproduce a failure in a sandbox when asked to, and a
