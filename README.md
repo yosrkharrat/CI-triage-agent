@@ -9,6 +9,10 @@ An agent that reads a failed GitHub Actions run and decides *why* it is red —
 that prove it. Every citation is checked against the real log, and a verdict
 resting on a quote the log does not contain is never posted.
 
+![The dashboard: gpt-oss-120b triages a failed psf/black run live, and its one citation is verified against the log](assets/demo.gif)
+
+*Live triage of a failed `psf/black` run on gpt-oss-120b: the agent reads the logs, names the cause, and its citation (`0_check.txt:168-169`) is checked against the real log. Recorded in real time.*
+
 ## At a glance
 
 | | |
