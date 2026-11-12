@@ -130,6 +130,85 @@ def test_a_live_triage_streams_tool_calls_then_the_checks(client: TestClient, tm
     assert result.cached
 
 
+def _http(status: int, code: str | None = None):
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    body = {"error": {"message": "x", "code": code}} if code else {"error": {"message": "x"}}
+    return ModelHTTPError(status, "m", body)
+
+
+def _fails_on_request(exc, nth: int):
+    """A stub model whose `nth` streamed request raises `exc`, mid-run: by then
+    the browser has already been shown the first attempt's tool calls."""
+    from contextlib import asynccontextmanager
+
+    from pydantic_ai.models.test import TestModel
+    from pydantic_ai.models.wrapper import WrapperModel
+
+    class FailsOnce(WrapperModel):
+        calls = 0
+
+        @asynccontextmanager
+        async def request_stream(self, *args, **kwargs):
+            type(self).calls += 1
+            if type(self).calls == nth:
+                raise exc
+            async with super().request_stream(*args, **kwargs) as stream:
+                yield stream
+
+    return FailsOnce(TestModel())
+
+
+def _stream(client: TestClient, monkeypatch, tmp_path, model) -> list[dict]:
+    monkeypatch.setattr(agent_mod, "CACHE_DIR", tmp_path / "cache")
+    real = agent_mod.build_agent
+    monkeypatch.setattr(agent_mod, "build_agent", lambda m=None, **kw: real(model, **kw))
+    message = {"id": "m1", "role": "user", "parts": [{"type": "text", "text": "triage"}]}
+    r = client.post(
+        f"/api/fixtures/{FIXTURE.name}/triage",
+        json={"trigger": "submit-message", "id": "chat", "messages": [message]},
+        headers=AUTH,
+    )
+    assert r.status_code == 200
+    return _events(r.text)
+
+
+@pytest.mark.parametrize(
+    "exc", [_http(413), _http(400, "tool_use_failed")], ids=["too-large", "tool-use-failed"]
+)
+def test_a_live_triage_restarts_on_a_failure_another_attempt_can_avoid(client: TestClient, tmp_path, monkeypatch, exc):
+    """`triage()` already gives these a second attempt; the live view did not,
+    so one bad roll of the model ended the run the reviewer was watching."""
+    events = _stream(client, monkeypatch, tmp_path, _fails_on_request(exc, nth=2))
+    kinds = [e["type"] for e in events]
+
+    assert "error" not in kinds
+    [restart] = [e for e in events if e["type"] == "data-triage_restart"]
+    assert restart["data"]["attempt"] == 2
+    assert restart["data"]["reason"]
+    at = kinds.index("data-triage_restart")
+    # The first attempt was on screen before it failed, and the second one
+    # streams after the marker the dashboard clears the view at.
+    assert any(k.startswith("tool-") for k in kinds[:at])
+    assert any(k.startswith("tool-") for k in kinds[at:])
+    [verdict] = [e for e in events if e["type"] == "data-verdict"]
+    assert kinds.index("data-verdict") > at
+    # Billed like `triage()`: the verdict cost every attempt it took, so more
+    # than the same triage answered on the first try.
+    from pydantic_ai.models.test import TestModel
+
+    [clean] = [e for e in _stream(client, monkeypatch, tmp_path, TestModel()) if e["type"] == "data-verdict"]
+    assert verdict["data"]["tokens"] > clean["data"]["tokens"]
+
+
+def test_a_live_triage_does_not_retry_a_rate_limit(client: TestClient, tmp_path, monkeypatch):
+    events = _stream(client, monkeypatch, tmp_path, _fails_on_request(_http(429), nth=2))
+    kinds = [e["type"] for e in events]
+    assert "data-triage_restart" not in kinds
+    assert "error" in kinds
+    assert "data-verdict" not in kinds
+
+
 def test_a_queued_verdict_comes_back_with_each_citation_rechecked(client: TestClient):
     from ci_triage.models import Evidence, FailureCategory, Verdict
     from ci_triage.store import Status

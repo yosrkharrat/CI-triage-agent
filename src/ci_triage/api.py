@@ -197,33 +197,63 @@ def dashboard_router(
 
     @router.post("/fixtures/{name}/triage")
     async def stream_triage(name: str, request: Request, model: str | None = None) -> Response:
+        from pydantic_ai import capture_run_messages
         from pydantic_ai.ui.vercel_ai import VercelAIAdapter
         from pydantic_ai.ui.vercel_ai.response_types import DataChunk
-        from pydantic_ai.usage import UsageLimits
+        from pydantic_ai.usage import RunUsage, UsageLimits
 
-        from ci_triage.agent import MODEL, REQUEST_LIMIT, _cache_key, _store_verdict, build_agent
+        from ci_triage.agent import (
+            MODEL,
+            REQUEST_LIMIT,
+            RUN_ATTEMPTS,
+            TriageRestarted,
+            _add,
+            _cache_key,
+            _store_verdict,
+            _usage_of,
+            _worth_another_attempt,
+            build_agent,
+            restart_reason,
+        )
 
         ctx = context(name)
         model_name = model or settings.model or MODEL
         agent = build_agent(model_name)
         adapter = await VercelAIAdapter.from_request(request, agent=agent, sdk_version=7)
+        # What abandoned attempts spent, so the verdict is billed like `triage()`
+        # bills it: every attempt it took, not only the one that answered.
+        spent: list[RunUsage | None] = [None]
 
         async def on_complete(result: AgentRunResult[Any]) -> AsyncIterator[DataChunk]:
             verdict = result.output
-            usage = result.usage
+            usage = _add(spent[0], result.usage)
             # Same key as `triage()`: the prompt is the fixture's overview, not
             # whatever the browser sent, so the question is the eval's question.
             _store_verdict(_cache_key(type(ctx)(ctx.fixture), model_name), verdict, usage)
             yield DataChunk(type="data-verdict", data={"model": model_name, **_verdict_payload(ctx, verdict, usage)})
 
         async def events() -> AsyncIterator[Any]:
-            async with agent.run_stream_events(
-                ctx.overview(),
-                deps=ctx,
-                usage_limits=UsageLimits(request_limit=REQUEST_LIMIT),
-            ) as stream:
-                async for event in stream:
-                    yield event
+            # The same second chance `triage()` gives a 413 or an unparseable
+            # tool call. The browser has already seen the failed attempt, so a
+            # marker goes out first and the dashboard clears the view at it.
+            for attempt in range(1, RUN_ATTEMPTS + 1):
+                ctx.reset_meter()
+                with capture_run_messages() as messages:
+                    try:
+                        async with agent.run_stream_events(
+                            ctx.overview(),
+                            deps=ctx,
+                            usage_limits=UsageLimits(request_limit=REQUEST_LIMIT),
+                        ) as stream:
+                            async for event in stream:
+                                yield event
+                        return
+                    except Exception as exc:
+                        spent[0] = _add(spent[0], _usage_of(messages))
+                        if attempt < RUN_ATTEMPTS and _worth_another_attempt(exc):
+                            yield TriageRestarted(attempt=attempt + 1, reason=restart_reason(exc))
+                            continue
+                        raise
 
         return adapter.streaming_response(adapter.transform_stream(events(), on_complete=on_complete))
 

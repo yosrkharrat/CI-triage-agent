@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![tests](https://img.shields.io/badge/tests-214%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-217%20passing-brightgreen)
 
 An agent that reads a failed GitHub Actions run and decides *why* it is red —
 `flaky`, `regression`, `infra`, `dependency` or `unknown` — citing the log lines
@@ -22,7 +22,7 @@ resting on a quote the log does not contain is never posted.
 | **Corpus** | 43 real failed runs captured from open-source repos (pandas, pydantic, …): logs, diff and test history, ~370 MB |
 | **Result so far** | `gpt-oss-120b`: **92%** of citations verified (44 / 48). `gpt-oss-20b`: **52%** (15 / 29), and 2 of its confident verdicts would have posted an invented quote. The service blocks those. |
 | **What runs** | CLI + eval harness · FastAPI webhook service for a GitHub App · human review queue · sandbox that reproduces a failure and tests a patch · Next.js dashboard that streams a triage live |
-| **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 214 tests, ruff + mypy in CI |
+| **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 217 tests, ruff + mypy in CI |
 
 ```mermaid
 flowchart LR

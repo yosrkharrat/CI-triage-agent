@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 from pydantic_ai import Agent, RunContext, capture_run_messages
 from pydantic_ai.capabilities import ProcessHistory
 from pydantic_ai.exceptions import ModelHTTPError
-from pydantic_ai.messages import ModelMessage, ModelResponse, ThinkingPart
+from pydantic_ai.messages import CustomEvent, ModelMessage, ModelResponse, ThinkingPart
 from pydantic_ai.models import Model
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import RunUsage, UsageLimits
@@ -637,6 +637,26 @@ def _worth_another_attempt(exc: Exception) -> bool:
     body = exc.body if isinstance(exc.body, dict) else {}
     error = body.get("error", body)
     return exc.status_code == 400 and isinstance(error, dict) and error.get("code") == "tool_use_failed"
+
+
+@dataclass(kw_only=True)
+class TriageRestarted(CustomEvent, name="triage_restart"):
+    """A live triage starting again from scratch, after `_worth_another_attempt`.
+
+    The stream reaches the browser as a `data-triage_restart` part. The first
+    attempt's tool calls are already on screen by then, so the dashboard shows
+    only what follows the last of these, and says why it restarted.
+    """
+
+    attempt: int
+    reason: str
+
+
+def restart_reason(exc: Exception) -> str:
+    """Why an attempt was abandoned, in words for the person watching it."""
+    if isinstance(exc, ModelHTTPError) and exc.status_code == 413:
+        return "the conversation outgrew the largest request the provider accepts"
+    return "the provider could not parse the model's tool call"
 
 
 def _add(a: RunUsage | None, b: RunUsage | None) -> RunUsage | None:

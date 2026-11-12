@@ -82,11 +82,26 @@ export function LiveTriage({ name }: { name: string }) {
   );
 }
 
+type Restart = { type: "data-triage_restart"; data: { attempt: number; reason: string } };
+
 function RunParts({ message }: { message: UIMessage }) {
-  const verdict = message.parts.find((p) => p.type === "data-verdict") as { data: CheckedVerdict } | undefined;
+  // A run the service restarted from scratch (a 413, or a tool call the
+  // provider could not parse) streams a marker before its next attempt. What
+  // came before it is an abandoned conversation, so only the latest attempt
+  // is shown, with a line saying why the earlier one was dropped.
+  const at = message.parts.findLastIndex((p) => p.type === "data-triage_restart");
+  const restart = at >= 0 ? (message.parts[at] as unknown as Restart) : undefined;
+  const parts = message.parts.slice(at + 1);
+  const verdict = parts.find((p) => p.type === "data-verdict") as { data: CheckedVerdict } | undefined;
   return (
     <div className="space-y-2">
-      {message.parts.map((part, i) => {
+      {restart && (
+        <p className="rounded-md bg-panel px-3 py-2 text-xs text-muted">
+          Attempt {restart.data.attempt}: the previous attempt stopped because {restart.data.reason}, so the agent
+          started again from scratch.
+        </p>
+      )}
+      {parts.map((part, i) => {
         if (part.type === "reasoning" && part.text.trim()) {
           return (
             <p key={i} className="border-l-2 border-line pl-3 text-sm italic leading-relaxed text-muted">
