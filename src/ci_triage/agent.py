@@ -28,7 +28,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic_ai import Agent, RunContext, capture_run_messages
+from pydantic_ai import Agent, ModelRetry, RunContext, capture_run_messages
 from pydantic_ai.capabilities import ProcessHistory
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import CustomEvent, ModelMessage, ModelResponse, ThinkingPart
@@ -36,7 +36,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import RunUsage, UsageLimits
 
-from ci_triage.logs import verify_evidence
+from ci_triage.logs import CLIP_MARK, normalize, verify_evidence
 from ci_triage.models import Evidence, Route, Verdict, category_guide, route
 from ci_triage.tools import NO_DIFF, TriageContext
 
@@ -334,6 +334,54 @@ def drop_reasoning(messages: list[ModelMessage]) -> list[ModelMessage]:
     ]
 
 
+#: How many times a verdict may be sent back to have its citations fixed.
+#:
+#: Every failed citation measured across the corpus was the model garbling text
+#: it had been shown, not inventing text it had not: a quote one line off, two
+#: non-adjacent lines joined, `"` escaped once too often in the JSON answer, or
+#: the excerpt's own clip marker copied into the quote. A model told exactly
+#: what was wrong fixes that in one more turn, so the check that used to only
+#: hold such a verdict back now hands it back first. The check itself is
+#: unchanged: a citation passes on the same verbatim test, or not at all, and a
+#: verdict still failing after these rounds is held for a person as before.
+MAX_REPAIRS = 2
+
+_CLIP_MARK_START = CLIP_MARK.split("{", 1)[0]
+
+
+def repair_hint(ctx: TriageContext, ev: Evidence, reason: str) -> str:
+    """What to tell the model about one citation that failed, as precisely as
+    the log allows. Only facts about the log: where the text really is, or that
+    it is not there. Never a suggested replacement quote."""
+    where = f"`{ev.log_path}` lines {ev.line_start}-{ev.line_end}"
+    if _CLIP_MARK_START in ev.quote:
+        return (
+            f"{where}: the quote contains the excerpt's clip marker, which is not in the log. "
+            "Quote from one side of the marker only."
+        )
+    raw = ctx.raw_log(ev.log_path)
+    if raw is None:
+        return f"{where}: {reason}."
+    lines = [" ".join(line.split()) for line in normalize(raw)]
+    quote_lines = [" ".join(q.split()) for q in ev.quote.splitlines() if q.strip()]
+    if len(quote_lines) == 1:
+        found = [i + 1 for i, line in enumerate(lines) if quote_lines[0] in line]
+        if found:
+            near = sorted(found, key=lambda n: abs(n - ev.line_start))[:3]
+            return f"{where}: that text is in this log, at line(s) {', '.join(map(str, near))}. Fix the line numbers."
+    elif len(quote_lines) > 1:
+        return (
+            f"{where}: the quoted lines are not consecutive lines of the log at those numbers. "
+            "Cite one line, or a range whose lines appear exactly in that order."
+        )
+    if '\\"' in ev.quote or "\\\\" in ev.quote:
+        return (
+            f"{where}: the quote carries backslash escapes the log does not contain. "
+            "Copy the characters exactly as the excerpt shows them."
+        )
+    return f"{where}: this text is not in that log. Re-read the log with get_logs and quote it verbatim."
+
+
 def build_agent(
     model: str | Model = MODEL, *, retries: int = RETRIES, sandbox: bool = False
 ) -> Agent[TriageContext, Verdict]:
@@ -358,6 +406,26 @@ def build_agent(
         model_settings=_model_settings(model),
         capabilities=[ProcessHistory(drop_reasoning)],
     )
+
+    @agent.output_validator
+    def citations_hold(ctx: RunContext[TriageContext], verdict: Verdict) -> Verdict:
+        """Check every citation before the verdict is accepted, and send it back
+        with the reasons when one fails. See `MAX_REPAIRS`."""
+        if ctx.partial_output:  # streamed fragments are not the answer yet
+            return verdict
+        checks = check_evidence(ctx.deps, verdict)
+        if ctx.deps.first_try is None:
+            ctx.deps.first_try = (sum(c.ok for c in checks), len(checks))
+            ctx.deps.first_verdict = verdict
+        bad = [c for c in checks if not c.ok]
+        if not bad or ctx.deps.repairs >= MAX_REPAIRS:
+            return verdict
+        ctx.deps.repairs += 1
+        hints = "\n".join(f"- {repair_hint(ctx.deps, c.evidence, c.reason)}" for c in bad)
+        raise ModelRetry(
+            f"{len(bad)} of {len(checks)} citation(s) failed the check against the log:\n{hints}\n"
+            "Return the verdict again with those citations fixed. Keep the ones that passed."
+        )
 
     @agent.tool
     def get_logs(ctx: RunContext[TriageContext], job_name: str | None = None) -> str:
@@ -446,6 +514,11 @@ class TriageResult:
     #: What the agent ran in the sandbox on the way to this verdict. Empty when
     #: there was no sandbox, or the verdict came from the cache.
     reproductions: tuple[Reproduction, ...] = ()
+    #: Times the citation check sent the verdict back (see `MAX_REPAIRS`), and
+    #: (verified, cited) for the first verdict the model returned. The first-try
+    #: numbers are the model's own accuracy at quoting; `checks` is what ships.
+    repairs: int = 0
+    first_try: tuple[int, int] | None = None
 
     @property
     def evidence_ok(self) -> bool:
@@ -562,6 +635,37 @@ def _cached_verdict(key: str) -> tuple[Verdict, RunUsage | None] | None:
         return None
 
 
+def _cache_extras(key: str) -> dict:
+    """The repair bookkeeping stored beside a verdict, if any."""
+    try:
+        blob = json.loads((CACHE_DIR / f"{key}.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    return {k: blob[k] for k in ("repair_policy", "repairs", "first_try") if k in blob}
+
+
+def _needs_repair_run(ctx: TriageContext, key: str, verdict: Verdict) -> bool:
+    """A verdict answered before the citation check could send it back, whose
+    citations fail. It was never offered the repair the current agent makes,
+    so serving it would score the old agent under the new one's name. A cached
+    verdict whose citations pass is still a valid answer of the current agent:
+    the check would have accepted it as it stands."""
+    if "repair_policy" in _cache_extras(key):
+        return False
+    return not all(c.ok for c in check_evidence(ctx, verdict))
+
+
+def awaits_repair(fixture: Path | str, *, model: str = MODEL, max_lines: int = 300) -> bool:
+    """Answered before the citation check could send a verdict back, with a
+    citation that fails. Not answered as far as the current agent goes, but
+    not unanswered either: a report has to say these exist, or leaving them out
+    would make every score look better than the model is."""
+    ctx = TriageContext(Path(fixture), max_lines=max_lines)
+    key = _cache_key(ctx, model)
+    hit = _cached_verdict(key)
+    return hit is not None and _needs_repair_run(ctx, key, hit[0])
+
+
 def is_answered(fixture: Path | str, *, model: str = MODEL, max_lines: int = 300) -> bool:
     """Whether `triage` could answer for this fixture without calling the model.
 
@@ -570,12 +674,27 @@ def is_answered(fixture: Path | str, *, model: str = MODEL, max_lines: int = 300
     a report you can regenerate while rate-limited and one you cannot.
     """
     ctx = TriageContext(Path(fixture), max_lines=max_lines)
-    return _cached_verdict(_cache_key(ctx, model)) is not None
+    key = _cache_key(ctx, model)
+    hit = _cached_verdict(key)
+    return hit is not None and not _needs_repair_run(ctx, key, hit[0])
 
 
-def _store_verdict(key: str, verdict: Verdict, usage: RunUsage | None) -> None:
+def _store_verdict(
+    key: str,
+    verdict: Verdict,
+    usage: RunUsage | None,
+    *,
+    repairs: int = 0,
+    first_try: tuple[int, int] | None = None,
+) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    blob: dict = {"verdict": verdict.model_dump(mode="json")}
+    blob: dict = {
+        "verdict": verdict.model_dump(mode="json"),
+        "repair_policy": MAX_REPAIRS,
+        "repairs": repairs,
+    }
+    if first_try is not None:
+        blob["first_try"] = list(first_try)
     if usage is not None:
         blob["usage"] = {
             "input_tokens": usage.input_tokens,
@@ -708,9 +827,20 @@ def triage(
 
     key = _cache_key(ctx, model)
     hit = _cached_verdict(key) if cache else None
+    # The model's first try, when an old cached answer is what it was.
+    earlier_try: tuple[int, int] | None = None
+    if hit is not None and _needs_repair_run(ctx, key, hit[0]):
+        old = check_evidence(ctx, hit[0])
+        earlier_try = (sum(c.ok for c in old), len(old))
+        hit = None
+    repairs, first_try = 0, None
     if hit is not None:
         verdict, usage = hit
         cached = True
+        extras = _cache_extras(key)
+        repairs = int(extras.get("repairs", 0))
+        if "first_try" in extras:
+            first_try = (int(extras["first_try"][0]), int(extras["first_try"][1]))
     else:
         agent = build_agent(model, sandbox=sandbox is not None)
         # What earlier attempts spent. The verdict's cost is every attempt it
@@ -727,22 +857,40 @@ def triage(
                     )
                 except Exception as exc:
                     spent = _add(spent, _usage_of(messages))
+                    # A repair turn re-sends the whole conversation plus the
+                    # answer being repaired, which is what pushes a run over a
+                    # per-request cap that its first answer fitted under. The
+                    # repair is an offer, never a risk: if it fails, the answer
+                    # the model already gave stands, and is held as before.
+                    if isinstance(ctx.first_verdict, Verdict):
+                        fallback: Verdict | None = ctx.first_verdict
+                        break
                     if attempt < RUN_ATTEMPTS and _worth_another_attempt(exc):
                         continue
                     setattr(exc, SPENT_ATTR, spent)
                     raise
+            fallback = None
             break
-        verdict, usage = run.output, _add(spent, run.usage)
-        _store_verdict(key, verdict, usage)
+        if fallback is not None:
+            verdict, usage = fallback, spent
+        else:
+            verdict, usage = run.output, _add(spent, run.usage)
+        repairs, first_try = ctx.repairs, earlier_try or ctx.first_try
+        _store_verdict(key, verdict, usage, repairs=repairs, first_try=first_try)
         cached = False
 
+    checks = check_evidence(ctx, verdict)
     destination, reason = route(verdict)
     return TriageResult(
         verdict,
         destination,
         reason,
-        check_evidence(ctx, verdict),
+        checks,
         usage=usage,
         cached=cached,
         reproductions=tuple(ctx.reproductions),
+        repairs=repairs,
+        # A verdict that needed no repair was right first time; say so rather
+        # than leave old cache entries without a first try.
+        first_try=first_try or (sum(c.ok for c in checks), len(checks)),
     )

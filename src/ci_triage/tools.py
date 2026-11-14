@@ -265,6 +265,13 @@ class TriageContext:
         #: keeps a triage offline and the tool off the agent.
         self.sandbox = sandbox
         self.reproductions: list[Reproduction] = []
+        #: Set by the agent's citation check: how many times the verdict was
+        #: sent back, and (verified, cited) for the first verdict it returned.
+        self.repairs = 0
+        self.first_try: tuple[int, int] | None = None
+        #: The first verdict the model returned, kept so a repair turn that
+        #: fails cannot cost the run the answer it already had.
+        self.first_verdict: object | None = None
         self.max_lines = max_lines
         self.max_chars = max_chars
         self.run_chars = run_chars
@@ -533,7 +540,11 @@ class TriageContext:
         )
 
     def reset_meter(self) -> None:
+        """Start a fresh run: budget, and the citation check's bookkeeping."""
         self.spent_chars = 0
+        self.repairs = 0
+        self.first_try = None
+        self.first_verdict = None
 
     def failing_command(self) -> str | None:
         """The script of the step that failed, from the first failed job that ran one."""

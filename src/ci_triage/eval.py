@@ -48,11 +48,23 @@ from pathlib import Path
 
 from pydantic_ai.exceptions import AgentRunError, ModelHTTPError
 
-from ci_triage.agent import MODEL, EvidenceCheck, TriageResult, is_answered, spent_on, triage
+from ci_triage.agent import (
+    MODEL,
+    EvidenceCheck,
+    TriageResult,
+    awaits_repair,
+    is_answered,
+    spent_on,
+    triage,
+)
 from ci_triage.github import load_fixture
 from ci_triage.models import FailureCategory, Label, Route, Verdict, route
 
 FIXTURES = Path("fixtures")
+
+#: The error a cached-only sweep gives a verdict answered before the citation
+#: check could repair it, whose citations fail. See `agent.awaits_repair`.
+AWAITS_REPAIR = "answered before citation repair, and a citation fails; rerun to repair it"
 
 
 # --------------------------------------------------------------------------
@@ -166,6 +178,19 @@ class FixtureScore:
         return sum(c.ok for c in self.checks)
 
     @property
+    def first_try(self) -> tuple[int, int]:
+        """(verified, cited) for the first verdict the model returned, before
+        the citation check sent anything back. The model's own accuracy at
+        quoting, which repair would otherwise hide."""
+        if self.result is None:
+            return (0, 0)
+        return self.result.first_try or (self.verified, self.cited)
+
+    @property
+    def repairs(self) -> int:
+        return self.result.repairs if self.result else 0
+
+    @property
     def evidence_ok(self) -> bool:
         """Every citation holds up. False for a run that produced no verdict."""
         return self.result is not None and self.result.evidence_ok
@@ -202,6 +227,8 @@ class FixtureScore:
             "route": self.result.route.value if self.result else None,
             "cited": self.cited,
             "verified": self.verified,
+            "first_try": list(self.first_try),
+            "repairs": self.repairs,
             "faults": {f.value: n for f, n in self.faults.items()},
             "tokens": self.tokens,
             "burned": self.burned,
@@ -291,6 +318,16 @@ class EvalReport:
     def citation_rate(self) -> float | None:
         """Share of all citations that survive being looked up."""
         return self.verified / self.cited if self.cited else None
+
+    @property
+    def first_try_rate(self) -> tuple[int, int]:
+        """(verified, cited) over every verdict's first try."""
+        pairs = [s.first_try for s in self.answered]
+        return sum(v for v, _ in pairs), sum(c for _, c in pairs)
+
+    @property
+    def repaired(self) -> list[FixtureScore]:
+        return [s for s in self.answered if s.repairs]
 
     @property
     def sound_verdicts(self) -> int:
@@ -468,6 +505,13 @@ class EvalReport:
             )
 
         lines += ["", "-- citations " + "-" * 48]
+        # First, and whatever else prints: rates that silently leave these out
+        # would read better than the model is.
+        if pending := [s for s in self.scores if s.error == AWAITS_REPAIR]:
+            lines.append(
+                f"NOT COUNTED     {len(pending)} verdict(s) answered before citation repair "
+                "have a failing citation; the rates below leave them out. Rerun them."
+            )
         if self.citation_rate is None:
             lines.append("no citations to verify")
         else:
@@ -476,6 +520,12 @@ class EvalReport:
                 f"({self.citation_rate:.0%}) across {len(self.answered)} verdict(s) — "
                 "no labels needed"
             )
+            ok, n = self.first_try_rate
+            if n and (ok, n) != (self.verified, self.cited):
+                lines.append(
+                    f"first try       {ok} of {n} ({ok / n:.0%}): the model's own quoting, "
+                    f"before any repair; {len(self.repaired)} verdict(s) were sent back"
+                )
             lines.append(
                 f"sound verdicts  {self.sound_verdicts} of {len(self.answered)} "
                 f"({self.sound_verdict_rate:.0%}) cite nothing that fails verification"
@@ -483,6 +533,7 @@ class EvalReport:
             if faults := self.faults:
                 detail = "  ".join(f"{f.value}: {c}" for f, c in faults.most_common())
                 lines.append(f"faults          {detail}")
+
 
         lines += ["", "-- categories " + "-" * 47]
         if not self.labelled:
@@ -595,6 +646,8 @@ class EvalReport:
                 "cited": self.cited,
                 "verified": self.verified,
                 "rate": self.citation_rate,
+                "first_try": list(self.first_try_rate),
+                "repaired": [s.fixture for s in self.repaired],
                 "sound_verdicts": self.sound_verdicts,
                 "sound_verdict_rate": self.sound_verdict_rate,
                 "faults": {f.value: n for f, n in self.faults.items()},
@@ -756,7 +809,10 @@ def run_eval(
         label = _label_of(path)
 
         if cached_only and not is_answered(path, model=model, max_lines=max_lines):
-            score = FixtureScore(path.name, label, error="not in the verdict cache")
+            pending = awaits_repair(path, model=model, max_lines=max_lines)
+            score = FixtureScore(
+                path.name, label, error=AWAITS_REPAIR if pending else "not in the verdict cache"
+            )
             scores.append(score)
             if on_score:
                 on_score(score)

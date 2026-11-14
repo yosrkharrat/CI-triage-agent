@@ -432,6 +432,7 @@ def test_cached_only_never_calls_the_model(tmp_path, monkeypatch):
     """What you run on the day the quota is gone and you still need the number."""
     paths = _fixture_paths(tmp_path, 2)
     monkeypatch.setattr(eval_mod, "is_answered", lambda *a, **k: False)
+    monkeypatch.setattr(eval_mod, "awaits_repair", lambda *a, **k: False)
     monkeypatch.setattr(
         eval_mod, "triage", lambda *a, **k: pytest.fail("--cached-only called the model")
     )
