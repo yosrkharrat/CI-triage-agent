@@ -30,12 +30,12 @@ import shutil
 import tempfile
 import uuid
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from ci_triage.github import GitHubClient, load_fixture, save_fixture
-from ci_triage.models import Route, WorkflowRun
+from ci_triage.models import Route, WorkflowRun, route
 from ci_triage.service import (
     TRIAGE_CONCLUSIONS,
     _fence,
@@ -47,6 +47,26 @@ from ci_triage.store import Status
 
 if TYPE_CHECKING:
     from ci_triage.agent import TriageResult
+
+FIX_NOTE = "Not in the PR comment: a proposed code change is only posted after a person reviews it."
+
+
+def without_fix(result: TriageResult) -> TriageResult:
+    """The verdict as it may be posted: the diagnosis, without the proposed fix.
+
+    `route` sends any verdict carrying a fix to review, because a code change on
+    a pull request needs a person to vouch for it. The service has a review
+    queue for that; the action does not. Holding back the whole verdict would
+    mean almost no regression ever got a comment, since that is where a fix is
+    usually proposed. So the fix is dropped from what is posted, and the rest is
+    routed on its own merits. The fix stays in the job summary, and a citation
+    that fails verification still blocks the post, as before.
+    """
+    if result.verdict.suggested_fix is None:
+        return result
+    verdict = result.verdict.model_copy(update={"suggested_fix": None})
+    destination, reason = route(verdict)
+    return replace(result, verdict=verdict, route=destination, route_reason=reason)
 
 
 class ActionError(RuntimeError):
@@ -204,7 +224,7 @@ def render_summary(
             "",
         ]
     if v.suggested_fix:
-        lines += ["### Suggested fix", "", v.suggested_fix, ""]
+        lines += ["### Suggested fix", "", v.suggested_fix, "", f"<sub>{FIX_NOTE}</sub>", ""]
     lines += ["<details><summary>Reasoning</summary>", "", v.reasoning, "", "</details>", ""]
 
     cost = ""
@@ -317,16 +337,17 @@ def run_action(
         result = backend.triage(fixture, inputs.model)
         run, _, _ = load_fixture(fixture)
 
+        postable = without_fix(result)
         pulls: list[int] = []
-        if result.evidence_ok and result.route is Route.AUTO_POST:
+        if postable.evidence_ok and postable.route is Route.AUTO_POST:
             pulls = backend.pulls(inputs, run)
-        status, reason = decide(result, pulls=pulls, post_comments=inputs.post_comment)
+        status, reason = decide(postable, pulls=pulls, post_comments=inputs.post_comment)
         if status is Status.DRY_RUN:
             reason = "`post-comment` is off"
 
         urls: list[str] = []
         if status is Status.POSTED:
-            body = render_comment(run, result.verdict)
+            body = render_comment(run, postable.verdict)
             urls = [backend.post(inputs, n, body, comment_marker(run.id)) for n in pulls]
     except Exception as exc:
         message = f"triage of run {inputs.run_id} failed: {type(exc).__name__}: {exc}"

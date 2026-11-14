@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![tests](https://img.shields.io/badge/tests-231%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-233%20passing-brightgreen)
 [![GitHub Action](https://img.shields.io/badge/GitHub%20Action-ci--triage-2088FF?logo=githubactions&logoColor=white)](#add-it-to-your-repo-in-two-minutes)
 
 An agent that reads a failed GitHub Actions run and decides *why* it is red —
@@ -87,7 +87,9 @@ Next time CI goes red, the triage run's **job summary** shows the verdict with
 every citation marked verified or not. If the verdict is confident and every
 quote was found in the log, it is also **commented on the pull request** (and
 edited in place on a re-run, not stacked). A verdict that fails either test is
-never posted: it stays in the summary, flagged for a person.
+never posted: it stays in the summary, flagged for a person. A proposed fix is
+never posted either. The PR gets the diagnosis, and the fix stays in the summary
+for a person to judge.
 
 | input | default | |
 | --- | --- | --- |

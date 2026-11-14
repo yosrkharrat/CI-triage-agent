@@ -23,7 +23,7 @@ FIXTURE = Path("fixtures/sweep__30005725094")
 pytestmark = pytest.mark.skipif(not FIXTURE.exists(), reason="fixture not captured")
 
 
-def _result(*, ok: bool = True, confidence: float = 0.9) -> TriageResult:
+def _result(*, ok: bool = True, confidence: float = 0.9, fix: str | None = None) -> TriageResult:
     ev = Evidence(
         job_name="build (ubuntu-22.04)",
         log_path="2_build (ubuntu-22.04).txt",
@@ -38,6 +38,7 @@ def _result(*, ok: bool = True, confidence: float = 0.9) -> TriageResult:
         summary="The workflow lacks contents: write.",
         reasoning="r",
         evidence=[ev],
+        suggested_fix=fix,
     )
     dest, reason = route(verdict)
     check = EvidenceCheck(ev, ok, "ok" if ok else "quote does not appear within the cited lines")
@@ -182,6 +183,24 @@ def test_an_unverified_citation_is_never_posted_but_is_shown_in_the_summary(env)
 
 def test_a_low_confidence_verdict_is_not_posted(env):
     backend = FakeBackend(_result(confidence=0.4))
+    run_action(env, backend)
+    assert backend.posted == []
+    assert _outputs(env)["status"] == "awaiting_review"
+
+
+def test_a_proposed_fix_is_kept_off_the_pr_but_the_diagnosis_is_posted(env):
+    backend = FakeBackend(_result(fix="Grant `contents: write` to the release job."))
+    run_action(env, backend)
+    assert _outputs(env)["status"] == "posted"
+    [(_, body, _)] = backend.posted
+    assert "contents: write` to the release" not in body
+    summary = _summary(env)
+    assert "Grant `contents: write` to the release job." in summary
+    assert "only posted after a person reviews it" in summary
+
+
+def test_a_proposed_fix_does_not_rescue_an_unverified_citation(env):
+    backend = FakeBackend(_result(ok=False, fix="something"))
     run_action(env, backend)
     assert backend.posted == []
     assert _outputs(env)["status"] == "awaiting_review"
