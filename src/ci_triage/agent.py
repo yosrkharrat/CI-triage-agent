@@ -45,6 +45,7 @@ if TYPE_CHECKING:
 
 if TYPE_CHECKING:
     from pydantic_ai.models.anthropic import AnthropicModelSettings
+    from pydantic_ai.models.google import GoogleModelSettings
     from pydantic_ai.models.groq import GroqModelSettings
 
 #: Triage is a judgement call on ambiguous evidence. The default is an
@@ -293,6 +294,19 @@ def _model_settings(model: str | Model) -> ModelSettings:
             "groq_reasoning_format": "parsed",
         }
         return groq
+    if provider in {"google-gla", "google-vertex"}:
+        # Two generations, two knobs: Gemini 2.x takes a token budget (-1 lets
+        # the model size it), and later models take a named level and reject
+        # a budget alongside it. Thoughts stay out of the response either way;
+        # only the verdict is parsed.
+        name = model.split(":", 1)[1] if isinstance(model, str) else getattr(model, "model_name", "")
+        thinking: dict = {"include_thoughts": False}
+        if name.startswith("gemini-2"):
+            thinking["thinking_budget"] = -1
+        else:
+            thinking["thinking_level"] = "HIGH"
+        google: GoogleModelSettings = {"max_tokens": max_tokens, "google_thinking_config": thinking}  # type: ignore[typeddict-item]
+        return google
     return {"max_tokens": max_tokens}
 
 

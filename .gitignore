@@ -45,6 +45,7 @@ reports/*.log
 
 # Project planning notes, not documentation.
 readme
+labelling-worksheet.md
 
 # python
 __pycache__/

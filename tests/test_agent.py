@@ -198,23 +198,36 @@ def test_reasoning_is_enabled_for_the_default_model():
     [
         ("groq:openai/gpt-oss-120b", {"groq_reasoning_effort", "groq_reasoning_format"}),
         ("anthropic:claude-opus-5", {"anthropic_thinking", "anthropic_effort"}),
+        ("google-gla:gemini-3-flash", {"google_thinking_config"}),
     ],
 )
 def test_each_provider_gets_its_own_reasoning_keys(model: str, expected: set[str]):
     settings = _model_settings(model)
     assert expected <= set(settings)
     # And none belonging to the other provider, which would be dead config.
-    others = {"groq", "anthropic"} - {model.split(":", 1)[0]}
+    others = {"groq", "anthropic", "google"} - {model.split(":", 1)[0].removesuffix("-gla")}
     for other in others:
         assert not [k for k in settings if k.startswith(f"{other}_")]
 
 
 def test_an_unknown_provider_still_gets_a_token_budget():
-    """A model the mapping has never seen must still run — `ollama:` and
-    `google-gla:` are listed as alternatives and neither takes a reasoning key."""
+    """A model the mapping has never seen must still run: `ollama:` is listed as
+    an alternative and takes no reasoning key."""
     settings = _model_settings("ollama:qwen2.5:14b")
     assert settings["max_tokens"] > 0
     assert not [k for k in settings if k.startswith(("groq_", "anthropic_"))]
+
+
+@pytest.mark.parametrize(
+    ("model", "knob"),
+    [("google-gla:gemini-2.5-flash", "thinking_budget"), ("google-gla:gemini-3-pro", "thinking_level")],
+)
+def test_gemini_gets_the_thinking_knob_its_generation_accepts(model: str, knob: str):
+    """Gemini 2.x takes a budget and later models a level; sending the wrong one
+    is either ignored or rejected, so the generation picks it."""
+    config = _model_settings(model)["google_thinking_config"]
+    assert knob in config
+    assert not ({"thinking_budget", "thinking_level"} - {knob}) & config.keys()
 
 
 def test_a_groq_model_name_containing_a_slash_is_parsed_as_one_name():
