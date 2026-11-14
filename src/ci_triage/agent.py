@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 #:   groq:openai/gpt-oss-20b          GROQ_API_KEY      smaller, same family
 #:   groq:qwen/qwen3.8-27b            GROQ_API_KEY      16k output cap
 #:   anthropic:claude-opus-5          ANTHROPIC_API_KEY frontier, paid
-#:   google-gla:gemini-2.0-flash      GOOGLE_API_KEY    free tier, not open
+#:   google:gemini-3.8-flash          GOOGLE_API_KEY    free tier, not open
 #:   ollama:qwen2.5:14b               (none)            local, offline, free
 #:
 #: Names are worth checking against the account rather than against memory.
@@ -294,7 +294,8 @@ def _model_settings(model: str | Model) -> ModelSettings:
             "groq_reasoning_format": "parsed",
         }
         return groq
-    if provider in {"google-gla", "google-vertex"}:
+    # `google:` since pydantic-ai renamed it; `google-gla:` is the older spelling.
+    if provider in {"google", "google-gla", "google-vertex"}:
         # Two generations, two knobs: Gemini 2.x takes a token budget (-1 lets
         # the model size it), and later models take a named level and reject
         # a budget alongside it. Thoughts stay out of the response either way;

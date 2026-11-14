@@ -154,6 +154,7 @@ PROVIDER_KEYS = {
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
     "openai": "OPENAI_API_KEY",
+    "google": "GOOGLE_API_KEY",
     "google-gla": "GOOGLE_API_KEY",
 }
 

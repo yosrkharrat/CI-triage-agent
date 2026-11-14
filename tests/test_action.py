@@ -136,6 +136,8 @@ def test_a_missing_model_key_names_the_input_to_set(env):
     del env["GROQ_API_KEY"]
     assert missing_key("groq:openai/gpt-oss-120b", env) == "groq-api-key"
     assert missing_key("someprovider:x", env) is None
+    for gemini in ("google:gemini-3.8-flash", "google-gla:gemini-2.5-flash"):
+        assert missing_key(gemini, env) == "google-api-key"
     backend = FakeBackend(_result())
     assert run_action(env, backend) == 1
     assert "groq-api-key" in _summary(env)

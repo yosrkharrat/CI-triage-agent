@@ -19,7 +19,7 @@ inputs:
     description: "OpenAI API key, for `model: openai:...`."
     required: false
   google-api-key:
-    description: "Google AI Studio key, for `model: google-gla:...`."
+    description: "Google AI Studio key, for `model: google:...` (e.g. `google:gemini-3.8-flash`)."
     required: false
   model:
     description: Provider and model, e.g. `groq:openai/gpt-oss-120b` or `anthropic:claude-sonnet-5-5`.

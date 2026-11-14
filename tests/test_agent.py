@@ -198,7 +198,7 @@ def test_reasoning_is_enabled_for_the_default_model():
     [
         ("groq:openai/gpt-oss-120b", {"groq_reasoning_effort", "groq_reasoning_format"}),
         ("anthropic:claude-opus-5", {"anthropic_thinking", "anthropic_effort"}),
-        ("google-gla:gemini-3-flash", {"google_thinking_config"}),
+        ("google:gemini-3.8-flash", {"google_thinking_config"}),
     ],
 )
 def test_each_provider_gets_its_own_reasoning_keys(model: str, expected: set[str]):
@@ -220,7 +220,7 @@ def test_an_unknown_provider_still_gets_a_token_budget():
 
 @pytest.mark.parametrize(
     ("model", "knob"),
-    [("google-gla:gemini-2.5-flash", "thinking_budget"), ("google-gla:gemini-3-pro", "thinking_level")],
+    [("google:gemini-2.5-flash", "thinking_budget"), ("google-gla:gemini-3-pro", "thinking_level")],
 )
 def test_gemini_gets_the_thinking_knob_its_generation_accepts(model: str, knob: str):
     """Gemini 2.x takes a budget and later models a level; sending the wrong one

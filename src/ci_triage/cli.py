@@ -159,7 +159,7 @@ def triage(
         "-m",
         help=(
             "Provider:model, e.g. groq:openai/gpt-oss-20b, "
-            "anthropic:claude-opus-5, google-gla:gemini-2.0-flash, ollama:qwen2.5:14b"
+            "anthropic:claude-opus-5, google:gemini-3.8-flash, ollama:qwen2.5:14b"
         ),
     ),
     max_lines: int = typer.Option(300, help="Line budget per log excerpt"),

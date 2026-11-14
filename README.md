@@ -300,7 +300,7 @@ uv run ci-triage triage repo__123456
 
 The default model is `groq:openai/gpt-oss-120b`, on Groq's free tier. Pass
 `--model` for any provider pydantic-ai supports — `anthropic:claude-opus-5`,
-`google-gla:gemini-2.0-flash`, `ollama:qwen2.5:14b`. Running below the frontier
+`google:gemini-3.8-flash`, `ollama:qwen2.5:14b`. Running below the frontier
 is deliberate: a weaker model is what makes the citation check measure anything.
 
 Captured runs land in `fixtures/`. The logs are gitignored — roughly 370 MB
