@@ -10,9 +10,9 @@ An agent that reads a failed GitHub Actions run and decides *why* it is red —
 that prove it. Every citation is checked against the real log, and a verdict
 resting on a quote the log does not contain is never posted.
 
-![The dashboard: gpt-oss-120b triages a failed psf/black run live, and its one citation is verified against the log](assets/demo.gif)
+![The GitHub Action diagnosing a failed pull request: CI goes red, the agent names a regression, and both of its log citations are verified before it comments](assets/action-demo.gif)
 
-*Live triage of a failed `psf/black` run on gpt-oss-120b: the agent reads the logs, names the cause, and its citation (`0_check.txt:168-169`) is checked against the real log. Recorded in real time.*
+*A real run, from the [demo repo](https://github.com/yosrkharrat/ci-triage-demo): a PR breaks a test, CI goes red, and the Action comments with the cause. Both log quotes were found at the lines it cites. [See the comment on PR #1](https://github.com/yosrkharrat/ci-triage-demo/pull/1).*
 
 ## At a glance
 
@@ -102,6 +102,8 @@ for a person to judge.
 Outputs: `category`, `confidence`, `summary`, `verified`, `status`
 (`posted` · `awaiting_review` · `no_pr` · `dry_run` · `skipped` · `failed`) and
 `comment-url`, for chaining into Slack, labels or auto-retry of `flaky` runs.
+
+See it on a real failure in [ci-triage-demo](https://github.com/yosrkharrat/ci-triage-demo/pull/1).
 
 It is safe on pull requests from forks: `workflow_run` runs in your repo's
 context, and the action never checks out or executes the PR's code. It only
@@ -506,6 +508,10 @@ arrives as a new `run_attempt`, and so as a new row.
   changes with it.
 
 ## The dashboard
+
+![The dashboard: gpt-oss-120b triages a failed psf/black run live, and its one citation is verified against the log](assets/demo.gif)
+
+*Live triage of a failed `psf/black` run on gpt-oss-120b: the agent reads the logs, names the cause, and its citation (`0_check.txt:168-169`) is checked against the real log. Recorded in real time.*
 
 `dashboard/` is a Next.js app on the Vercel AI SDK. Its setup is in
 [dashboard/README.md](dashboard/README.md).
