@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/yosrkharrat/CI-triage-agent/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![tests](https://img.shields.io/badge/tests-217%20passing-brightgreen)
+![tests](https://img.shields.io/badge/tests-231%20passing-brightgreen)
+[![GitHub Action](https://img.shields.io/badge/GitHub%20Action-ci--triage-2088FF?logo=githubactions&logoColor=white)](#add-it-to-your-repo-in-two-minutes)
 
 An agent that reads a failed GitHub Actions run and decides *why* it is red —
 `flaky`, `regression`, `infra`, `dependency` or `unknown` — citing the log lines
@@ -21,7 +22,7 @@ resting on a quote the log does not contain is never posted.
 | **The answer it is built on** | A model can write a confident, wrong verdict. It cannot fake a quote at line numbers that do not contain it. So every citation is verified mechanically, and that gives a hallucination metric that needs no labels. |
 | **Corpus** | 43 real failed runs captured from open-source repos (pandas, pydantic, …): logs, diff and test history, ~370 MB |
 | **Result so far** | `gpt-oss-120b`: **92%** of citations verified (44 / 48). `gpt-oss-20b`: **52%** (15 / 29), and 2 of its confident verdicts would have posted an invented quote. The service blocks those. |
-| **What runs** | CLI + eval harness · FastAPI webhook service for a GitHub App · human review queue · sandbox that reproduces a failure and tests a patch · Next.js dashboard that streams a triage live |
+| **What runs** | GitHub Action (one workflow file) · CLI + eval harness · FastAPI webhook service for a GitHub App · human review queue · sandbox that reproduces a failure and tests a patch · Next.js dashboard that streams a triage live |
 | **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 217 tests, ruff + mypy in CI |
 
 ```mermaid
@@ -37,7 +38,74 @@ flowchart LR
     V --> EV[Eval harness<br/>citation rate · accuracy]
 ```
 
-### Try it in two minutes
+### Add it to your repo in two minutes
+
+It brings no model of its own: use a key from a provider you already have.
+Groq, Anthropic, OpenAI and Google all work.
+
+1. Add the key as a repo secret (Settings → Secrets and variables → Actions).
+2. Save this as `.github/workflows/ci-triage.yml`, with your CI workflow's `name:` in `workflows:`.
+
+```yaml
+name: CI triage
+on:
+  workflow_run:
+    workflows: [CI]          # the workflow(s) to watch
+    types: [completed]
+
+permissions:
+  actions: read              # read the failed run's logs
+  contents: read             # read the diff under test
+  pull-requests: write       # comment on the PR
+
+jobs:
+  triage:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: yosrkharrat/CI-triage-agent@v1
+        with:
+          # To try it for free: a Groq key, on the model every number in
+          # this README was measured with.
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+
+          # Or the provider your team already uses:
+          # model: anthropic:claude-sonnet-5-5
+          # anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+Which to pick: the free Groq tier is enough to try it, at roughly ten
+triages a day per key, since a triage costs about 19k tokens. A busy repo will
+run out, and when the quota is spent the action warns instead of failing. For
+real use, a paid key from the provider your team already sends code to avoids
+both the cap and a new vendor review. Only `gpt-oss-120b` and `gpt-oss-20b` have
+been scored so far ([results](#where-the-numbers-stand)). Any other model works,
+but its citation rate has not been measured, so read its first few summaries
+with that in mind.
+
+Next time CI goes red, the triage run's **job summary** shows the verdict with
+every citation marked verified or not. If the verdict is confident and every
+quote was found in the log, it is also **commented on the pull request** (and
+edited in place on a re-run, not stacked). A verdict that fails either test is
+never posted: it stays in the summary, flagged for a person.
+
+| input | default | |
+| --- | --- | --- |
+| `model` | `groq:openai/gpt-oss-120b` | any `provider:model` pydantic-ai knows, e.g. `anthropic:claude-sonnet-5-5` |
+| `groq-api-key` · `anthropic-api-key` · `openai-api-key` · `google-api-key` | | the one your `model` needs |
+| `post-comment` | `true` | `false` writes the summary only |
+| `run-id` | the triggering run | triage any run by id, e.g. from `workflow_dispatch` |
+| `fail-on-error` | `false` | by default a spent quota warns instead of adding a second red run |
+
+Outputs: `category`, `confidence`, `summary`, `verified`, `status`
+(`posted` · `awaiting_review` · `no_pr` · `dry_run` · `skipped` · `failed`) and
+`comment-url`, for chaining into Slack, labels or auto-retry of `flaky` runs.
+
+It is safe on pull requests from forks: `workflow_run` runs in your repo's
+context, and the action never checks out or executes the PR's code. It only
+reads the logs and the diff through the API.
+
+### Try the CLI in two minutes
 
 ```bash
 uv sync
@@ -49,7 +117,7 @@ uv run ci-triage eval --cached-only       # re-score the stored verdicts, at no 
 ```
 
 **Contents:** [The idea](#the-idea-it-is-built-around) ·
-[How it works](#how-it-works) · [Scoring it](#scoring-it) ·
+[Install](#add-it-to-your-repo-in-two-minutes) · [How it works](#how-it-works) · [Scoring it](#scoring-it) ·
 [Live runs](#running-it-on-live-runs) · [Data model](#the-data-model) ·
 [Dashboard](#the-dashboard) · [Reproducing a failure](#reproducing-a-failure) ·
 [At scale](#what-changes-at-scale) · [Not done yet](#not-done-yet)
@@ -104,6 +172,7 @@ ci-triage eval                score the agent over the whole corpus
 ci-triage serve               triage live runs as GitHub reports them
 ci-triage review              approve or reject what the service would not post
 ci-triage reproduce <fixture> rerun the failure in a sandbox, and try a patch on it
+ci-triage action              triage the run a GitHub Actions event points at (action.yml)
 ```
 
 A captured run is the unit of work. The agent's three tools — `get_logs`,

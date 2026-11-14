@@ -1,0 +1,92 @@
+name: CI Triage Agent
+description: >-
+  Diagnose a failed GitHub Actions run (flaky, regression, infra, dependency)
+  and cite the log lines that prove it. Every quote is checked against the log
+  before anything is posted.
+author: yosrkharrat
+branding:
+  icon: activity
+  color: red
+
+inputs:
+  groq-api-key:
+    description: Groq API key, for the default model. Bring your own key; set the one your `model` needs.
+    required: false
+  anthropic-api-key:
+    description: "Anthropic API key, for `model: anthropic:...`."
+    required: false
+  openai-api-key:
+    description: "OpenAI API key, for `model: openai:...`."
+    required: false
+  google-api-key:
+    description: "Google AI Studio key, for `model: google-gla:...`."
+    required: false
+  model:
+    description: Provider and model, e.g. `groq:openai/gpt-oss-120b` or `anthropic:claude-sonnet-5-5`.
+    required: false
+    default: groq:openai/gpt-oss-120b
+  run-id:
+    description: >-
+      The run to triage. Defaults to the run that triggered a `workflow_run`
+      event, which is how this action is meant to be used.
+    required: false
+    default: ""
+  post-comment:
+    description: >-
+      Comment on the pull request when the verdict is confident and every
+      citation verified. The job summary is written either way.
+    required: false
+    default: "true"
+  fail-on-error:
+    description: Fail this step when the triage itself cannot finish (quota spent, provider down).
+    required: false
+    default: "false"
+  github-token:
+    description: Token used to read the run's logs and comment. Needs `actions:read` and `pull-requests:write`.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  category:
+    description: flaky, regression, infra, dependency or unknown.
+    value: ${{ steps.triage.outputs.category }}
+  confidence:
+    description: The model's confidence, 0.00 to 1.00.
+    value: ${{ steps.triage.outputs.confidence }}
+  summary:
+    description: One or two sentences on why the run failed.
+    value: ${{ steps.triage.outputs.summary }}
+  verified:
+    description: "`true` when every citation was found in the log at the lines it names."
+    value: ${{ steps.triage.outputs.verified }}
+  status:
+    description: posted, dry_run, no_pr, awaiting_review, skipped or failed.
+    value: ${{ steps.triage.outputs.status }}
+  comment-url:
+    description: The PR comment, when one was posted.
+    value: ${{ steps.triage.outputs.comment-url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+      with:
+        # The lockfile lives in the action, not in the caller's workspace.
+        enable-cache: false
+
+    - id: triage
+      shell: bash
+      env:
+        CI_TRIAGE_GITHUB_TOKEN: ${{ inputs.github-token }}
+        CI_TRIAGE_MODEL: ${{ inputs.model }}
+        CI_TRIAGE_RUN_ID: ${{ inputs.run-id }}
+        CI_TRIAGE_POST_COMMENT: ${{ inputs.post-comment }}
+        CI_TRIAGE_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+        GROQ_API_KEY: ${{ inputs.groq-api-key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        OPENAI_API_KEY: ${{ inputs.openai-api-key }}
+        GOOGLE_API_KEY: ${{ inputs.google-api-key }}
+      # Runs from the action's own checkout, so the caller's repository is never
+      # checked out, installed or executed — which is what makes it safe to run
+      # on failures from fork pull requests.
+      run: uv run --directory "$GITHUB_ACTION_PATH" --frozen --no-dev --quiet ci-triage action

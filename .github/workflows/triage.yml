@@ -1,0 +1,25 @@
+# This repository triaging its own CI with the action it ships (`uses: ./`).
+# Needs a GROQ_API_KEY repository secret.
+name: CI triage
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  triage:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      # The default branch's copy of the action, never the failing PR's: a
+      # workflow_run job must not run code the PR could have changed.
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}

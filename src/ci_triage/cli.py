@@ -11,6 +11,7 @@
     ci-triage serve                run the webhook service for live runs
     ci-triage review               approve or reject verdicts awaiting a human
     ci-triage reproduce <fixture>  rerun the failing step in a sandbox, and try a patch
+    ci-triage action               triage the run a GitHub Actions event points at
 """
 
 from __future__ import annotations
@@ -770,6 +771,21 @@ def reproduce(
     console.print(trial.render(), markup=False, highlight=False)
     if patch is not None and not trial.fixed:
         raise typer.Exit(1)
+
+
+@app.command(name="action")
+def action_cmd() -> None:
+    """Triage the run named by a GitHub Actions event (used by action.yml).
+
+    Reads its inputs from the environment the composite action sets up:
+    GITHUB_EVENT_PATH, GITHUB_TOKEN or CI_TRIAGE_GITHUB_TOKEN, CI_TRIAGE_MODEL,
+    CI_TRIAGE_RUN_ID, CI_TRIAGE_POST_COMMENT and the provider's API key. Writes
+    the verdict to the job summary and its fields to the step outputs.
+    """
+    os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
+    from ci_triage.action import run_action
+
+    raise typer.Exit(run_action())
 
 
 if __name__ == "__main__":

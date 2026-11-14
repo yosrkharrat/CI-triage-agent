@@ -1,0 +1,36 @@
+# Copy to .github/workflows/ci-triage.yml in your repository, and add your
+# model provider's API key as a secret (Settings → Secrets and variables →
+# Actions). Bring your own key: Groq, Anthropic, OpenAI and Google all work.
+name: CI triage
+
+on:
+  workflow_run:
+    # The `name:` of every workflow whose failures should be triaged.
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: read          # read the failed run's logs and history
+  contents: read         # read the diff under test
+  pull-requests: write   # comment on the pull request
+
+jobs:
+  triage:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - id: triage
+        uses: yosrkharrat/CI-triage-agent@v1
+        with:
+          # Free to try (about ten triages a day per key):
+          groq-api-key: ${{ secrets.GROQ_API_KEY }}
+          # Or the provider your team already uses:
+          # model: anthropic:claude-sonnet-5-5
+          # anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # model: openai:gpt-5
+          # openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+
+      # Outputs are there to build on, e.g. re-run a run judged flaky once:
+      # - if: steps.triage.outputs.category == 'flaky' && steps.triage.outputs.verified == 'true'
+      #   run: gh run rerun ${{ github.event.workflow_run.id }} --failed -R ${{ github.repository }}
+      #   env: { GH_TOKEN: ${{ github.token }} }   # needs `actions: write`
