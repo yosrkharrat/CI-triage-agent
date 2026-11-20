@@ -26,6 +26,10 @@ export type CheckedVerdict = {
   route_reason: string;
   evidence_ok: boolean;
   checks: { ok: boolean; reason: string }[];
+  /** The log around each citation, numbered as cited; null for a log the run lacks. */
+  context?: ({ first_line: number; lines: string[]; total_lines: number } | null)[];
+  /** What the GitHub Action does with this verdict, and the comment it posts. */
+  action?: { posts: boolean; reason: string; fix_withheld: boolean; comment: string | null };
   tokens: number | null;
 };
 
@@ -109,6 +113,27 @@ export type RunRecord = {
   reviewed_by: string | null;
   reviewed_at: string | null;
   review_note: string | null;
+};
+
+/** One recorded triage, as `scripts/record-demo.mjs` lists it in the snapshot. */
+export type Recording = {
+  model: string;
+  /** Under `public/`, so the browser fetches it as a static file. */
+  path: string;
+  recorded_at: string;
+  duration_ms: number;
+  category: Category | null;
+  evidence_ok: boolean | null;
+  /** The comment the GitHub Action would post for this verdict, if it posts one. */
+  comment: string | null;
+};
+
+/** What a recording file holds: every stream chunk, with its time since the request. */
+export type RecordingFile = {
+  model: string;
+  fixture: string;
+  recorded_at: string;
+  events: { t: number; chunk: unknown }[];
 };
 
 /** `groq:openai/gpt-oss-120b` → `gpt-oss-120b`. */

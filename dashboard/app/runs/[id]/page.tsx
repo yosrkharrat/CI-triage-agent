@@ -4,10 +4,19 @@ import { ReviewForm } from "@/components/review-form";
 import { VerdictCard } from "@/components/verdict-card";
 import { CategoryBadge, ErrorPanel, Panel, StatusBadge } from "@/components/ui";
 import { AgentError, agentJson } from "@/lib/agent";
+import { DEMO } from "@/lib/demo";
 import type { CheckedVerdict, RunRecord } from "@/lib/types";
 
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;
+  if (DEMO) {
+    return (
+      <ErrorPanel
+        title="The review queue needs the webhook service"
+        detail="This demo replays recorded triages and runs no service. Run the dashboard locally against ci-triage serve to review live runs."
+      />
+    );
+  }
   let r: RunRecord;
   try {
     r = await agentJson<RunRecord>(`/runs/${encodeURIComponent(id)}`);

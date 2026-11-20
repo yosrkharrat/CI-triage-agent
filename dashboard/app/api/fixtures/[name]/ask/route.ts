@@ -12,6 +12,7 @@ import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { agentJson, env } from "@/lib/agent";
+import { DEMO } from "@/lib/demo";
 import { explainModelError } from "@/lib/model-errors";
 import type { FixtureDetail } from "@/lib/types";
 
@@ -28,6 +29,8 @@ const MODEL = env("CI_TRIAGE_ASK_MODEL") ?? "openai/gpt-oss-120b";
  * tools on the other, so both agents read exactly the same evidence.
  */
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/fixtures/[name]/ask">) {
+  // A public demo calls no model: anyone could spend the quota.
+  if (DEMO) return new Response("not available in the demo", { status: 404 });
   const { name } = await ctx.params;
   const { messages }: { messages: UIMessage[] } = await req.json();
   const base = `/api/fixtures/${encodeURIComponent(name)}`;

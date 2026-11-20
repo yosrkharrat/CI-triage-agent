@@ -38,7 +38,7 @@ export function ReviewForm({ id, canApprove }: { id: number; canApprove: boolean
         <button
           onClick={() => act("approve")}
           disabled={pending || !reviewer.trim() || !canApprove}
-          className="rounded-md bg-ok px-3.5 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded-sm bg-ok px-3.5 py-1.5 font-display text-sm font-semibold uppercase tracking-[0.06em] text-bg disabled:opacity-40"
           title={canApprove ? undefined : "A citation failed verification; this can only be rejected"}
         >
           Approve and post

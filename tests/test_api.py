@@ -226,3 +226,69 @@ def test_a_queued_verdict_comes_back_with_each_citation_rechecked(client: TestCl
     assert body["evidence_ok"] is False
     assert [c["ok"] for c in body["checks"]] == [False]
     assert client.get("/api/runs/999/verdict", headers=AUTH).status_code == 404
+
+
+def _verdict_citing(line_no: int, quote: str, *, fix: str | None = None, confidence: float = 0.95) -> dict:
+    log = sorted((FIXTURE / "logs").iterdir())[0].name
+    return {
+        "category": "infra",
+        "confidence": confidence,
+        "summary": "The runner could not download its toolchain.",
+        "reasoning": "The log shows the download failing.",
+        "evidence": [
+            {
+                "job_name": "build",
+                "log_path": log,
+                "line_start": line_no,
+                "line_end": line_no,
+                "quote": quote,
+                "why": "the failing step",
+            }
+        ],
+        "suggested_fix": fix,
+    }
+
+
+def _a_real_line() -> tuple[int, str]:
+    from ci_triage.logs import normalize
+
+    log = sorted((FIXTURE / "logs").iterdir())[0]
+    lines = normalize(log.read_text(encoding="utf-8", errors="replace"))
+    n = next(i for i, line in enumerate(lines, 1) if len(line.strip()) > 20 and i > 10)
+    return n, lines[n - 1].strip()
+
+
+def test_a_checked_verdict_shows_each_quote_in_its_log(client: TestClient):
+    n, quote = _a_real_line()
+    body = {"verdict": _verdict_citing(n, quote, fix="Pin the toolchain.")}
+    out = client.post(f"/api/fixtures/{FIXTURE.name}/check", json=body, headers=AUTH).json()
+
+    assert out["evidence_ok"] is True
+    [context] = out["context"]
+    # Numbered like the citation, so the cited line is the one a page highlights.
+    assert context["lines"][n - context["first_line"]].strip() == quote
+    assert context["first_line"] < n < context["first_line"] + len(context["lines"]) - 1
+
+    # The service holds a verdict that proposes a fix; the Action posts the
+    # diagnosis without it, and the comment is the one it would post.
+    assert out["route"] == "human_review"
+    action = out["action"]
+    assert action["posts"] is True and action["fix_withheld"] is True
+    assert quote in action["comment"] and "Pin the toolchain." not in action["comment"]
+
+
+def test_a_verdict_with_an_invented_quote_is_never_posted(client: TestClient):
+    n, _ = _a_real_line()
+    body = {"verdict": _verdict_citing(n, "this line was never in the log")}
+    out = client.post(f"/api/fixtures/{FIXTURE.name}/check", json=body, headers=AUTH).json()
+
+    assert out["evidence_ok"] is False
+    assert out["action"]["posts"] is False and out["action"]["comment"] is None
+    # The context is still there: it is how a reader sees what the log really says.
+    assert out["context"][0]["lines"]
+
+
+def test_checking_needs_a_verdict(client: TestClient):
+    url = f"/api/fixtures/{FIXTURE.name}/check"
+    assert client.post(url, json={"verdict": {"category": "nope"}}, headers=AUTH).status_code == 422
+    assert client.post(url, json={}).status_code == 401

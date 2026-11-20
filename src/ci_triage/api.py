@@ -86,18 +86,78 @@ def _reports(root: Path) -> dict[str, dict[str, dict]]:
     return out
 
 
+#: Log lines shown on either side of a citation, so a reader sees the quote in place.
+CONTEXT_LINES = 6
+#: Longer log lines are cut for display; the check itself always uses the whole line.
+CONTEXT_LINE_CHARS = 400
+
+
+def _citation_context(ctx: Any, verdict: Verdict) -> list[dict | None]:
+    """The log around each citation, numbered as the citation numbers it.
+
+    The numbering is `normalize()`'s, the same one the quote was checked
+    against, so a dashboard can highlight exactly the lines that were cited.
+    `None` for a citation naming a log the fixture does not have.
+    """
+    from ci_triage.logs import normalize
+
+    out: list[dict | None] = []
+    for ev in verdict.evidence:
+        raw = ctx.raw_log(ev.log_path)
+        if raw is None:
+            out.append(None)
+            continue
+        lines = normalize(raw)
+        first = max(1, min(ev.line_start, len(lines)) - CONTEXT_LINES)
+        last = min(len(lines), max(ev.line_end, ev.line_start) + CONTEXT_LINES)
+        out.append(
+            {
+                "first_line": first,
+                "lines": [line[:CONTEXT_LINE_CHARS] for line in lines[first - 1 : last]],
+                "total_lines": len(lines),
+            }
+        )
+    return out
+
+
+def _action_outcome(ctx: Any, verdict: Verdict, evidence_ok: bool) -> dict:
+    """What the GitHub Action does with this verdict, and the comment it posts.
+
+    The same policy as `action.without_fix` and `run_action`: the suggested fix
+    is held back from what is posted, the rest is routed on its own merits, and
+    a citation that fails verification blocks the post whatever the route.
+    """
+    from ci_triage.models import Route, route
+    from ci_triage.service import render_comment
+
+    postable = verdict.model_copy(update={"suggested_fix": None})
+    dest, reason = route(postable)
+    posts = evidence_ok and dest is Route.AUTO_POST
+    if not evidence_ok:
+        reason = "a quoted line is not in the log where the verdict says"
+    return {
+        "posts": posts,
+        "reason": reason,
+        "fix_withheld": posts and verdict.suggested_fix is not None,
+        "comment": render_comment(ctx.run, postable) if posts else None,
+    }
+
+
 def _verdict_payload(ctx: Any, verdict: Verdict, usage: Any = None) -> dict:
     from ci_triage.agent import check_evidence
     from ci_triage.models import route
 
     dest, reason = route(verdict)
     checks = check_evidence(ctx, verdict)
+    evidence_ok = all(c.ok for c in checks)
     return {
         "verdict": verdict.model_dump(mode="json"),
         "route": dest.value,
         "route_reason": reason,
-        "evidence_ok": all(c.ok for c in checks),
+        "evidence_ok": evidence_ok,
         "checks": [{"ok": c.ok, "reason": c.reason} for c in checks],
+        "context": _citation_context(ctx, verdict),
+        "action": _action_outcome(ctx, verdict, evidence_ok),
         "tokens": None
         if usage is None
         else (usage.input_tokens or 0) + (usage.output_tokens or 0),
@@ -194,6 +254,24 @@ def dashboard_router(
     @router.get("/fixtures/{name}/history")
     def fixture_history(name: str) -> dict:
         return {"text": context(name).test_history()}
+
+    @router.post("/fixtures/{name}/check")
+    def check_verdict(name: str, body: dict) -> dict:
+        """Check a verdict someone already has, without asking a model again.
+
+        What the triage stream ends with, for any verdict: each citation looked
+        up, the route, the log around each quote and what the Action would post.
+        The demo recorder uses it to bring an old recording's checks up to date.
+        """
+        from pydantic import ValidationError
+
+        from ci_triage.models import Verdict
+
+        try:
+            verdict = Verdict.model_validate(body.get("verdict"))
+        except ValidationError as exc:
+            raise HTTPException(422, 'body must be {"verdict": <Verdict>}') from exc
+        return _verdict_payload(context(name), verdict)
 
     @router.post("/fixtures/{name}/triage")
     async def stream_triage(name: str, request: Request, model: str | None = None) -> Response:

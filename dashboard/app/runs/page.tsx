@@ -2,9 +2,18 @@ import Link from "next/link";
 
 import { CategoryBadge, ErrorPanel, StatusBadge } from "@/components/ui";
 import { AgentError, agentJson } from "@/lib/agent";
+import { DEMO } from "@/lib/demo";
 import type { RunRecord } from "@/lib/types";
 
 export default async function RunsPage() {
+  if (DEMO) {
+    return (
+      <ErrorPanel
+        title="The review queue needs the webhook service"
+        detail="This demo replays recorded triages and runs no service. Run the dashboard locally against ci-triage serve to review live runs."
+      />
+    );
+  }
   let runs: RunRecord[];
   try {
     runs = await agentJson<RunRecord[]>("/runs?limit=200");
@@ -34,9 +43,9 @@ function RunTable({ title, runs, empty }: { title: string; runs: RunRecord[]; em
     <section>
       <h2 className="mb-2 text-sm font-semibold">{title}</h2>
       {runs.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-line p-4 text-sm text-muted">{empty}</p>
+        <p className="rounded-md border border-dashed border-line p-4 text-sm text-muted">{empty}</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-panel">
+        <div className="overflow-x-auto rounded-md border border-line bg-panel">
           <table className="w-full text-sm">
             <tbody>
               {runs.map((r) => (

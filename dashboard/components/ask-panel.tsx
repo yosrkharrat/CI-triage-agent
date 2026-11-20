@@ -51,7 +51,7 @@ export function AskPanel({ name }: { name: string }) {
             {m.parts.map((part, i) => {
               if (part.type === "text" && part.text.trim()) {
                 return m.role === "user" ? (
-                  <p key={i} className="max-w-[85%] rounded-lg bg-sunken px-3 py-2 text-sm">
+                  <p key={i} className="max-w-[85%] rounded-md bg-sunken px-3 py-2 text-sm">
                     {part.text}
                   </p>
                 ) : (
@@ -81,7 +81,7 @@ export function AskPanel({ name }: { name: string }) {
         />
         <button
           disabled={busy || !input.trim()}
-          className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40"
+          className="rounded-sm bg-fg px-3 py-1.5 font-display text-sm font-semibold uppercase tracking-[0.06em] text-bg disabled:opacity-40"
         >
           Ask
         </button>
