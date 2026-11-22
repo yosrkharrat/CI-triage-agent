@@ -1,4 +1,4 @@
-import type { Category, RunStatus } from "@/lib/types";
+import type { Category, DelegationStatus, RunStatus } from "@/lib/types";
 
 export const CATEGORIES: Category[] = ["regression", "flaky", "infra", "dependency", "unknown"];
 
@@ -146,7 +146,29 @@ const STATUS_STYLE: Record<RunStatus, string> = {
   no_pr: "border-line text-muted",
   rejected: "border-line text-muted",
   failed: "border-bad/50 text-bad",
+  checked: "border-line text-muted",
 };
+
+const DELEGATION_STYLE: Record<DelegationStatus, string> = {
+  proposed: "border-warn/50 text-warn",
+  approved: "border-accent/50 text-accent",
+  dispatched: "border-accent/50 text-accent",
+  retry: "border-accent/50 text-accent",
+  fixed: "border-ok/50 text-ok",
+  gave_up: "border-bad/50 text-bad",
+  rejected: "border-line text-muted",
+  stale: "border-line text-muted",
+  superseded: "border-line text-muted",
+  closed: "border-line text-muted",
+};
+
+export function DelegationBadge({ status }: { status: DelegationStatus }) {
+  return (
+    <span className={`label whitespace-nowrap rounded-sm border px-1.5 py-px text-[10.5px] ${DELEGATION_STYLE[status]}`}>
+      {status === "dispatched" ? "with Claude" : status.replace("_", " ")}
+    </span>
+  );
+}
 
 export function StatusBadge({ status }: { status: RunStatus }) {
   return (

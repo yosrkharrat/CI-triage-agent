@@ -4,7 +4,17 @@ import { useState, useTransition } from "react";
 
 import { review } from "@/app/runs/actions";
 
-export function ReviewForm({ id, canApprove }: { id: number; canApprove: boolean }) {
+export function ReviewForm({
+  id,
+  canApprove,
+  target = "runs",
+  approveLabel = "Approve and post",
+}: {
+  id: number;
+  canApprove: boolean;
+  target?: "runs" | "delegations";
+  approveLabel?: string;
+}) {
   const [reviewer, setReviewer] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +23,7 @@ export function ReviewForm({ id, canApprove }: { id: number; canApprove: boolean
   function act(action: "approve" | "reject") {
     setError(null);
     startTransition(async () => {
-      const r = await review(id, action, reviewer, note);
+      const r = await review(id, action, reviewer, note, target);
       if (!r.ok) setError(r.error);
     });
   }
@@ -30,7 +40,7 @@ export function ReviewForm({ id, canApprove }: { id: number; canApprove: boolean
         <input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="note (optional, kept with the run)"
+          placeholder={`note (optional, kept with the ${target === "runs" ? "run" : "delegation"})`}
           className="rounded-md border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-accent"
         />
       </div>
@@ -41,7 +51,7 @@ export function ReviewForm({ id, canApprove }: { id: number; canApprove: boolean
           className="rounded-sm bg-ok px-3.5 py-1.5 font-display text-sm font-semibold uppercase tracking-[0.06em] text-bg disabled:opacity-40"
           title={canApprove ? undefined : "A citation failed verification; this can only be rejected"}
         >
-          Approve and post
+          {approveLabel}
         </button>
         <button
           onClick={() => act("reject")}

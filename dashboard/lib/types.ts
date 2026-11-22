@@ -90,7 +90,8 @@ export type RunStatus =
   | "no_pr"
   | "approved"
   | "rejected"
-  | "failed";
+  | "failed"
+  | "checked";
 
 export type RunRecord = {
   id: number;
@@ -113,6 +114,69 @@ export type RunRecord = {
   reviewed_by: string | null;
   reviewed_at: string | null;
   review_note: string | null;
+  /** `follow_up` for a CI run on a delegation's fix branch, checked rather than triaged. */
+  kind?: "triage" | "follow_up";
+  delegation?: number | null;
+  /** On `/runs/{id}` only: the delegations this run's diagnosis started. */
+  delegations?: Delegation[];
+};
+
+export type DelegationStatus =
+  | "proposed"
+  | "approved"
+  | "dispatched"
+  | "retry"
+  | "fixed"
+  | "gave_up"
+  | "rejected"
+  | "stale"
+  | "superseded"
+  | "closed";
+
+export const OPEN_DELEGATION: DelegationStatus[] = ["proposed", "approved", "dispatched", "retry"];
+
+export type GuardResult = { ok: boolean; violations: string[]; flags: string[]; files: number };
+
+/** One attempt that did not fix it, as the service records it. */
+export type AttemptRecord = {
+  attempt: number;
+  outcome: string;
+  run_id: number;
+  html_url: string;
+  sha: string;
+  verdict?: Verdict;
+  guard?: string[];
+};
+
+export type Delegation = {
+  id: number;
+  repo: string;
+  pr_number: number;
+  origin_run: number;
+  workflow_id: number;
+  failed_jobs: string[];
+  head_branch: string;
+  head_sha: string;
+  base_branch: string | null;
+  fix_branch: string;
+  fix_pr: number | null;
+  command: string | null;
+  status: DelegationStatus;
+  attempt: number;
+  max_attempts: number;
+  brief: string;
+  history: AttemptRecord[];
+  last_run_id: number | null;
+  guard_result: GuardResult | null;
+  closed_reason: string | null;
+  error: string | null;
+  reviewed_by: string | null;
+  comment_url: string | null;
+  created_at: string;
+  updated_at: string;
+  deadline: string | null;
+  /** On `/delegations/{id}` only. */
+  follow_ups?: RunRecord[];
 };
 
 /** One recorded triage, as `scripts/record-demo.mjs` lists it in the snapshot. */

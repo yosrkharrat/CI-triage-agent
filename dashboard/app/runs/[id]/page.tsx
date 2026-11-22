@@ -1,11 +1,12 @@
 import Link from "next/link";
 
+import { DelegationChain } from "@/components/delegation-chain";
 import { ReviewForm } from "@/components/review-form";
 import { VerdictCard } from "@/components/verdict-card";
 import { CategoryBadge, ErrorPanel, Panel, StatusBadge } from "@/components/ui";
 import { AgentError, agentJson } from "@/lib/agent";
 import { DEMO } from "@/lib/demo";
-import type { CheckedVerdict, RunRecord } from "@/lib/types";
+import type { CheckedVerdict, Delegation, RunRecord } from "@/lib/types";
 
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;
@@ -24,6 +25,10 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
     return <ErrorPanel title={`Run ${id} could not be loaded`} detail={(err as AgentError).message} />;
   }
   const fixture = r.fixture?.split("/").pop();
+  const parent =
+    r.kind === "follow_up" && r.delegation != null
+      ? await agentJson<Delegation>(`/delegations/${r.delegation}`).catch(() => null)
+      : null;
   // Re-checked against the capture, so a reviewer sees which citation failed,
   // not only that one did. Missing when the capture has since been removed.
   const checked = r.verdict
@@ -58,6 +63,19 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
           )}
         </div>
         {(r.reason || r.error) && <p className="mt-2 text-sm text-muted">{r.error ?? r.reason}</p>}
+        {r.kind === "follow_up" && (
+          <p className="mt-1 text-sm text-muted">
+            A CI run on a fix branch, checked against{" "}
+            {parent ? (
+              <Link href={`/runs/${parent.origin_run}`} className="text-accent hover:underline">
+                delegation {parent.id}
+              </Link>
+            ) : (
+              `delegation ${r.delegation}`
+            )}{" "}
+            rather than triaged on its own.
+          </p>
+        )}
         {r.reviewed_by && (
           <p className="mt-1 text-sm text-muted">
             Reviewed by @{r.reviewed_by}
@@ -71,6 +89,8 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
           <ReviewForm id={r.id} canApprove={r.evidence_ok === true} />
         </Panel>
       )}
+
+      {r.delegations?.map((d) => <DelegationChain key={d.id} d={d} verdict={r.verdict} />)}
 
       {checked && <VerdictCard v={checked} />}
 
