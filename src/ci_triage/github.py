@@ -87,6 +87,40 @@ class GitHubError(RuntimeError):
     pass
 
 
+class RateLimited(GitHubError):
+    """GitHub refused a request for rate, and says when to come back.
+
+    A run that hits this has done nothing wrong, so the service defers it to
+    `reset` instead of failing it. Raised for the primary limit (403 or 429
+    with `x-ratelimit-remaining: 0`) and the secondary one (`retry-after`).
+    """
+
+    def __init__(self, message: str, reset: datetime):
+        super().__init__(message)
+        self.reset = reset
+
+
+def rate_limit(r: httpx.Response) -> RateLimited | None:
+    """The `RateLimited` a response amounts to, or None when it is not one."""
+    if r.status_code not in (403, 429):
+        return None
+    now = datetime.now(UTC)
+    if retry := r.headers.get("retry-after"):
+        try:
+            return RateLimited(
+                f"secondary rate limit; retry after {retry}s", now + timedelta(seconds=int(retry))
+            )
+        except ValueError:
+            pass
+    if r.headers.get("x-ratelimit-remaining") == "0" or r.status_code == 429:
+        try:
+            reset = datetime.fromtimestamp(int(r.headers.get("x-ratelimit-reset", "")), UTC)
+        except ValueError:
+            reset = now + timedelta(minutes=1)
+        return RateLimited(f"rate limited; resets at {reset:%H:%M:%S} UTC", max(reset, now))
+    return None
+
+
 def parse_run_ref(ref: str) -> tuple[str, str, int]:
     """Accept either a run URL or `owner/repo#run_id` / `owner/repo run_id`."""
     if m := _RUN_URL.search(ref):
@@ -130,9 +164,8 @@ class GitHubClient:
         r = _with_retry(lambda: self._client.get(path, **kwargs), what=f"GET {path}")
         if r.status_code == 404:
             raise GitHubError(f"not found: {path} (private repo, or token lacks access?)")
-        if r.status_code == 403 and r.headers.get("x-ratelimit-remaining") == "0":
-            reset = r.headers.get("x-ratelimit-reset", "?")
-            raise GitHubError(f"rate limited; resets at epoch {reset}")
+        if limited := rate_limit(r):
+            raise limited
         r.raise_for_status()
         return r
 
@@ -168,6 +201,8 @@ class GitHubClient:
         )
         if r.status_code == 410:
             raise GitHubError("logs have expired (GitHub keeps them ~90 days)")
+        if limited := rate_limit(r):
+            raise limited
         if r.status_code in (301, 302, 307):
             location = r.headers["location"]
             with httpx.Client(timeout=_BLOB_TIMEOUT, follow_redirects=True) as anon:
@@ -220,6 +255,8 @@ class GitHubClient:
                     prior = self._get(
                         f"/repos/{owner}/{repo}/actions/runs/{run.id}/attempts/{n}"
                     ).json()
+                except RateLimited:
+                    raise
                 except (GitHubError, httpx.HTTPError):
                     continue
                 same_commit.append(HistoricalRun.model_validate(prior))
@@ -280,13 +317,15 @@ class GitHubClient:
         comments. Losing one comment is the cheaper failure.
         """
         r = self._client.request(method, path, json=body)
+        if limited := rate_limit(r):
+            raise limited
         if r.status_code in (403, 404):
             raise GitHubError(
                 f"{method} {path}: {r.status_code} — does the token or App have write access "
                 "to pull requests?"
             )
         r.raise_for_status()
-        return r.json()
+        return r.json() if r.content else {}
 
     def open_pulls_for_commit(self, owner: str, repo: str, sha: str) -> list[int]:
         """Open PRs whose head is `sha`.
@@ -325,6 +364,61 @@ class GitHubClient:
         else:
             c = self._write("POST", f"/repos/{owner}/{repo}/issues/{number}/comments", {"body": body})
         return str(c["html_url"])
+
+    # -- delegation ---------------------------------------------------------
+
+    def get_pull(self, owner: str, repo: str, number: int) -> dict:
+        return dict(self._get(f"/repos/{owner}/{repo}/pulls/{number}").json())
+
+    def branch_head(self, owner: str, repo: str, branch: str) -> str | None:
+        """The commit a branch points at, or None when it does not exist."""
+        try:
+            ref = self._get(f"/repos/{owner}/{repo}/git/ref/heads/{branch}").json()
+        except GitHubError as exc:
+            if isinstance(exc, RateLimited):
+                raise
+            return None
+        return str(ref["object"]["sha"])
+
+    def repository_dispatch(self, owner: str, repo: str, event_type: str, payload: dict) -> None:
+        """Send a `repository_dispatch`. GitHub answers 204 and starts the
+        workflow from the default branch; it needs `contents: write`."""
+        self._write(
+            "POST", f"/repos/{owner}/{repo}/dispatches",
+            {"event_type": event_type, "client_payload": payload},
+        )
+
+    def compare(self, owner: str, repo: str, base: str, head: str) -> dict:
+        """The compare API between two commits: `files` with their patches.
+
+        GitHub stops listing files at 300 and leaves out a large or binary
+        file's `patch`; the diff guard treats both as a failed check.
+        """
+        return dict(self._get(f"/repos/{owner}/{repo}/compare/{base}...{head}").json())
+
+    def compare_diff(self, owner: str, repo: str, base: str, head: str) -> str:
+        r = self._get(
+            f"/repos/{owner}/{repo}/compare/{base}...{head}",
+            headers={"Accept": "application/vnd.github.diff"},
+        )
+        return r.text
+
+    def create_pull(
+        self, owner: str, repo: str, *, head: str, base: str, title: str, body: str, draft: bool = True
+    ) -> int:
+        pr = self._write(
+            "POST", f"/repos/{owner}/{repo}/pulls",
+            {"head": head, "base": base, "title": title, "body": body, "draft": draft},
+        )
+        return int(pr["number"])
+
+    def pulls_for_branch(self, owner: str, repo: str, head: str, base: str) -> list[int]:
+        """Open PRs from `head` (a branch of this repo) into `base`."""
+        pulls = self._get(
+            f"/repos/{owner}/{repo}/pulls",
+            params={"head": f"{owner}:{head}", "base": base, "state": "open"},
+        ).json()
+        return [int(p["number"]) for p in pulls]
 
 
 # --------------------------------------------------------------------------
@@ -431,6 +525,10 @@ def _populate(
         logs_dir.mkdir(exist_ok=True)
         with zipfile.ZipFile(io.BytesIO(blob)) as zf:
             zf.extractall(logs_dir)
+    except RateLimited:
+        # Not a property of the run: a capture without logs would be triaged
+        # blind. Let the caller wait for the reset and capture it again.
+        raise
     except GitHubError as exc:
         (dest / "logs_unavailable.txt").write_text(str(exc))
 
@@ -441,12 +539,16 @@ def _populate(
     # directory — losing the logs, which are the part with a 90-day clock on them.
     try:
         (dest / "diff.patch").write_text(client.get_diff(owner, repo, run.head_sha))
+    except RateLimited:
+        raise
     except (GitHubError, httpx.HTTPError) as exc:
         (dest / "diff_unavailable.txt").write_text(str(exc))
 
     try:
         history = client.get_run_history(owner, repo, run)
         (dest / "history.json").write_text(history.model_dump_json(indent=2))
+    except RateLimited:
+        raise
     except (GitHubError, httpx.HTTPError) as exc:
         (dest / "history_unavailable.txt").write_text(str(exc))
 
