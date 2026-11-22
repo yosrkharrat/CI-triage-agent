@@ -93,6 +93,9 @@ class WorkflowRun(BaseModel):
     html_url: str
     created_at: datetime
     repository: Repository
+    #: Where the commit lives. Differs from `repository` for a fork's PR, and
+    #: delegation never hands a fork's code to an agent with write access.
+    head_repository: Repository | None = None
     pull_requests: list[PullRequestRef] = Field(default_factory=list)
 
     @property
