@@ -1,0 +1,76 @@
+# Lets ci-triage hand a diagnosed failure to Claude. Copy to
+# .github/workflows/ci-triage-fix.yml on your DEFAULT branch: GitHub runs
+# repository_dispatch workflows from there, whatever branch the fix is for.
+#
+# ci-triage sends a `ci-triage-fix` dispatch carrying a brief: the verified log
+# quotes, the failing command, the rules. Claude works on `fix_branch`, cut from
+# the pull request's head, and pushes there. Nothing is merged: ci-triage opens
+# a draft PR from the fix branch into the author's branch, and reports it fixed
+# only when CI passes on it and its diff guard does too.
+#
+# Requirements, from the delegation spike (DELEGATION.md, Phase 0):
+#   - Claude's push must NOT use this workflow's GITHUB_TOKEN. GitHub starts no
+#     workflow run from a push made with it, so CI would never check the fix.
+#     Install the Claude GitHub App (https://github.com/apps/claude) and leave
+#     `github_token` unset: the action then trades `id-token` for the App's
+#     token, and pushes made with it do start CI.
+#   - Your CI must run on a pull request into a non-default branch, i.e. a
+#     `pull_request:` trigger without a `branches: [main]` filter.
+name: ci-triage fix
+
+on:
+  repository_dispatch:
+    types: [ci-triage-fix]
+
+permissions:
+  contents: write       # push to the fix branch
+  pull-requests: write
+  id-token: write       # exchanged for the Claude GitHub App's token
+
+# One attempt at a time per fix branch; a retry waits for the attempt before it.
+concurrency:
+  group: ci-triage-fix-${{ github.event.client_payload.fix_branch }}
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FIX_BRANCH: ${{ github.event.client_payload.fix_branch }}
+      HEAD_SHA: ${{ github.event.client_payload.head_sha }}
+    steps:
+      # Payload values reach the shell through env, never through ${{ }} in a
+      # script, and the branch name is held to the shape ci-triage gives it.
+      - name: Check the payload
+        run: |
+          [[ "$FIX_BRANCH" =~ ^ci-triage/fix-[0-9]+$ ]] || { echo "bad fix_branch: $FIX_BRANCH"; exit 1; }
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "bad head_sha: $HEAD_SHA"; exit 1; }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Leave GITHUB_TOKEN out of .git/config, so no push can fall back to it.
+          persist-credentials: false
+
+      # Attempt 1 cuts the branch from the PR head. A retry continues the
+      # branch, so Claude sees what the last attempt did.
+      - name: Put the fix branch in place
+        run: |
+          if git ls-remote --exit-code --heads origin "$FIX_BRANCH" >/dev/null; then
+            git checkout -B "$FIX_BRANCH" "origin/$FIX_BRANCH"
+          else
+            git checkout -b "$FIX_BRANCH" "$HEAD_SHA"
+          fi
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Or, with a Claude subscription:
+          # claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: ${{ github.event.client_payload.brief }}
+          # The test command is this repo's: name your own. No `gh`, and no
+          # broad `Bash(git:*)`; Claude only needs to edit, test, commit, push.
+          claude_args: >-
+            --max-turns 30
+            --allowedTools "Read,Edit,Glob,Grep,Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(pip install:*),Bash(pytest:*),Bash(python -m pytest:*)"
