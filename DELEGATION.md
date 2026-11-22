@@ -1,5 +1,10 @@
 # Plan: from failed run to verified fix
 
+**Status (23 Nov 2026):** Phases 0–6 and 8 are built and tested against a
+scripted GitHub (`tests/test_guard.py`, `tests/test_delegate.py`,
+`tests/test_delegation.py`). Phase 7, the end-to-end runs on ci-triage-demo,
+is not done. README → "Handing a fix to Claude" documents what was built.
+
 ## Goal
 
 When CI fails on a pull request, ci-triage diagnoses it. If the fix is a code
