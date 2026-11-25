@@ -92,6 +92,16 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
 
       {r.delegations?.map((d) => <DelegationChain key={d.id} d={d} verdict={r.verdict} />)}
 
+      {r.trail && r.trail.length > 0 && (
+        <Panel title="How it was diagnosed">
+          <ol className="list-decimal space-y-0.5 pl-5 text-sm text-muted">
+            {r.trail.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ol>
+        </Panel>
+      )}
+
       {checked && <VerdictCard v={checked} />}
 
       {/* The comment says every quote was found in the log; only show it where that is true. */}

@@ -1,6 +1,6 @@
 import { ReviewForm } from "@/components/review-form";
 import { DelegationBadge, Panel } from "@/components/ui";
-import type { Delegation, Verdict } from "@/lib/types";
+import type { Delegation, FixPlan, PlanChecks, Verdict } from "@/lib/types";
 
 /**
  * One delegation as a single line: the failed run, the diagnosis, the brief
@@ -49,6 +49,58 @@ function Diagnosis({ v }: { v: Verdict }) {
   );
 }
 
+function Plan({ plan, checks }: { plan: FixPlan; checks: PlanChecks | null | undefined }) {
+  return (
+    <div className="mt-1 space-y-2 text-sm text-muted">
+      <p>{plan.goal}</p>
+      {!plan.feasible && plan.blocker && (
+        <p>
+          <span className="font-medium text-fg">What a person must do:</span> {plan.blocker}
+        </p>
+      )}
+      {plan.steps.length > 0 && (
+        <ol className="list-decimal space-y-1 pl-5">
+          {plan.steps.map((s, i) => (
+            <li key={i}>
+              <span className="font-medium text-fg">{s.action}</span>{" "}
+              <span className="break-all font-mono text-xs text-fg">{s.file}</span>: {s.change}
+              <span className="block text-xs">answers: {s.why}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {plan.verify.length > 0 && (
+        <div>
+          <p className="text-xs font-medium tracking-wide uppercase">Done when these pass</p>
+          <ul className="mt-0.5 space-y-0.5">
+            {plan.verify.map((v) => (
+              <li key={v} className="break-all font-mono text-xs">
+                {v}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {plan.risks && <p>Risks: {plan.risks}</p>}
+      {checks && checks.checks.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-accent">
+            {checks.checks.filter((c) => c.ok).length} of {checks.checks.length} checks passed against the code
+            {checks.repairs > 0 && <>, after {checks.repairs} repair(s)</>}
+          </summary>
+          <ul className="mt-1 space-y-0.5 text-xs">
+            {checks.checks.map((c) => (
+              <li key={c.check} className={c.ok ? "" : "text-bad"}>
+                <span aria-hidden>{c.ok ? "✓" : "✗"}</span> <span className="font-mono">{c.check}</span>: {c.detail}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
 function List({ items, tone }: { items: string[]; tone: "bad" | "warn" }) {
   return (
     <ul className={`mt-1 space-y-0.5 text-xs ${tone === "bad" ? "text-bad" : "text-warn"}`}>
@@ -76,6 +128,27 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
     },
   ];
   if (verdict) stops.push({ title: "Diagnosis, every quote found in the log", tone: "ok", body: <Diagnosis v={verdict} /> });
+
+  // The plan sits before the approval: a person approves what Claude will be told.
+  const plan = d.plan ?? null;
+  if (plan) {
+    stops.push({
+      title: plan.feasible ? "Plan, checked against the code" : "Plan: no code fix within the rules",
+      tone: plan.feasible ? "ok" : "bad",
+      body: <Plan plan={plan} checks={d.plan_checks} />,
+    });
+  } else if (d.plan_checks?.dropped) {
+    stops.push({
+      title: "No plan: the brief carries the diagnosis's hint",
+      tone: "warn",
+      body: <p className="text-sm break-words text-muted">{d.plan_checks.dropped}</p>,
+    });
+  }
+  // Nothing was sent: the line ends at the plan, with what a person must do.
+  if (plan && !plan.feasible) {
+    stops.push({ title: "Gave up at the plan: over to a person", tone: "bad", body: undefined });
+    return <Chain d={d} stops={stops} />;
+  }
 
   const decided = d.status !== "proposed";
   stops.push({
@@ -183,6 +256,10 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
     });
   }
 
+  return <Chain d={d} stops={stops} />;
+}
+
+function Chain({ d, stops }: { d: Delegation; stops: Stop[] }) {
   return (
     <Panel
       title={`Fix delegation ${d.id}`}
