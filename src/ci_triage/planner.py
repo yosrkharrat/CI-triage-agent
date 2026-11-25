@@ -53,9 +53,11 @@ from ci_triage.models import MAX_PLAN_STEPS, FixPlan, Verdict, WorkflowRun
 if TYPE_CHECKING:
     from ci_triage.github import GitHubClient
 
-#: Model requests one plan may make. Reading a handful of files, the answer,
-#: and the repairs `MAX_REPAIRS` allows.
-REQUEST_LIMIT = 14
+#: Model requests one plan may make. Each file read is a request, so this is
+#: a dozen reads, the answer, and the repairs `MAX_REPAIRS` allows. 14 ran out
+#: on the first two-file regression on ci-triage-demo, which listed and read
+#: its way through the repository before answering.
+REQUEST_LIMIT = 24
 
 #: Characters of tool output one planning run may receive in total. Larger
 #: than the triage budget: the planner reads source, and is meant for a model

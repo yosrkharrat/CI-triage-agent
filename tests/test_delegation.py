@@ -247,7 +247,7 @@ def test_review_mode_proposes_and_sends_nothing(make):
     [d] = store.delegations()
     assert d.status is DelegationStatus.PROPOSED
     assert d.origin_run == rid
-    assert d.fix_branch == f"ci-triage/fix-{rid}"
+    assert d.fix_branch == f"ci-triage/fix-{RUN['id']}"  # GitHub's run id, not the row id
     assert d.failed_jobs == FAILED
     assert d.workflow_id == WORKFLOW
     assert "error[E0425]" in d.brief
@@ -918,3 +918,16 @@ def test_an_old_database_gains_the_plan_columns(tmp_path: Path):
     cols = {r[1] for r in sqlite3.connect(path).execute("PRAGMA table_info(delegations)")}
     assert {"plan", "plan_checks", "trail"} <= cols
     assert store.delegations() == []
+
+
+def test_a_fix_branch_that_already_exists_is_never_reused(make):
+    """A fresh database starts its row ids at 1 again. When the fix branch was
+    named after the row, ci-triage-demo's `ci-triage/fix-1` (an earlier fix,
+    with its own PR) was taken for Claude's push on a new delegation, and the
+    fix workflow would have committed on top of it."""
+    gh = FakeGitHub(_result())
+    gh.branches[f"ci-triage/fix-{RUN['id']}"] = "an-old-fix"
+    client, store, worker = make(gh, mode="auto")
+    _fail(client, worker)
+    assert store.delegations() == []
+    assert gh.dispatched == [] and gh.opened == []

@@ -803,9 +803,17 @@ def propose(
         log.info("run %s: not delegated: %s", record.id, why)
         return None
 
+    # Named after GitHub's run id, not this database's row id: a fresh or
+    # second database starts its rows at 1 again, and `ci-triage/fix-1` may
+    # already be a branch holding an earlier fix. The fix workflow continues a
+    # branch that exists, so a reused name would put Claude's commits on top
+    # of someone else's fix. Refused outright when the branch is already there.
+    branch = fix_branch(run.id)
+    if pipeline.branch_head(record, branch) is not None:
+        log.warning("run %s: not delegated: branch %s already exists", record.id, branch)
+        return None
     _, jobs, _ = load_fixture(fixture)
     command, files = _brief_inputs(fixture)
-    branch = fix_branch(record.id)
     planned = _plan_for(record, run, result.verdict, fixture, pipeline)
     plan = planned.plan if planned is not None and planned.usable else None
     brief = render_brief(
