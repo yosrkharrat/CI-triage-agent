@@ -1,0 +1,3877 @@
+{
+ "captured_at": "2026-11-20T15:45:44.146Z",
+ "fixtures": [
+  {
+   "name": "airflow__32529760720",
+   "source": "corpus",
+   "repo": "apache/airflow",
+   "branch": "improve-mapped-task-scheduler-performance",
+   "workflow": "Tests (AMD)",
+   "conclusion": "failure",
+   "created_at": "2026-08-21T21:42:36+00:00",
+   "failed_jobs": 5,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.9,
+     "cited": 2,
+     "verified": 0,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "black__34987498448",
+   "source": "corpus",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "diff-shades",
+   "conclusion": "failure",
+   "created_at": "2026-09-15T15:18:00+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.9,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "black__34987498453",
+   "source": "corpus",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "test",
+   "conclusion": "failure",
+   "created_at": "2026-09-15T15:18:00+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.99,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.92,
+     "cited": 1,
+     "verified": 0,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "black__34987498587",
+   "source": "corpus",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "changelog",
+   "conclusion": "failure",
+   "created_at": "2026-09-15T15:18:00+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "infra",
+     "confidence": 0.95,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "core__35489352701",
+   "source": "corpus",
+   "repo": "home-assistant/core",
+   "branch": "codex/add-beatbot-integration-v2",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T04:31:19+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "dependency",
+     "confidence": 0.86,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "dependency",
+     "confidence": 0.92,
+     "cited": 1,
+     "verified": 1,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "core__35499654396",
+   "source": "corpus",
+   "repo": "home-assistant/core",
+   "branch": "assist-pipeline-user-id",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T08:28:32+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 3,
+     "verified": 3,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "core__35505915015",
+   "source": "corpus",
+   "repo": "home-assistant/core",
+   "branch": "feat/xiaomi-weather/init",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T10:44:39+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 0,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "fastapi__35503211274",
+   "source": "corpus",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T09:46:01+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "fastapi__35503211282",
+   "source": "corpus",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test Redistribute",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T09:46:01+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "dependency",
+     "confidence": 0.85,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "dependency",
+     "confidence": 0.85,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "fastapi__35503857223",
+   "source": "corpus",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test Redistribute",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T10:00:44+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "dependency",
+     "confidence": 0.85,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "dependency",
+     "confidence": 0.9,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "httpx__35071320524",
+   "source": "corpus",
+   "repo": "encode/httpx",
+   "branch": "keep-method-for-redirects",
+   "workflow": "Test Suite",
+   "conclusion": "failure",
+   "created_at": "2026-09-16T07:59:05+00:00",
+   "failed_jobs": 5,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "dependency",
+     "confidence": 0.85,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "dependency",
+     "confidence": 0.9,
+     "cited": 1,
+     "verified": 1,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "langchain__34329491939",
+   "source": "corpus",
+   "repo": "langchain-ai/langchain",
+   "branch": "openwiki/update",
+   "workflow": "🔄 Check CLAUDE.md / AGENTS.md Sync",
+   "conclusion": "failure",
+   "created_at": "2026-09-09T08:30:32+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 1,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "langchain__34503536672",
+   "source": "corpus",
+   "repo": "langchain-ai/langchain",
+   "branch": "lint-upgrade",
+   "workflow": "🔧 CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-10T16:40:32+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.94,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "langchain__34531198857",
+   "source": "corpus",
+   "repo": "langchain-ai/langchain",
+   "branch": "mdrxy/core/response-format-provider-strategy",
+   "workflow": "🔧 CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-10T21:15:50+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "infra",
+     "confidence": 0.96,
+     "cited": 3,
+     "verified": 3,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "infra",
+     "confidence": 0.92,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "pandas__35489338041",
+   "source": "corpus",
+   "repo": "pandas-dev/pandas",
+   "branch": "regrs-66552",
+   "workflow": "Unit Tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T04:31:00+00:00",
+   "failed_jobs": 5,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.93,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 2,
+     "verified": 0,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "pandas__35496694897",
+   "source": "corpus",
+   "repo": "pandas-dev/pandas",
+   "branch": "fix/69037-rolling-skew-kurt-nobs-zero",
+   "workflow": "Unit Tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T07:22:30+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "infra",
+     "confidence": 0.92,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "flaky",
+     "confidence": 0.9,
+     "cited": 1,
+     "verified": 1,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "pandas__35499323117",
+   "source": "corpus",
+   "repo": "pandas-dev/pandas",
+   "branch": "fix/69037-rolling-skew-kurt-nobs-zero",
+   "workflow": "Doc Build and Upload",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T08:21:16+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "flaky",
+     "confidence": 0.95,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.85,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "poetry__35343948952",
+   "source": "corpus",
+   "repo": "python-poetry/poetry",
+   "branch": "fix/11069-bump-poetry-core-2.4.1",
+   "workflow": "Tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-18T12:18:16+00:00",
+   "failed_jobs": 17,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.95,
+     "cited": 2,
+     "verified": 0,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "poetry__35364542297",
+   "source": "corpus",
+   "repo": "python-poetry/poetry",
+   "branch": "codex/9485-stale-show-lock-error",
+   "workflow": "Tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-18T15:47:17+00:00",
+   "failed_jobs": 31,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.9,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "poetry__35455975872",
+   "source": "corpus",
+   "repo": "python-poetry/poetry",
+   "branch": "release/2.5.0",
+   "workflow": "Tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T16:45:37+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "infra",
+     "confidence": 0.94,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.92,
+     "cited": 3,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "polars__35498835979",
+   "source": "corpus",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Lint Rust",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T08:10:29+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "polars__35499202405",
+   "source": "corpus",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Lint Rust",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T08:18:34+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.94,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    },
+    "groq:openai/gpt-oss-20b": {
+     "category": "regression",
+     "confidence": 0.9,
+     "cited": 1,
+     "verified": 0,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "polars__35501439993",
+   "source": "corpus",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Test Python",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T09:07:33+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.85,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "prefect__33784290671",
+   "source": "corpus",
+   "repo": "PrefectHQ/prefect",
+   "branch": "fix-event-url-template-22957-work",
+   "workflow": "Verify prefect-client build",
+   "conclusion": "failure",
+   "created_at": "2026-09-03T17:23:41+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.87,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "prefect__33784333154",
+   "source": "corpus",
+   "repo": "PrefectHQ/prefect",
+   "branch": "fix-event-url-template-22957-work",
+   "workflow": "Unit tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-03T17:24:06+00:00",
+   "failed_jobs": 15,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.97,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "prefect__33832652720",
+   "source": "corpus",
+   "repo": "PrefectHQ/prefect",
+   "branch": "codex/tla-plus-deployment-concurrency",
+   "workflow": "Unit tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-04T03:17:15+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.86,
+     "cited": 2,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "pydantic-ai__35441580741",
+   "source": "corpus",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix/8413-bracket-ipv6-host-default-port",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T11:59:17+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.86,
+     "cited": 2,
+     "verified": 2,
+     "route": "auto_post"
+    }
+   }
+  },
+  {
+   "name": "pydantic-ai__35453419958",
+   "source": "corpus",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix-griffe-logging-leak",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T15:57:38+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {
+    "groq:openai/gpt-oss-120b": {
+     "category": "regression",
+     "confidence": 0.96,
+     "cited": 2,
+     "verified": 2,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "pydantic-ai__35495282377",
+   "source": "corpus",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix-ssrf-ipv6-percent",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T06:50:38+00:00",
+   "failed_jobs": 27,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "pydantic__35248454086",
+   "source": "corpus",
+   "repo": "pydantic/pydantic",
+   "branch": "sq918/plugin-dead-doc",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-17T16:44:32+00:00",
+   "failed_jobs": 7,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "pydantic__35411255497",
+   "source": "corpus",
+   "repo": "pydantic/pydantic",
+   "branch": "fix-v1-hypothesis-plugin-imports",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T01:00:32+00:00",
+   "failed_jobs": 37,
+   "label": "regression",
+   "verdicts": {}
+  },
+  {
+   "name": "pydantic__35499357639",
+   "source": "corpus",
+   "repo": "pydantic/pydantic",
+   "branch": "fix-create-model-validators-typing",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T08:22:01+00:00",
+   "failed_jobs": 7,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "ruff__35431390053",
+   "source": "corpus",
+   "repo": "astral-sh/ruff",
+   "branch": "micha/ty-uv-project-metadata-watch",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T08:12:45+00:00",
+   "failed_jobs": 4,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "ruff__35496013565",
+   "source": "corpus",
+   "repo": "astral-sh/ruff",
+   "branch": "lerebear/push-rtoryuwmrrlx",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T07:07:09+00:00",
+   "failed_jobs": 4,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "ruff__35496014017",
+   "source": "corpus",
+   "repo": "astral-sh/ruff",
+   "branch": "lerebear/push-ownnyrxvlomu",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T07:07:09+00:00",
+   "failed_jobs": 5,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "scikit-learn__35408108521",
+   "source": "corpus",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "fix-random-projection-auto-feature-names-out",
+   "workflow": "Check Changelog",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T00:05:10+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "scikit-learn__35425065902",
+   "source": "corpus",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "doc-fix-34987",
+   "workflow": "Unit tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-19T05:51:31+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "scikit-learn__35491264734",
+   "source": "corpus",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "fix_tsne_segfault_32788",
+   "workflow": "Unit tests",
+   "conclusion": "failure",
+   "created_at": "2026-09-20T05:16:44+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "sweep__30005314760",
+   "source": "corpus",
+   "repo": "Agence-OOO/sweep",
+   "branch": "v0.1.0",
+   "workflow": "Release desktop app",
+   "conclusion": "failure",
+   "created_at": "2026-07-23T12:01:03+00:00",
+   "failed_jobs": 4,
+   "label": "regression",
+   "verdicts": {}
+  },
+  {
+   "name": "sweep__30005725094",
+   "source": "corpus",
+   "repo": "Agence-OOO/sweep",
+   "branch": "v0.1.0",
+   "workflow": "Release desktop app",
+   "conclusion": "failure",
+   "created_at": "2026-07-23T12:07:14+00:00",
+   "failed_jobs": 4,
+   "label": "infra",
+   "verdicts": {
+    "google:gemini-3.5-flash": {
+     "category": "infra",
+     "confidence": 0.98,
+     "cited": 1,
+     "verified": 1,
+     "route": "human_review"
+    }
+   }
+  },
+  {
+   "name": "uv__35371185310",
+   "source": "corpus",
+   "repo": "astral-sh/uv",
+   "branch": "charlie/test-scheduling",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-18T16:54:06+00:00",
+   "failed_jobs": 2,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "uv__35371954060",
+   "source": "corpus",
+   "repo": "astral-sh/uv",
+   "branch": "ww/test-pub-cleanup",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-18T17:02:07+00:00",
+   "failed_jobs": 5,
+   "label": null,
+   "verdicts": {}
+  },
+  {
+   "name": "uv__35372848757",
+   "source": "corpus",
+   "repo": "astral-sh/uv",
+   "branch": "charlie/resolver-requirement-scope",
+   "workflow": "CI",
+   "conclusion": "failure",
+   "created_at": "2026-09-18T17:11:20+00:00",
+   "failed_jobs": 1,
+   "label": null,
+   "verdicts": {}
+  }
+ ],
+ "details": {
+  "airflow__32529760720": {
+   "name": "airflow__32529760720",
+   "repo": "apache/airflow",
+   "branch": "improve-mapped-task-scheduler-performance",
+   "workflow": "Tests (AMD)",
+   "html_url": "https://github.com/apache/airflow/actions/runs/32529760720",
+   "head_sha": "f10dce4215e769bea8abb456a90083c99ce92a44",
+   "overview": "repository:  apache/airflow\nworkflow:    Tests (AMD)\nevent:       pull_request on improve-mapped-task-scheduler-performance\ncommit:      f10dce4215e769bea8abb456a90083c99ce92a44\nconclusion:  failure (attempt 1)\njobs:        5 failed of 70\n\ndistinct failures:\n  1. Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization  [3 jobs]\n     failed at step: core:DB Tests Sqlite  Py3.10:Core Other Serialization\n  2. Low dep tests:core / core:LowestDeps:14:3.10:Core...Serialization\n     failed at step: core:All Tests LowestDeps 14 Py3.10:Core Other Serialization\n  3. MySQL tests: core / DB-core:MySQL:8.0:3.10:API...CLI\n     failed at step: core:DB Tests MySQL 8.0 Py3.10:API Always CLI",
+   "failed_jobs": [
+    "Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization",
+    "MySQL tests: core / DB-core:MySQL:8.0:3.10:API...CLI",
+    "Low dep tests:core / core:LowestDeps:14:3.10:Core...Serialization",
+    "Postgres tests: core / DB-core:Postgres:14:3.10:Core...Serialization",
+    "MySQL tests: core / DB-core:MySQL:8.0:3.10:Core...Serialization"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "airflow__32529760720",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 16720,
+     "burned": 0,
+     "requests": 5,
+     "cached": true,
+     "seconds": 0.5,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The CI run fails because a core unit test asserts an unexpected queue assignment, causing an AssertionError across multiple jobs – a clear regression.",
+      "reasoning": "All failing jobs report the same AssertionError in 'test_mutation_hook_safe_session_reuse_routes_mapped_tis_under_prohibit_commit', a core unit test. This shows that the recent change broke expected behavior (queues not all 'high_queue'), which is a regression of the repository's own code. No evidence of flakiness, infra issues, or external dependency changes is present; the failure is deterministic across multiple matrix jobs.",
+      "evidence": [
+       {
+        "job_name": "Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization",
+        "log_path": "25_Sqlite tests core _ DB-coreSqlite3.10Core...Serialization.txt",
+        "line_start": 4875,
+        "line_end": 4875,
+        "quote": "E   AssertionError: assert equals failed",
+        "why": "The test 'test_mutation_hook_safe_session_reuse_routes_mapped_tis_under_prohibit_commit' raised an AssertionError, indicating a regression in the repository code."
+       },
+       {
+        "job_name": "Low dep tests:core / core:LowestDeps:14:3.10:Core...Serialization",
+        "log_path": "14_Low dep testscore _ coreLowestDeps143.10Core...Serialization.txt",
+        "line_start": 4198,
+        "line_end": 4198,
+        "quote": "E   AssertionError: assert equals failed",
+        "why": "The same unit test failed under the lowest‑dependency configuration, confirming the failure originates from the repository code, not external dependencies."
+       }
+      ],
+      "suggested_fix": "Investigate the task‑mapping and queue‑assignment logic introduced in the PR; ensure that mapped task instances are assigned the expected 'high_queue' as asserted by the test."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "airflow__32529760720",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 2
+     },
+     "tokens": 22424,
+     "burned": 0,
+     "requests": 7,
+     "cached": true,
+     "seconds": 0.5,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.9,
+      "summary": "New changes in dagrun.py broke core unit tests related to task mapping and queue ordering, indicating a regression.",
+      "reasoning": "The failure log shows two unit tests in the core SQLite DB tests that assert specific queue order and deterministic mapping behavior. Both tests now raise AssertionError after the commit that introduced new logic in dagrun.py regarding max_tis_per_query and map index handling. The new code changes the way expanded TIs are processed and deferred, which directly affects the outcomes observed in the failing tests. Since the failures are deterministic and tied to the repo’s own source changes, this is a regression, not an infrastructure or dependency issue.",
+      "evidence": [
+       {
+        "job_name": "Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization",
+        "log_path": "25_Sqlite tests core _ DB-coreSqlite3.10Core...Serialization.txt",
+        "line_start": 4841,
+        "line_end": 4845,
+        "quote": "4841 | FAILED airflow-core/tests/unit/models/test_dagrun.py::test_mutation_hook_safe_session_reuse_routes_mapped_tis_under_prohibit_commit - AssertionError: assert equals failed\n4842 |   [                [\n4843 |     'high_queue',    'high_queue',\n4844 |     'default',       'high_queue',\n4845 |     'default',       'high_queue',\n",
+        "why": "Shows test failure due to incorrect queue assignment after mutation hook, indicating regression."
+       },
+       {
+        "job_name": "Sqlite tests: core / DB-core:Sqlite:3.10:Core...Serialization",
+        "log_path": "25_Sqlite tests core _ DB-coreSqlite3.10Core...Serialization.txt",
+        "line_start": 4850,
+        "line_end": 4851,
+        "quote": "4850 |   +  where dict_values([1, 1, 1]) = <built-in method values of collections.defaultdict object at 0x7f7b46cce5c0>()\n4851 |   +      where <built-in method values of collections.defaultdict object at 0x7f7b46cce5c0> = defaultdict(<class 'int'>, {0: 1, 1: 1, 2: 1}).values\n",
+        "why": "Shows test failure in deterministic mapping expansion, confirming regression."
+       }
+      ],
+      "suggested_fix": "Review the added logic in _expand_mapped_task_if_needed and _revise_map_indexes_if_mapped, particularly the handling of max_tis_per_query, deferred TIs, and the interaction with task_instance_mutation_hook. Ensure that mapping expansion remains deterministic and that queued task ordering matches expected behavior, possibly by removing the dropping of TIs or adjusting the deferred logic."
+     }
+    }
+   }
+  },
+  "black__34987498448": {
+   "name": "black__34987498448",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "diff-shades",
+   "html_url": "https://github.com/psf/black/actions/runs/34987498448",
+   "head_sha": "96151e44f920be0db5788d5f7c48df136f7e4e78",
+   "overview": "repository:  psf/black\nworkflow:    diff-shades\nevent:       pull_request on fix/issue-3925-line-length\ncommit:      96151e44f920be0db5788d5f7c48df136f7e4e78\nconclusion:  failure (attempt 2)\njobs:        1 failed of 7\n\ndistinct failures:\n  1. compare / assert-no-changes\n     failed at step: Verify zero changes (PR only)",
+   "failed_jobs": [
+    "compare / assert-no-changes"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "black__34987498448",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 8821,
+     "burned": 0,
+     "requests": 5,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The job detected style differences between the stable baseline and the PR, causing a failure; this is a regression.",
+      "reasoning": "The 'compare / assert-no-changes' job loads the stable and PR analysis JSONs and expects them to be identical. The log shows that 86 changes were detected, leading to an error exit (code 1). This deterministic failure demonstrates that the PR unintentionally altered the stable code style, which is a regression in the repository's code rather than an infra, flaky, or dependency issue.",
+      "evidence": [
+       {
+        "job_name": "compare / assert-no-changes",
+        "log_path": "1_compare _ assert-no-changes.txt",
+        "line_start": 552,
+        "line_end": 554,
+        "quote": "Differences found.\nPlease verify you didn't change the stable code style unintentionally!\n##[error]Process completed with exit code 1.",
+        "why": "The job asserts that the stable and PR analyses are identical; detecting differences triggers an error exit, indicating a regression introduced by the PR."
+       }
+      ],
+      "suggested_fix": "Review the changes reported in the diff (86 changes) and ensure they do not unintentionally modify the stable code style; revert or adjust the offending modifications."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "black__34987498448",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 2030,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.9,
+      "summary": "The PR introduced unintended changes to the stable code style, causing the compare / assert-no-changes job to fail. This is a repository regression; review and fix the style changes.",
+      "reasoning": "The compare / assert-no-changes job compares the stable code style between the main branch and the PR branch. The log shows that it found differences and explicitly failed with the message \"Please verify you didn't change the stable code style unintentionally!\" This indicates that the repository’s own code was altered unintentionally, which is a regression in the repository's code base, not an infrastructure or dependency issue.",
+      "evidence": [
+       {
+        "job_name": "compare / assert-no-changes",
+        "log_path": "1_compare _ assert-no-changes.txt",
+        "line_start": 552,
+        "line_end": 553,
+        "quote": "Differences found.\nPlease verify you didn't change the stable code style unintentionally!",
+        "why": "The job detected differences in the stable code style and exited with an error, indicating unintended changes."
+       }
+      ],
+      "suggested_fix": "Revert or correct the unintended style changes in the PR, or adjust the diff-shades workflow if the changes were intentional."
+     }
+    }
+   }
+  },
+  "black__34987498453": {
+   "name": "black__34987498453",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "test",
+   "html_url": "https://github.com/psf/black/actions/runs/34987498453",
+   "head_sha": "96151e44f920be0db5788d5f7c48df136f7e4e78",
+   "overview": "repository:  psf/black\nworkflow:    test\nevent:       pull_request on fix/issue-3925-line-length\ncommit:      96151e44f920be0db5788d5f7c48df136f7e4e78\nconclusion:  failure (attempt 2)\njobs:        1 failed of 31\n\ndistinct failures:\n  1. test (3.15, windows-11-arm)\n     failed at step: Unit tests",
+   "failed_jobs": [
+    "test (3.15, windows-11-arm)"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "black__34987498453",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.99,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 30968,
+     "burned": 0,
+     "requests": 8,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.99,
+      "summary": "Black's test_expression_diff fails because Black exits with code 123 instead of 0, indicating a regression introduced by recent formatting logic changes.",
+      "reasoning": "The failure occurs in tests/test_black.py::BlackTestCase::test_expression_diff, which expects Black to exit cleanly (code 0) when invoked with --diff on a specific input. The log shows an AssertionError: 123 != 0, indicating Black returned a non-zero exit code due to recent changes in src/black/linegen.py. Both attempts on this commit failed, and no pass history exists, so the failure is deterministic and caused by a code change in the repository, classifying it as a regression.",
+      "evidence": [
+       {
+        "job_name": "test (3.15, windows-11-arm)",
+        "log_path": "2_test (3.15, windows-11-arm).txt",
+        "line_start": 1378,
+        "line_end": 1379,
+        "quote": ">           self.assertEqual(result.exit_code, 0)\nE           AssertionError: 123 != 0",
+        "why": "The test asserts that Black's exit code should be 0 but the actual exit code is 123, causing an AssertionError."
+       }
+      ],
+      "suggested_fix": "Investigate the new logic added in _prefer_split_rhs_oop_over_rhs (src/black/linegen.py) to ensure it does not cause Black to exit with error code 123 for the case exercised by test_expression_diff, and adjust the condition or handling accordingly."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "black__34987498453",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.92,
+     "route": "auto_post",
+     "cited": 1,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 22914,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.92,
+      "summary": "Black’s unit test 'test_expression_diff' failed on windows-11-arm due to an exit code 123, signaling a regression introduced by recent changes.",
+      "reasoning": "The test ‘test_expression_diff’ expects Black to finish cleanly (exit code 0) but the runner exits with code 123, leading to an assertion failure. The failure is deterministic, occurs consistently on the same commit, and is not due to infrastructure or dependency changes, indicating a bug introduced in the repository’s own code.",
+      "evidence": [
+       {
+        "job_name": "test (3.15, windows-11-arm)",
+        "log_path": "2_test (3.15, windows-11-arm).txt",
+        "line_start": 1376,
+        "line_end": 1381,
+        "quote": "        try:\n            result = BlackRunner().invoke(\n                black.main, [\"--diff\", str(tmp_file), f\"--config={EMPTY_CONFIG}\"]\n            )\n>           self.assertEqual(result.exit_code, 0)\nE           AssertionError: 123 != 0",
+        "why": "Shows that the test expected exit code 0 but Black returned 123, causing the test to fail."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "black__34987498587": {
+   "name": "black__34987498587",
+   "repo": "psf/black",
+   "branch": "fix/issue-3925-line-length",
+   "workflow": "changelog",
+   "html_url": "https://github.com/psf/black/actions/runs/34987498587",
+   "head_sha": "96151e44f920be0db5788d5f7c48df136f7e4e78",
+   "overview": "repository:  psf/black\nworkflow:    changelog\nevent:       pull_request on fix/issue-3925-line-length\ncommit:      96151e44f920be0db5788d5f7c48df136f7e4e78\nconclusion:  failure (attempt 2)\njobs:        1 failed of 1\n\ndistinct failures:\n  1. check\n     failed at step: Grep CHANGES.md for PR number",
+   "failed_jobs": [
+    "check"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "black__34987498587",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 7921,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "The changelog check failed because the PR’s number (#5407) is missing from CHANGES.md, causing the job to exit with an error.",
+      "reasoning": "The CI job runs a grep on CHANGES.md for the PR number (#5407). The log shows the script printed a message asking to add '(#5407)' to CHANGES.md and then exited with code 1. This deterministic failure is due to the repository's own source not meeting the required changelog entry, which is a regression introduced by the PR. No external factors or flakiness are involved.",
+      "evidence": [
+       {
+        "job_name": "check",
+        "log_path": "0_check.txt",
+        "line_start": 168,
+        "line_end": 169,
+        "quote": "Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)\n##[error]Process completed with exit code 1.",
+        "why": "The check script exited with error because CHANGES.md lacks an entry referencing PR #5407, causing the job to fail."
+       }
+      ],
+      "suggested_fix": "Add a line containing '(#5407)' to CHANGES.md (or apply the 'ci: skip news' label if the change does not need a changelog entry)."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "black__34987498587",
+     "label": null,
+     "predicted": "infra",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 7438,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.95,
+      "summary": "CI failed because the PR was not referenced in CHANGES.md; add the PR reference or a skip label to pass the check.",
+      "reasoning": "The job logs show a grep command searching for the PR number (#5407) in CHANGES.md. It fails, leading to an explicit error message and the job exiting with code 1. This is a deterministic CI policy check, not a compile or runtime failure in the repository code, nor an external dependency change. Therefore the failure is due to a CI workflow requirement, categorised as an infra issue.",
+      "evidence": [
+       {
+        "job_name": "check",
+        "log_path": "0_check.txt",
+        "line_start": 160,
+        "line_end": 163,
+        "quote": "##[group]Run grep -Pz \"\\\\((\\\\n\\\\s*)?#5407(\\\\n\\\\s*)?\\\\)\" CHANGES.md || \\\ngrep -Pz \"\\\\((\\\\n\\\\s*)?#5407(\\\\n\\\\s*)?\\\\)\" CHANGES.md || \\\n(echo \"Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)\" && \\\nexit 1)",
+        "why": "Shows the CI step grepping for the PR reference in CHANGES.md and exiting with an error when not found."
+       },
+       {
+        "job_name": "check",
+        "log_path": "0_check.txt",
+        "line_start": 168,
+        "line_end": 168,
+        "quote": "Please add '(#5407)' change line to CHANGES.md (or if appropriate, ask a maintainer to add the 'ci: skip news' label)",
+        "why": "Explicit error message indicating the missing changelog entry that caused the job to fail."
+       }
+      ],
+      "suggested_fix": "Add a line containing '(#5407)' to CHANGES.md for this PR, or add the 'ci: skip news' label to bypass the check."
+     }
+    }
+   }
+  },
+  "core__35489352701": {
+   "name": "core__35489352701",
+   "repo": "home-assistant/core",
+   "branch": "codex/add-beatbot-integration-v2",
+   "workflow": "CI",
+   "html_url": "https://github.com/home-assistant/core/actions/runs/35489352701",
+   "head_sha": "88043c75bdf31e1c82560222aaae144475c4458f",
+   "overview": "repository:  home-assistant/core\nworkflow:    CI\nevent:       pull_request on codex/add-beatbot-integration-v2\ncommit:      88043c75bdf31e1c82560222aaae144475c4458f\nconclusion:  failure (attempt 1)\njobs:        1 failed of 42\n\ndistinct failures:\n  1. Run tests Python 3.14.5 (4)\n     failed at step: Set up Python 3.14.5 and restore venv",
+   "failed_jobs": [
+    "Run tests Python 3.14.5 (4)"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "core__35489352701",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.86,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 18874,
+     "burned": 0,
+     "requests": 7,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.86,
+      "summary": "The job failed because it could not fetch a manifest file from an external service (astral-sh/versions), causing the Python setup step to error out.",
+      "reasoning": "The failure occurs during the 'Set up Python 3.14.5 and restore venv' step when the job tries to fetch a manifest file from an external URL (astral-sh/versions). The log shows a fetch error, which aborts the job before any code is built or tests run. This points to an external service or unpinned reference being unavailable, matching the definition of a dependency failure. No code changes or test failures are involved, and there is no evidence of flaky behavior across runs, so the appropriate category is 'dependency'.",
+      "evidence": [
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "19_Run tests Python 3.14.5 (4).txt",
+        "line_start": 853,
+        "line_end": 853,
+        "quote": "Fetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...",
+        "why": "The job attempts to download a manifest from an external URL, showing reliance on an external service."
+       },
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "19_Run tests Python 3.14.5 (4).txt",
+        "line_start": 854,
+        "line_end": 854,
+        "quote": "##[error]fetch failed",
+        "why": "The fetch of the external manifest failed, causing the setup step to abort, indicating a dependency failure."
+       }
+      ],
+      "suggested_fix": "Check the availability of https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson and consider pinning the manifest or adding retry logic to mitigate transient fetch failures."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "core__35489352701",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.92,
+     "route": "auto_post",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 5189,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.92,
+      "summary": "The CI job fails to download the `uv` manifest from GitHub, causing a dependency failure.",
+      "reasoning": "The failure occurs during the `python.python.uv` action, which retrieves a manifest from `https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson`. The log shows a `fetch failed` error, meaning the external service is unreachable or changed. This is not a code defect, nor an environment misconfiguration, but a dependency issue (an unpinned external service). There is no evidence of flakiness or infra problems.",
+      "evidence": [
+       {
+        "job_name": "Run tests Python 3.14.5",
+        "log_path": "19_Run tests Python 3.14.5 (4).txt",
+        "line_start": 852,
+        "line_end": 855,
+        "quote": "UV_CACHE_DIR is already set to /tmp/uv-cache\nFetching manifest data from https://raw.githubusercontent.com/astral-sh/versions/main/v1/uv.ndjson ...\n##[error]fetch failed\n##[end-action id=python.python.uv;outcome=failure;conclusion=failure;duration_ms=198]",
+        "why": "The job fails while attempting to fetch an external manifest from GitHub, indicating a problem with a third‑party service."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "core__35499654396": {
+   "name": "core__35499654396",
+   "repo": "home-assistant/core",
+   "branch": "assist-pipeline-user-id",
+   "workflow": "CI",
+   "html_url": "https://github.com/home-assistant/core/actions/runs/35499654396",
+   "head_sha": "1ffe44e3b38f018a1474207bbbf8e1ce0f9a8686",
+   "overview": "repository:  home-assistant/core\nworkflow:    CI\nevent:       pull_request on assist-pipeline-user-id\ncommit:      1ffe44e3b38f018a1474207bbbf8e1ce0f9a8686\nconclusion:  failure (attempt 1)\njobs:        1 failed of 42\n\ndistinct failures:\n  1. Run tests Python 3.14.5 (4)\n     failed at step: Run pytest",
+   "failed_jobs": [
+    "Run tests Python 3.14.5 (4)"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "core__35499654396",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 3,
+     "verified": 3,
+     "faults": {},
+     "tokens": 11233,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "Deterministic test failures in cloud component migration tests (extra 'user_id' field) indicate a code regression introduced in this PR.",
+      "reasoning": "The job failed deterministically because two internal tests (test_migrating_pipelines for TTS and STT) raised AssertionError exceptions. The failure logs contain the exact assertion mismatches, and the diff snippet reveals an extra 'user_id' field that the tests did not expect. This indicates a code regression: a recent change altered the pipeline migration output, breaking existing test expectations. No evidence points to flaky behavior, infra problems, or external dependencies.",
+      "evidence": [
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "5_Run tests Python 3.14.5 (4).txt",
+        "line_start": 2778,
+        "line_end": 2778,
+        "quote": "FAILED tests/components/cloud/test_tts.py::test_migrating_pipelines - AssertionError: assert {'conversatio...guage_2', ...} == {'conversatio...guage_2', ...}",
+        "why": "The TTS migration test raised an AssertionError, causing the pytest step to exit with failure."
+       },
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "5_Run tests Python 3.14.5 (4).txt",
+        "line_start": 2801,
+        "line_end": 2801,
+        "quote": "FAILED tests/components/cloud/test_stt.py::test_migrating_pipelines - AssertionError: assert {'conversatio...guage_2', ...} == {'conversatio...guage_2', ...}",
+        "why": "The STT migration test also raised an AssertionError, confirming a deterministic failure."
+       },
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "5_Run tests Python 3.14.5 (4).txt",
+        "line_start": 2820,
+        "line_end": 2820,
+        "quote": "+     'user_id': None,",
+        "why": "The diff shows an unexpected 'user_id': None field in the migrated pipeline data, which is the root cause of the assertion mismatches."
+       }
+      ],
+      "suggested_fix": "Adjust the migration logic to omit the 'user_id' field or update the expected test data to include it, ensuring the migrated pipeline matches the test expectations."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "core__35499654396",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 5840,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "CI fails because the `Pipeline` model now includes a `user_id` field, causing test assertions to fail on the JSON output that contains the new key. The regression should be fixed by excluding `user_id` from JSON when unset or updating the tests accordingly.",
+      "reasoning": "The test failure occurs in tests/components/cloud/test_stt.py and test_tts.py where the migrated pipeline JSON is compared against an expected dictionary. The log shows the actual dictionary includes an extra key `'user_id': None` that is not present in the expected dictionary. This discrepancy is due to recent changes in `homeassistant/components/assist_pipeline/models.py` that added a `user_id` field to the `Pipeline` dataclass and included it in `to_json()`. Since the test expectations were not updated to account for this new field, the JSON output no longer matches the expected structure, causing an AssertionError. The change is in the repository’s own code, not in external dependencies or CI infrastructure, making it a regression.",
+      "evidence": [
+       {
+        "job_name": "Run tests Python 3.14.5 (4)",
+        "log_path": "5_Run tests Python 3.14.5 (4).txt",
+        "line_start": 2805,
+        "line_end": 2805,
+        "quote": "   {'user_id': None}",
+        "why": "Shows that the test expected a dictionary without the 'user_id' key, but the actual output includes it."
+       }
+      ],
+      "suggested_fix": "Modify `Pipeline.to_json()` to omit the `'user_id'` key when its value is `None` (e.g., `if self.user_id is not None: result['user_id'] = self.user_id`) or update the tests to expect the new key."
+     }
+    }
+   }
+  },
+  "core__35505915015": {
+   "name": "core__35505915015",
+   "repo": "home-assistant/core",
+   "branch": "feat/xiaomi-weather/init",
+   "workflow": "CI",
+   "html_url": "https://github.com/home-assistant/core/actions/runs/35505915015",
+   "head_sha": "a4cf12080fd0489c071a39d23b25354c64f6ccbf",
+   "overview": "repository:  home-assistant/core\nworkflow:    CI\nevent:       pull_request on feat/xiaomi-weather/init\ncommit:      a4cf12080fd0489c071a39d23b25354c64f6ccbf\nconclusion:  failure (attempt 1)\njobs:        1 failed of 25\n\ndistinct failures:\n  1. Check hassfest\n     failed at step: Run hassfest",
+   "failed_jobs": [
+    "Check hassfest"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "core__35505915015",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 5690,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The CI failed because the hassfest quality check reported missing quality scale rules for the xiaomi_weather integration, a regression in the repository's code.",
+      "reasoning": "The failing job is 'Check hassfest', which runs repository quality checks. The log shows an explicit error from the QUALITY_SCALE rule for the xiaomi_weather integration. This indicates a problem in the repository's own source (missing required metadata), which classifies as a regression. There is no indication of nondeterminism, infrastructure issues, or external dependency changes.",
+      "evidence": [
+       {
+        "job_name": "Check hassfest",
+        "log_path": "8_Check hassfest.txt",
+        "line_start": 1021,
+        "line_end": 1023,
+        "quote": "* [ERROR] [QUALITY_SCALE] Quality scale tier bronze requires quality scale rules to be met:\n  brands: todo\n  dependency-transparency: todo",
+        "why": "The hassfest quality check failed for the xiaomi_weather integration, causing the job to exit with an error."
+       }
+      ],
+      "suggested_fix": "Add the required quality scale metadata (e.g., brands and dependency-transparency entries) to the xiaomi_weather integration to satisfy the bronze tier requirements."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "core__35505915015",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 3712,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "Check hassfest failed because the xiaomi_weather integration is missing required quality scale metadata (brands and dependency-transparency).",
+      "reasoning": "The Check hassfest job runs hassfest to validate integration quality. The log excerpt shows an error emitted at lines 1021-1023 stating that the xiaomi_weather integration fails to meet the quality scale bronze rules, specifically missing the 'brands' and 'dependency-transparency' entries. This is a direct failure of the repository's own code (the integration's metadata), thus a regression.",
+      "evidence": [
+       {
+        "job_name": "Check hassfest",
+        "log_path": "8_Check hassfest.txt",
+        "line_start": 1020,
+        "line_end": 1023,
+        "quote": "1020 | Integration xiaomi_weather:\n1021 | * [ERROR] [QUALITY_SCALE] Quality scale tier bronze requires quality scale rules to be met:\n1022 |   brands: todo\n1023 |   dependency-transparency: todo",
+        "why": "The Check hassfest job fails because the xiaomi_weather integration does not meet the quality scale bronze requirements (brands and dependency-transparency fields)."
+       }
+      ],
+      "suggested_fix": "Add the missing 'brands' and 'dependency-transparency' fields to the xiaomi_weather integration's quality scale metadata."
+     }
+    }
+   }
+  },
+  "fastapi__35503211274": {
+   "name": "fastapi__35503211274",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test",
+   "html_url": "https://github.com/fastapi/fastapi/actions/runs/35503211274",
+   "head_sha": "1b57c341a4387ffa53c1c9e65433b015f28be469",
+   "overview": "repository:  fastapi/fastapi\nworkflow:    Test\nevent:       pull_request on fix-annotated-async-iterator-stream\ncommit:      1b57c341a4387ffa53c1c9e65433b015f28be469\nconclusion:  failure (attempt 1)\njobs:        2 failed of 20\n\ndistinct failures:\n  1. coverage-combine\n     failed at step: Run uv run coverage report --fail-under=100\n  2. test-alls-green\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "coverage-combine",
+    "test-alls-green"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "fastapi__35503211274",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 24390,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "Coverage check failed because overall coverage dropped to 99% (required 100%).",
+      "reasoning": "The job 'coverage-combine' runs 'uv run coverage report --fail-under=100'. The logs show that overall coverage is 99% (line 2831) and explicitly report a coverage failure because the total is less than the required 100% (line 2834). This deterministic failure is caused by a drop in test coverage, i.e., a regression in the repository's code/test suite.",
+      "evidence": [
+       {
+        "job_name": "coverage-combine",
+        "log_path": "1_coverage-combine.txt",
+        "line_start": 2831,
+        "line_end": 2831,
+        "quote": "fastapi/dependencies/utils.py                                                                528      1    99%   265",
+        "why": "Shows that utils.py has one missed line, causing overall coverage to be 99%."
+       },
+       {
+        "job_name": "coverage-combine",
+        "log_path": "1_coverage-combine.txt",
+        "line_start": 2834,
+        "line_end": 2834,
+        "quote": "Coverage failure: total of 99 is less than fail-under=100",
+        "why": "Indicates the coverage check failed because total coverage is below the required 100% threshold."
+       }
+      ],
+      "suggested_fix": "Add or improve tests to cover the uncovered line in fastapi/dependencies/utils.py so that total coverage reaches 100%, or adjust the coverage threshold if appropriate."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "fastapi__35503211274",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 8479,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "FastAPI CI fails because coverage dropped to 99% and the job expects 100% coverage.",
+      "reasoning": "The failure originates from the coverage-combine job, which checks that overall test coverage meets a 100% threshold. The log shows a coverage report line stating that total coverage was 99% and is thus insufficient. This failure is due to the repository’s own test coverage metrics, not an external service or environment issue, so it is a regression.",
+      "evidence": [
+       {
+        "job_name": "coverage-combine",
+        "log_path": "1_coverage-combine.txt",
+        "line_start": 2834,
+        "line_end": 2834,
+        "quote": "Coverage failure: total of 99 is less than fail-under=100",
+        "why": "The coverage report indicates total coverage is 99%, below the required 100% threshold, causing the job to fail"
+       }
+      ],
+      "suggested_fix": "Adjust the fail-under threshold to a realistic value (e.g., 95%) or add missing tests to increase coverage to 100%."
+     }
+    }
+   }
+  },
+  "fastapi__35503211282": {
+   "name": "fastapi__35503211282",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test Redistribute",
+   "html_url": "https://github.com/fastapi/fastapi/actions/runs/35503211282",
+   "head_sha": "1b57c341a4387ffa53c1c9e65433b015f28be469",
+   "overview": "repository:  fastapi/fastapi\nworkflow:    Test Redistribute\nevent:       pull_request on fix-annotated-async-iterator-stream\ncommit:      1b57c341a4387ffa53c1c9e65433b015f28be469\nconclusion:  failure (attempt 1)\njobs:        2 failed of 2\n\ndistinct failures:\n  1. test-redistribute\n     failed at step: Run source distribution tests\n  2. test-redistribute-alls-green\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "test-redistribute",
+    "test-redistribute-alls-green"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "fastapi__35503211282",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 17896,
+     "burned": 0,
+     "requests": 5,
+     "cached": true,
+     "seconds": 0.3,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.85,
+      "summary": "The CI failure is caused by DeprecationWarnings from anyio's BlockingPortal alias, an external dependency change, resulting in 894 test errors and job failure.",
+      "reasoning": "The job fails because many tests error out due to DeprecationWarnings from anyio's BlockingPortal alias. This alias was deprecated in anyio, an external dependency, and the warnings are treated as errors by the test suite. The repository's code and the pull request diff do not modify any of the affected imports, indicating the break originates from the updated anyio package rather than a regression in the repo's own code. Therefore the failure is best categorized as a dependency issue.",
+      "evidence": [
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 4205,
+        "line_end": 4206,
+        "quote": "    warnings.warn(\nE   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+        "why": "The anyio library emits a DeprecationWarning about the BlockingPortal alias, showing a change in an external dependency."
+       },
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 17773,
+        "line_end": 17773,
+        "quote": "================ 193 passed, 5 skipped, 894 errors in 19.97s ==================",
+        "why": "Pytest reports 894 errors, caused by the DeprecationWarnings, leading the job to exit with a failure."
+       }
+      ],
+      "suggested_fix": "Pin the anyio version to a release before the BlockingPortal alias deprecation (e.g., <4.2) or upgrade starlette/fastapi to a version that uses the new anyio.from_thread.BlockingPortal import, so that the DeprecationWarnings no longer appear."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "fastapi__35503211282",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 31059,
+     "burned": 0,
+     "requests": 11,
+     "cached": true,
+     "seconds": 0.3,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.85,
+      "summary": "The CI failure is caused by a DeprecationWarning from anyio that is treated as an error during test collection, stemming from a recent dependency update. The repository code itself is unchanged. Pinning or updating the affected dependencies resolves the issue.",
+      "reasoning": "The test suite fails with many DeprecationWarning errors originating from anyio. The diff for the pull request only modifies a test file unrelated to this issue, indicating that the repository’s own code has not changed. The failure pattern is consistent across many tests that import the same module, and the warning is a result of a recent dependency update (anyio or starlette) that deprecates the alias used in the code. Because the error arises solely from external packages, it is a dependency‐related regression.",
+      "evidence": [
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 4209,
+        "line_end": 4209,
+        "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+        "why": "Shows that the failure is caused by a DeprecationWarning emitted by anyio during import of starlette.testclient, which is turned into an error by the test runner."
+       }
+      ],
+      "suggested_fix": "Pin anyio to a version that still supports the deprecated alias, or upgrade starlette (or other dependent packages) to a version that no longer imports anyio.abc.BlockingPortal."
+     }
+    }
+   }
+  },
+  "fastapi__35503857223": {
+   "name": "fastapi__35503857223",
+   "repo": "fastapi/fastapi",
+   "branch": "fix-annotated-async-iterator-stream",
+   "workflow": "Test Redistribute",
+   "html_url": "https://github.com/fastapi/fastapi/actions/runs/35503857223",
+   "head_sha": "334aa7bfde5928c1077abfaf95e483a153c6d45c",
+   "overview": "repository:  fastapi/fastapi\nworkflow:    Test Redistribute\nevent:       pull_request on fix-annotated-async-iterator-stream\ncommit:      334aa7bfde5928c1077abfaf95e483a153c6d45c\nconclusion:  failure (attempt 1)\njobs:        2 failed of 2\n\ndistinct failures:\n  1. test-redistribute\n     failed at step: Run source distribution tests\n  2. test-redistribute-alls-green\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "test-redistribute",
+    "test-redistribute-alls-green"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "fastapi__35503857223",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 32086,
+     "burned": 0,
+     "requests": 7,
+     "cached": true,
+     "seconds": 0.2,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.85,
+      "summary": "The CI fails because anyio's BlockingPortal alias now emits a DeprecationWarning treated as an error, causing hundreds of test errors; pinning or updating the anyio dependency should resolve it.",
+      "reasoning": "The failure is caused by a DeprecationWarning emitted from anyio (an external dependency) that is treated as an error by the test runner, resulting in hundreds of errors and a job failure. The warning originates from a site‑packages path, not the repository code, indicating the root cause is a change in an unpinned external package. The same workflow has been failing on recent commits, supporting a dependency break rather than a code regression or flaky behavior.",
+      "evidence": [
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 4209,
+        "line_end": 4209,
+        "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+        "why": "Shows a DeprecationWarning from the external anyio package being raised as an error."
+       },
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 17773,
+        "line_end": 17773,
+        "quote": "================ 193 passed, 5 skipped, 894 errors in 20.50s ==================",
+        "why": "Indicates that many test errors occurred, causing the job to fail."
+       }
+      ],
+      "suggested_fix": "Pin the anyio version to a pre‑deprecation release (e.g., anyio<4) or upgrade Starlette/fastapi to versions compatible with the new anyio, or configure the test suite to ignore this DeprecationWarning."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "fastapi__35503857223",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 12098,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0.2,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.9,
+      "summary": "FastAPI's test suite failed because anyio deprecated the BlockingPortal alias, turning Pytest's DeprecationWarnings into errors. Pinning anyio or updating dependencies resolves the issue.",
+      "reasoning": "The log shows Pytest encountering DeprecationWarnings about anyio.abc.BlockingPortal being deprecated, which Pytest treats as errors (E). This is caused by a recent change in the anyio library, not by repository code changes. Thus the failure is due to a dependency change.",
+      "evidence": [
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 4210,
+        "line_end": 4210,
+        "quote": "E   DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+        "why": "Shows Pytest treating the DeprecationWarning as an error, indicating a failure due to a changed external dependency."
+       },
+       {
+        "job_name": "test-redistribute",
+        "log_path": "1_test-redistribute.txt",
+        "line_start": 17749,
+        "line_end": 17749,
+        "quote": "ERROR tests/test_union_forms.py - DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.",
+        "why": "Demonstrates that multiple tests fail as DeprecationWarnings are treated as errors."
+       }
+      ],
+      "suggested_fix": "Pin anyio to a version that still provides the BlockingPortal alias (e.g., <4.0) or update starlette/tests to use anyio.from_thread.BlockingPortal. The simplest fix is to pin anyio in the dev dependencies."
+     }
+    }
+   }
+  },
+  "httpx__35071320524": {
+   "name": "httpx__35071320524",
+   "repo": "encode/httpx",
+   "branch": "keep-method-for-redirects",
+   "workflow": "Test Suite",
+   "html_url": "https://github.com/encode/httpx/actions/runs/35071320524",
+   "head_sha": "c1e73124c5d24aa6d61f0413d217f5810f62eb00",
+   "overview": "repository:  encode/httpx\nworkflow:    Test Suite\nevent:       pull_request on keep-method-for-redirects\ncommit:      c1e73124c5d24aa6d61f0413d217f5810f62eb00\nconclusion:  failure (attempt 1)\njobs:        5 failed of 5\n\ndistinct failures:\n  1. Python 3.10  [3 jobs]\n     failed at step: Build package & docs\n  2. Python 3.9  [2 jobs]\n     failed at step: Run linting checks",
+   "failed_jobs": [
+    "Python 3.10",
+    "Python 3.9",
+    "Python 3.12",
+    "Python 3.11",
+    "Python 3.13"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "httpx__35071320524",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 30022,
+     "burned": 0,
+     "requests": 10,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.85,
+      "summary": "CI fails at the twine check step with an InvalidDistribution error, indicating a packaging metadata issue likely caused by a recent change in external packaging dependencies.",
+      "reasoning": "The only failure observed in the CI logs is the twine check error, which reports an InvalidDistribution caused by an unsupported metadata version '2.5'. The PR diff only adds a client parameter and does not modify packaging configuration. Therefore the break originates from a change in external packaging dependencies (e.g., a new hatchling or twine version) rather than the repository's own code, classifying the failure as a dependency regression.",
+      "evidence": [
+       {
+        "job_name": "Python 3.10",
+        "log_path": "4_Python 3.10.txt",
+        "line_start": 517,
+        "line_end": 518,
+        "quote": "Checking dist/httpx-0.28.1-py3-none-any.whl: ERROR    InvalidDistribution: Invalid distribution metadata: '2.5' is not a valid metadata version",
+        "why": "Shows the twine check step fails due to invalid distribution metadata, indicating a packaging error caused by external tooling."
+       }
+      ],
+      "suggested_fix": "Pin the packaging dependencies (such as hatchling and twine) to a version known to generate valid metadata, or update the project's packaging configuration to be compatible with the newer metadata validation."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "httpx__35071320524",
+     "label": null,
+     "predicted": "dependency",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "auto_post",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 17084,
+     "burned": 0,
+     "requests": 10,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "dependency",
+      "confidence": 0.9,
+      "summary": "Twine fails to validate the built wheel because its METADATA file contains an invalid Metadata-Version ('2.5'), a change introduced by updated packaging tools. This is an external dependency issue rather than a code bug.",
+      "reasoning": "The build fails during the Twine check step with a clear error that the wheel’s METADATA file has an invalid Metadata-Version of '2.5', which is not a valid PEP 566 version. This error originates from the packaging toolchain (setuptools/wheel) used in the CI environment and not from the repository’s own code changes. The failure is deterministic across all Python matrix jobs, indicating a dependency or tooling change rather than flakiness or linting issues. Therefore the failure should be classified as a dependency failure.",
+      "evidence": [
+       {
+        "job_name": "Python 3.10",
+        "log_path": "4_Python 3.10.txt",
+        "line_start": 517,
+        "line_end": 517,
+        "quote": "Checking dist/httpx-0.28.1-py3-none-any.whl: ERROR    InvalidDistribution: Invalid distribution metadata: '2.5' is not a",
+        "why": "Twine rejects the wheel because its METADATA file contains an invalid Metadata-Version '2.5', a change caused by updated packaging tools."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "langchain__34329491939": {
+   "name": "langchain__34329491939",
+   "repo": "langchain-ai/langchain",
+   "branch": "openwiki/update",
+   "workflow": "🔄 Check CLAUDE.md / AGENTS.md Sync",
+   "html_url": "https://github.com/langchain-ai/langchain/actions/runs/34329491939",
+   "head_sha": "71098cdfa917087cd79634f37e749d9144f548ed",
+   "overview": "repository:  langchain-ai/langchain\nworkflow:    🔄 Check CLAUDE.md / AGENTS.md Sync\nevent:       pull_request on openwiki/update\ncommit:      71098cdfa917087cd79634f37e749d9144f548ed\nconclusion:  failure (attempt 2)\njobs:        1 failed of 1\n\ndistinct failures:\n  1. verify files are identical\n     failed at step: 🔍 Check CLAUDE.md and AGENTS.md are in sync",
+   "failed_jobs": [
+    "verify files are identical"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "langchain__34329491939",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 2018,
+     "burned": 0,
+     "requests": 2,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The CI step checks that CLAUDE.md and AGENTS.md are identical; the logs show they differ, causing the job to exit with an error, indicating a regression in the repository's source.",
+      "reasoning": "The workflow includes a step that asserts CLAUDE.md and AGENTS.md must be identical. The log explicitly reports that they are out of sync and prints a diff, followed by a non‑zero exit code, causing the job to fail. This is a deterministic break in the repository's own source files, not an infrastructure or external dependency issue, and there is no indication of non‑determinism. Hence it is a regression.",
+      "evidence": [
+       {
+        "job_name": "verify files are identical",
+        "log_path": "0_verify files are identical.txt",
+        "line_start": 143,
+        "line_end": 143,
+        "quote": "❌ CLAUDE.md and AGENTS.md are out of sync!",
+        "why": "Shows the step detected a mismatch and marked the job as failed."
+       },
+       {
+        "job_name": "verify files are identical",
+        "log_path": "0_verify files are identical.txt",
+        "line_start": 148,
+        "line_end": 149,
+        "quote": "378c378,383",
+        "why": "Displays the diff output confirming that CLAUDE.md and AGENTS.md contain different lines."
+       }
+      ],
+      "suggested_fix": "Update CLAUDE.md and AGENTS.md so their contents match, or adjust the sync check if they are intended to diverge."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "langchain__34329491939",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "auto_post",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 9851,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "The CI step fails because CLAUDE.md and AGENTS.md are out of sync – the repository’s own source violates the expected invariant, making this a regression.",
+      "reasoning": "The job \"verify files are identical\" runs a diff to ensure CLAUDE.md and AGENTS.md contain exactly the same text. The log indicates the diff output, confirming that the two files differ at line 378, thus triggering the failure. Since the failure is due to the repo’s own source files not matching an invariant, it is a regression, not an infra or dependency issue.",
+      "evidence": [
+       {
+        "job_name": "verify files are identical",
+        "log_path": "0_verify files are identical.txt",
+        "line_start": 143,
+        "line_end": 149,
+        "quote": "❌ CLAUDE.md and AGENTS.md are out of sync!\n\nThese files must contain identical content.\nDifferences:\n\n378c378,383\n< See [AGENTS.md](AGENTS.md) for OpenWiki agent instructions.",
+        "why": "The log shows that CLAUDE.md and AGENTS.md differ, causing the CI step to fail."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "langchain__34503536672": {
+   "name": "langchain__34503536672",
+   "repo": "langchain-ai/langchain",
+   "branch": "lint-upgrade",
+   "workflow": "🔧 CI",
+   "html_url": "https://github.com/langchain-ai/langchain/actions/runs/34503536672",
+   "head_sha": "9090fd8696a11fbca98c17dc71336eebc33d5c38",
+   "overview": "repository:  langchain-ai/langchain\nworkflow:    🔧 CI\nevent:       pull_request on lint-upgrade\ncommit:      9090fd8696a11fbca98c17dc71336eebc33d5c38\nconclusion:  failure (attempt 1)\njobs:        2 failed of 187\n\ndistinct failures:\n  1. test (libs/core, 3.12) / Python 3.12\n     failed at step: 🧪 Run Core Unit Tests\n  2. ✅ CI Success\n     failed at step: 🎉 All Checks Passed",
+   "failed_jobs": [
+    "test (libs/core, 3.12) / Python 3.12",
+    "✅ CI Success"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "langchain__34503536672",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.94,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 28992,
+     "burned": 0,
+     "requests": 7,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.94,
+      "summary": "A core unit test fails with an AssertionError because only one FakeTracer run is recorded instead of two, likely due to a regression in generator callback handling.",
+      "reasoning": "The CI run fails because a unit test in libs/core (test_runnable_gen_context_config) raises an AssertionError: it expects two tracer runs but only sees one. The accompanying warning shows a ValueError in the FakeTracer callback, indicating a regression in the runnable generator's callback handling. The failure is deterministic and originates from the repository's code, not from external services or flaky behavior. No prior successful run of this commit is recorded, and the failure is not due to infra or dependency changes, so it is classified as a regression.",
+      "evidence": [
+       {
+        "job_name": "test (libs/core, 3.12) / Python 3.12",
+        "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+        "line_start": 506,
+        "line_end": 506,
+        "quote": "E       AssertionError: assert 1 == 2",
+        "why": "The test expected two tracer runs but only one was recorded, causing an AssertionError."
+       },
+       {
+        "job_name": "test (libs/core, 3.12) / Python 3.12",
+        "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+        "line_start": 512,
+        "line_end": 512,
+        "quote": "WARNING  langchain_core.callbacks.manager:manager.py:341 Error in FakeTracer.on_chain_end callback: ValueError('generator already executing')",
+        "why": "A runtime error in the FakeTracer callback prevents proper tracking of generator runs, leading to the missing second run."
+       }
+      ],
+      "suggested_fix": "Investigate and fix the generator runnable's callback handling so that FakeTracer correctly records each chain execution, ensuring that two runs are captured as expected."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "langchain__34503536672",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 1958,
+     "burned": 0,
+     "requests": 2,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "Core unit test for generator runnable config propagation fails deterministically, indicating a regression in the library's runtime.",
+      "reasoning": "The test failure is deterministic: it consistently reports a missing tracer run and a generator execution error, which are direct failures of library behavior. The logs show no external environment error or missing dependency; the error originates from the library's own runtime logic. Therefore this is a regression.",
+      "evidence": [
+       {
+        "job_name": "test (libs/core, 3.12)",
+        "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+        "line_start": 505,
+        "line_end": 507,
+        "quote": "assert len(tracer.runs) == 2\nE       AssertionError: assert 1 == 2\nE        +  where 1 = len([RunTree(id=00000000-0000-4000-8000-000000000000, name='gen', run_type='chain', dotted_order='20260910T164118107573Z000000000000')])",
+        "why": "Test expected two tracer runs but only one was recorded, showing a bug in generator config propagation."
+       },
+       {
+        "job_name": "test (libs/core, 3.12)",
+        "log_path": "134_test (libs_core, 3.12) _ Python 3.12.txt",
+        "line_start": 512,
+        "line_end": 512,
+        "quote": "WARNING  langchain_core.callbacks.manager:manager.py:341 Error in FakeTracer.on_chain_end callback: ValueError('generator already executing')",
+        "why": "Shows the tracer encountered an error due to a generator already executing, corroborating the missing tracer run."
+       }
+      ],
+      "suggested_fix": "Investigate the generator runnable's config propagation logic and the FakeTracer implementation to ensure two distinct tracer calls are produced without raising a 'generator already executing' ValueError. Adjust the code so that generator and inner runnable each trigger separate tracer runs."
+     }
+    }
+   }
+  },
+  "langchain__34531198857": {
+   "name": "langchain__34531198857",
+   "repo": "langchain-ai/langchain",
+   "branch": "mdrxy/core/response-format-provider-strategy",
+   "workflow": "🔧 CI",
+   "html_url": "https://github.com/langchain-ai/langchain/actions/runs/34531198857",
+   "head_sha": "e8568ed619678d7d699fecb32b35a06e273fdf61",
+   "overview": "repository:  langchain-ai/langchain\nworkflow:    🔧 CI\nevent:       pull_request on mdrxy/core/response-format-provider-strategy\ncommit:      e8568ed619678d7d699fecb32b35a06e273fdf61\nconclusion:  failure (attempt 1)\njobs:        2 failed of 9\n\ndistinct failures:\n  1. Detect Changes & Set Matrix\n     failed at step: 🔍 Analyze Changed Files & Generate Build Matrix\n  2. ✅ CI Success\n     failed at step: 🎉 All Checks Passed",
+   "failed_jobs": [
+    "Detect Changes & Set Matrix",
+    "✅ CI Success"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "langchain__34531198857",
+     "label": null,
+     "predicted": "infra",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 3,
+     "verified": 3,
+     "faults": {},
+     "tokens": 22282,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.96,
+      "summary": "The CI job failed because a network request to PyPI was reset, causing a ConnectionError and a non-zero exit; this is an infrastructure/network outage rather than a code regression.",
+      "reasoning": "The 'Detect Changes & Set Matrix' job crashes while executing a script that queries PyPI for minimal dependency versions. The traceback ends with a ConnectionResetError and a requests.exceptions.ConnectionError, indicating a network failure when contacting an external service. The job then exits with a non-zero status. This failure is not due to a code regression or test assertion, but to an external service outage or CI network issue, which matches the definition of an 'infra' failure.",
+      "evidence": [
+       {
+        "job_name": "Detect Changes & Set Matrix",
+        "log_path": "7_Detect Changes & Set Matrix.txt",
+        "line_start": 242,
+        "line_end": 242,
+        "quote": "ConnectionResetError: [Errno 104] Connection reset by peer",
+        "why": "Shows the script failed due to a network connection reset when contacting PyPI"
+       },
+       {
+        "job_name": "Detect Changes & Set Matrix",
+        "log_path": "7_Detect Changes & Set Matrix.txt",
+        "line_start": 332,
+        "line_end": 332,
+        "quote": "requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
+        "why": "Indicates the request to PyPI failed, causing the job to error"
+       },
+       {
+        "job_name": "Detect Changes & Set Matrix",
+        "log_path": "7_Detect Changes & Set Matrix.txt",
+        "line_start": 333,
+        "line_end": 333,
+        "quote": "##[error]Process completed with exit code 1.",
+        "why": "Signals the job failed because of the earlier connection error"
+       }
+      ],
+      "suggested_fix": "Add retry logic or caching for the PyPI version lookup, or make the step tolerant of temporary network failures (e.g., retry with backoff), to mitigate CI infra outages."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "langchain__34531198857",
+     "label": null,
+     "predicted": "infra",
+     "correct": null,
+     "confidence": 0.92,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 7684,
+     "burned": 0,
+     "requests": 2,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.92,
+      "summary": "The CI failure is caused by a network connection reset when the job tries to download package metadata from PyPI; this points to an infrastructure/network issue rather than a code or dependency bug.",
+      "reasoning": "The Detect Changes & Set Matrix job fails while executing a helper script that pulls package metadata from PyPI. The traceback ends in a urllib3 ConnectionResetError and a requests.exceptions.ConnectionError, both caused by a “Connection reset by peer” from the remote side. This is an external network failure rather than a code defect, so the failure is due to CI infrastructure (network/runner). The CI Success job fails only because the preceding job did not complete successfully.",
+      "evidence": [
+       {
+        "job_name": "Detect Changes & Set Matrix",
+        "log_path": "7_Detect Changes & Set Matrix.txt",
+        "line_start": 242,
+        "line_end": 242,
+        "quote": "ConnectionResetError: [Errno 104] Connection reset by peer",
+        "why": "Shows a network connection reset while trying to query PyPI, indicating an external infrastructure issue"
+       },
+       {
+        "job_name": "Detect Changes & Set Matrix",
+        "log_path": "7_Detect Changes & Set Matrix.txt",
+        "line_start": 331,
+        "line_end": 331,
+        "quote": "requests.exceptions.ConnectionError: ('Connection aborted.', ConnectionResetError(104, 'Connection reset by peer'))",
+        "why": "Confirms the requests library failed to establish a connection to PyPI, a clear infrastructure/network error"
+       }
+      ],
+      "suggested_fix": "Retry the job, verify network connectivity to PyPI, or add retry logic / caching for package metadata."
+     }
+    }
+   }
+  },
+  "pandas__35489338041": {
+   "name": "pandas__35489338041",
+   "repo": "pandas-dev/pandas",
+   "branch": "regrs-66552",
+   "workflow": "Unit Tests",
+   "html_url": "https://github.com/pandas-dev/pandas/actions/runs/35489338041",
+   "head_sha": "55490fe272bcd2e226ccc6a978e004a7842c12ec",
+   "overview": "repository:  pandas-dev/pandas\nworkflow:    Unit Tests\nevent:       pull_request on regrs-66552\ncommit:      55490fe272bcd2e226ccc6a978e004a7842c12ec\nconclusion:  failure (attempt 1)\njobs:        5 failed of 39\n\ndistinct failures:\n  1. python-dev (windows-2025)  [5 jobs]\n     failed at step: Run Tests",
+   "failed_jobs": [
+    "python-dev (windows-2025)",
+    "windows-2025 py312",
+    "windows-2025 py311",
+    "windows-2025 py313",
+    "windows-2025 py314"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pandas__35489338041",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.93,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 24858,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.93,
+      "summary": "Unit tests fail on Windows python-dev jobs due to a RuntimeWarning in `test_td_mul_ndarray_subclass`, indicating a regression in Timedelta multiplication handling.",
+      "reasoning": "The failure occurs in the pandas scalar timedelta arithmetic test, where a RuntimeWarning is raised during multiplication of a Timedelta with an ndarray subclass for float dtypes. This error appears identically across all five python-dev (windows-2025) jobs, indicating a deterministic regression rather than a flaky or infrastructure issue. The recent code diff modifies the low‑level datetime handling functions (e.g., changing the signature of get_unit_count_from_dtype), which likely introduced the warning. No history of a passing run for this commit exists, and recent runs on other commits show occasional failures but not the same deterministic pattern, supporting the regression classification.",
+      "evidence": [
+       {
+        "job_name": "python-dev (windows-2025)",
+        "log_path": "32_python-dev (windows-2025).txt",
+        "line_start": 1803,
+        "line_end": 1803,
+        "quote": "FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f4] - RuntimeWarning: invalid value encountered in multiply",
+        "why": "The test `test_td_mul_ndarray_subclass[f4]` fails with a RuntimeWarning, showing a deterministic error in the code."
+       },
+       {
+        "job_name": "python-dev (windows-2025)",
+        "log_path": "32_python-dev (windows-2025).txt",
+        "line_start": 1804,
+        "line_end": 1804,
+        "quote": "FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f8] - RuntimeWarning: invalid value encountered in multiply",
+        "why": "The test `test_td_mul_ndarray_subclass[f8]` also fails with the same RuntimeWarning, confirming the failure across multiple dtypes."
+       }
+      ],
+      "suggested_fix": "Update the Timedelta multiplication implementation in pandas/_libs/tslibs/np_datetime.pyx (and related functions) to correctly handle ndarray subclasses without emitting an invalid‑value RuntimeWarning, or adjust the test expectations if the warning is now intentional."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "pandas__35489338041",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "auto_post",
+     "cited": 2,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 2
+     },
+     "tokens": 14465,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "Timedelta multiplication with a float ndarray subclass now triggers a RuntimeWarning on Windows, causing two tests to fail—a regression due to recent changes in pandas' datetime handling.",
+      "reasoning": "The logs show that the test 'test_td_mul_ndarray_subclass' for f4 and f8 dtypes raises a RuntimeWarning during multiplication, which PyTest treats as an error, causing two test failures only on the windows-2025 runner. The failure was not present before and no other job or OS shows this issue, so the failure is caused by recent code changes (e.g., adjustments in np_datetime or timedeltas) that introduced the warning. Since this is a deterministic failure tied to code changes and not an infrastructure or flaky issue, it is classified as a regression.",
+      "evidence": [
+       {
+        "job_name": "python-dev",
+        "log_path": "32_python-dev (windows-2025).txt",
+        "line_start": 1749,
+        "line_end": 1749,
+        "quote": "1749 | E       RuntimeWarning: invalid value encountered in multiply",
+        "why": "The test triggers a RuntimeWarning during multiplication, causing the test to fail."
+       },
+       {
+        "job_name": "python-dev",
+        "log_path": "32_python-dev (windows-2025).txt",
+        "line_start": 1803,
+        "line_end": 1803,
+        "quote": "1803 | FAILED pandas/tests/scalar/timedelta/test_arithmetic.py::test_td_mul_ndarray_subclass[f4] - RuntimeWarning: invalid value encountered in multiply",
+        "why": "The test suite reports this test as failed due to the RuntimeWarning, indicating the regression."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "pandas__35496694897": {
+   "name": "pandas__35496694897",
+   "repo": "pandas-dev/pandas",
+   "branch": "fix/69037-rolling-skew-kurt-nobs-zero",
+   "workflow": "Unit Tests",
+   "html_url": "https://github.com/pandas-dev/pandas/actions/runs/35496694897",
+   "head_sha": "60cf4f5baec06cbe5d39affb6465eab1018fdef6",
+   "overview": "repository:  pandas-dev/pandas\nworkflow:    Unit Tests\nevent:       pull_request on fix/69037-rolling-skew-kurt-nobs-zero\ncommit:      60cf4f5baec06cbe5d39affb6465eab1018fdef6\nconclusion:  failure (attempt 1)\njobs:        2 failed of 39\n\ndistinct failures:\n  1. Linux-32-bit  [2 jobs]\n     failed at step: Checkout pandas Repo",
+   "failed_jobs": [
+    "Linux-32-bit",
+    "Linux-Musl"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pandas__35496694897",
+     "label": null,
+     "predicted": "infra",
+     "correct": null,
+     "confidence": 0.92,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 13215,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.92,
+      "summary": "The Linux-32-bit jobs fail at checkout because they cannot find the PR merge ref (refs/pull/69122/merge), indicating an infrastructure problem with the GitHub ref.",
+      "reasoning": "The failure occurs during the checkout step, where the job attempts to fetch the PR's merge ref (refs/pull/69122/merge). The fetch returns a fatal error indicating the remote ref cannot be found. This prevents the repository from being checked out, and no code compilation or tests are run. Since the error originates from the CI environment's inability to locate the PR merge ref, it is classified as an infrastructure issue rather than a flaky test, regression, or dependency problem.",
+      "evidence": [
+       {
+        "job_name": "Linux-32-bit",
+        "log_path": "35_Linux-32-bit.txt",
+        "line_start": 196,
+        "line_end": 197,
+        "quote": "+ git fetch origin refs/pull/69122/merge:my_ref_name\nfatal: couldn't find remote ref refs/pull/69122/merge",
+        "why": "The git fetch command fails because the PR merge ref does not exist, causing the checkout step to abort"
+       }
+      ],
+      "suggested_fix": "Update the checkout script to fetch the PR head (refs/pull/ID/head) if the merge ref is unavailable, or ensure the PR merge ref is created by adjusting repository settings or avoiding merge-ref fetch for this job."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "pandas__35496694897",
+     "label": null,
+     "predicted": "flaky",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "auto_post",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 10468,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "flaky",
+      "confidence": 0.9,
+      "summary": "CI checkout step intermittently fails on Linux 32‑bit due to missing PR merge ref; the same commit sometimes passes, indicating flaky environment behavior.",
+      "reasoning": "The checkout step failed during a git fetch: the runner attempted to fetch the merge reference for the pull request (`refs/pull/69122/merge`) but received `fatal: couldn't find remote ref`. This indicates an intermittent failure of the CI environment to obtain that reference. Test history confirms that the same commit succeeded in a later attempt and failed in an earlier one, satisfying the definition of flakiness. The failure is not due to repository code changes or an external dependency, but to the CI environment’s inconsistent behavior, so the appropriate category is `flaky`.\n",
+      "evidence": [
+       {
+        "job_name": "Linux-32-bit",
+        "log_path": "35_Linux-32-bit.txt",
+        "line_start": 196,
+        "line_end": 197,
+        "quote": "+ git fetch origin refs/pull/69122/merge:my_ref_name\nfatal: couldn't find remote ref refs/pull/69122/merge",
+        "why": "The git fetch failed, causing checkout to fail."
+       }
+      ],
+      "suggested_fix": null
+     }
+    }
+   }
+  },
+  "pandas__35499323117": {
+   "name": "pandas__35499323117",
+   "repo": "pandas-dev/pandas",
+   "branch": "fix/69037-rolling-skew-kurt-nobs-zero",
+   "workflow": "Doc Build and Upload",
+   "html_url": "https://github.com/pandas-dev/pandas/actions/runs/35499323117",
+   "head_sha": "60cf4f5baec06cbe5d39affb6465eab1018fdef6",
+   "overview": "repository:  pandas-dev/pandas\nworkflow:    Doc Build and Upload\nevent:       pull_request on fix/69037-rolling-skew-kurt-nobs-zero\ncommit:      60cf4f5baec06cbe5d39affb6465eab1018fdef6\nconclusion:  failure (attempt 1)\njobs:        1 failed of 1\n\ndistinct failures:\n  1. Doc Build and Upload\n     failed at step: Build documentation",
+   "failed_jobs": [
+    "Doc Build and Upload"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pandas__35499323117",
+     "label": null,
+     "predicted": "flaky",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 20732,
+     "burned": 0,
+     "requests": 5,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "flaky",
+      "confidence": 0.95,
+      "summary": "The documentation build failed due to warnings treated as errors, and the same commit sometimes passes and sometimes fails, indicating a flaky failure.",
+      "reasoning": "The logs show the documentation build terminated with an error due to warnings being treated as errors. Test history for commit 60cf4f5b shows both a successful and a failed run of the same job, indicating the failure is non-deterministic. This matches the definition of a flaky failure.",
+      "evidence": [
+       {
+        "job_name": "Doc Build and Upload",
+        "log_path": "0_Doc Build and Upload.txt",
+        "line_start": 2313,
+        "line_end": 2314,
+        "quote": "build finished with problems, 12 warnings (with warnings treated as errors).\n##[error]Process completed with exit code 1.",
+        "why": "The documentation build failed because warnings were treated as errors, causing the job to exit with code 1."
+       }
+      ],
+      "suggested_fix": "Identify and fix the underlying Sphinx warnings or configure the documentation build to not treat warnings as errors, making the build deterministic."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "pandas__35499323117",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 35246,
+     "burned": 0,
+     "requests": 8,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.85,
+      "summary": "The documentation build failed due to 12 warnings treated as errors, likely caused by the recent code changes; fix the warnings to restore a passing build.",
+      "reasoning": "The log shows the docs build finishing with 12 warnings that are treated as errors, resulting in a non‑zero exit status. This indicates that changes in the commit introduced warnings into the documentation build process, which is a regression in the repo’s own source or documentation. No evidence of external dependency changes or infrastructure issues appears in the logs, and the failure is deterministic across the single job run, so the most appropriate classification is a regression.",
+      "evidence": [
+       {
+        "job_name": "Doc Build and Upload",
+        "log_path": "0_Doc Build and Upload.txt",
+        "line_start": 2313,
+        "line_end": 2313,
+        "quote": "build finished with problems, 12 warnings (with warnings treated as errors).",
+        "why": "The documentation build emitted 12 warnings that were treated as errors, causing the job to exit with code 1 – a typical indicator of a repository regression in the docs build."
+       }
+      ],
+      "suggested_fix": "Investigate the Sphinx warnings that triggered the failure (likely unresolved references, duplicate labels, or build issues caused by the recent code changes) and resolve them—e.g., by updating or correcting the affected documentation, adjusting the docstring references, or suppressing the warnings if appropriate."
+     }
+    }
+   }
+  },
+  "poetry__35343948952": {
+   "name": "poetry__35343948952",
+   "repo": "python-poetry/poetry",
+   "branch": "fix/11069-bump-poetry-core-2.4.1",
+   "workflow": "Tests",
+   "html_url": "https://github.com/python-poetry/poetry/actions/runs/35343948952",
+   "head_sha": "2df08dcc03e660830b493e9b4d755b656dfb1258",
+   "overview": "repository:  python-poetry/poetry\nworkflow:    Tests\nevent:       pull_request on fix/11069-bump-poetry-core-2.4.1\ncommit:      2df08dcc03e660830b493e9b4d755b656dfb1258\nconclusion:  failure (attempt 1)\njobs:        17 failed of 50\n\ndistinct failures:\n  1. Windows (Python 3.10) / pytest (poetry-plugin-export)  [5 jobs]\n     failed at step: Run tests\n  2. macOS aarch64 (Python 3.11) / pytest (poetry-plugin-export)  [4 jobs]\n     failed at step: Run tests\n  3. Ubuntu (Python 3.14) / pytest (poetry-plugin-export)  [3 jobs]\n     failed at step: Run tests\n  4. Status\n     failed at step: Run false\n  5. Windows (Python 3.11) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  6. macOS aarch64 (Python 3.10) / pytest (poetry-plugin-export)\n     failed at step: Run tests\n  7. macOS aarch64 (Python 3.12) / pytest (poetry-plugin-export)\n     failed at step: Run tests\n  8. macOS aarch64 (Python 3.13) / pytest (poetry-plugin-export)\n     failed at step: Run tests",
+   "failed_jobs": [
+    "Windows (Python 3.10) / pytest (poetry-plugin-export)",
+    "macOS aarch64 (Python 3.11) / pytest (poetry-plugin-export)",
+    "macOS aarch64 (Python 3.14) / pytest (poetry-plugin-export)",
+    "macOS aarch64 (Python 3.12) / pytest (poetry-plugin-export)",
+    "Windows (Python 3.11) / pytest (poetry-plugin-export)",
+    "Ubuntu (Python 3.14) / pytest (poetry-plugin-export)",
+    "Windows (Python 3.11) / pytest",
+    "Windows (Python 3.14) / pytest (poetry-plugin-export)",
+    "Ubuntu (Python 3.12) / pytest (poetry-plugin-export)",
+    "Windows (Python 3.13) / pytest (poetry-plugin-export)",
+    "Windows (Python 3.12) / pytest (poetry-plugin-export)",
+    "macOS aarch64 (Python 3.13) / pytest (poetry-plugin-export)",
+    "Ubuntu (Python 3.11) / pytest (poetry-plugin-export)",
+    "Ubuntu (Python 3.10) / pytest (poetry-plugin-export)",
+    "macOS aarch64 (Python 3.10) / pytest (poetry-plugin-export)",
+    "Ubuntu (Python 3.13) / pytest (poetry-plugin-export)",
+    "Status"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "poetry__35343948952",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.95,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 2
+     },
+     "tokens": 8588,
+     "burned": 0,
+     "requests": 2,
+     "cached": true,
+     "seconds": 0.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.95,
+      "summary": "The export tests fail because the generated pylock.toml lacks the expected version marker line, causing AssertionErrors across all platforms – a regression introduced by recent changes.",
+      "reasoning": "All failing jobs are from the poetry-plugin-export test suite, where test_exporter_pylock_toml.py asserts that the generated pylock.toml contains a marker line for the Python version constraint. The logs show AssertionError indicating the expected 'marker = \"python_version >= \\\"3.6\\\"\"' line is not present. This deterministic failure across multiple OSes and Python versions points to a regression in the repository's code, likely introduced by the recent bump of poetry-core, rather than an infrastructure or flaky issue.",
+      "evidence": [
+       {
+        "job_name": "Windows (Python 3.10) / pytest (poetry-plugin-export)",
+        "log_path": "39_Windows (Python 3.10) _ pytest (poetry-plugin-export).txt",
+        "line_start": 918,
+        "line_end": 918,
+        "quote": "E               assert 'marker = \"python_version >= \\\"3.6\\\"\"' in ['lock-version = \"1.0\"', 'created-by = \"poetry-plugin-export\"', '', '[[packages]]', 'name = \"foo\"', 'version = \"1.0\"', ...]",
+        "why": "The test asserts that a marker line should be present in the generated pylock.toml, but it is missing, causing an AssertionError."
+       },
+       {
+        "job_name": "macOS aarch64 (Python 3.11) / pytest (poetry-plugin-export)",
+        "log_path": "42_macOS aarch64 (Python 3.11) _ pytest (poetry-plugin-export).txt",
+        "line_start": 924,
+        "line_end": 924,
+        "quote": "E               assert 'marker = \"python_version >= \\\"3.6\\\"\"' in ['lock-version = \"1.0\"', 'created-by = \"poetry-plugin-export\"', '', '[[packages]]', 'name = \"foo\"', 'version = \"1.0\"', ...]",
+        "why": "The same assertion fails on macOS, confirming the missing marker line across platforms."
+       }
+      ],
+      "suggested_fix": "Adjust the plugin-export code to include version markers in the generated pylock.toml (or update the test expectations if the new behavior is intentional)."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "poetry__35343948952",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 6366,
+     "burned": 6366,
+     "requests": 9,
+     "cached": false,
+     "seconds": 282.6,
+     "error": "UnexpectedModelBehavior: Exceeded maximum output retries (5)",
+     "verdict": null
+    }
+   }
+  },
+  "poetry__35364542297": {
+   "name": "poetry__35364542297",
+   "repo": "python-poetry/poetry",
+   "branch": "codex/9485-stale-show-lock-error",
+   "workflow": "Tests",
+   "html_url": "https://github.com/python-poetry/poetry/actions/runs/35364542297",
+   "head_sha": "3d3249db3a6dac35843eb163b677b30d566a0b65",
+   "overview": "repository:  python-poetry/poetry\nworkflow:    Tests\nevent:       pull_request on codex/9485-stale-show-lock-error\ncommit:      3d3249db3a6dac35843eb163b677b30d566a0b65\nconclusion:  failure (attempt 1)\njobs:        31 failed of 50\n\ndistinct failures:\n  1. Windows (Python 3.11) / mypy  [15 jobs]\n     failed at step: Run poetry run mypy\n  2. Windows (Python 3.11) / pytest  [6 jobs]\n     failed at step: Run poetry run pytest --integration -v\n  3. Windows (Python 3.12) / pytest  [2 jobs]\n     failed at step: Run poetry run pytest --integration -v\n  4. Status\n     failed at step: Run false\n  5. Ubuntu (Python 3.11) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  6. Ubuntu (Python 3.14) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  7. Windows (Python 3.10) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  8. Windows (Python 3.13) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  9. Windows (Python 3.14) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  10. macOS aarch64 (Python 3.13) / pytest\n     failed at step: Run poetry run pytest --integration -v\n  11. macOS aarch64 (Python 3.14) / pytest\n     failed at step: Run poetry run pytest --integration -v",
+   "failed_jobs": [
+    "Windows (Python 3.11) / pytest",
+    "Windows (Python 3.11) / mypy",
+    "macOS aarch64 (Python 3.12) / pytest",
+    "macOS aarch64 (Python 3.12) / mypy",
+    "Windows (Python 3.12) / mypy",
+    "Windows (Python 3.12) / pytest",
+    "Ubuntu (Python 3.13) / pytest",
+    "Ubuntu (Python 3.12) / pytest",
+    "Ubuntu (Python 3.13) / mypy",
+    "Ubuntu (Python 3.11) / mypy",
+    "Ubuntu (Python 3.12) / mypy",
+    "Windows (Python 3.10) / mypy",
+    "Ubuntu (Python 3.11) / pytest",
+    "macOS aarch64 (Python 3.10) / pytest",
+    "Windows (Python 3.10) / pytest",
+    "macOS aarch64 (Python 3.10) / mypy",
+    "Ubuntu (Python 3.14) / mypy",
+    "Ubuntu (Python 3.14) / pytest",
+    "macOS aarch64 (Python 3.14) / pytest",
+    "macOS aarch64 (Python 3.14) / mypy",
+    "macOS aarch64 (Python 3.11) / pytest",
+    "macOS aarch64 (Python 3.11) / mypy",
+    "Windows (Python 3.13) / mypy",
+    "Windows (Python 3.14) / pytest",
+    "Ubuntu (Python 3.10) / mypy",
+    "Windows (Python 3.14) / mypy",
+    "Windows (Python 3.13) / pytest",
+    "macOS aarch64 (Python 3.13) / pytest",
+    "macOS aarch64 (Python 3.13) / mypy",
+    "Ubuntu (Python 3.10) / pytest",
+    "Status"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "poetry__35364542297",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 8631,
+     "burned": 0,
+     "requests": 2,
+     "cached": true,
+     "seconds": 1.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The CI run fails due to a regression in show.py: mypy reports a return type mismatch and pytest raises a TypeError when iterating over an int.",
+      "reasoning": "Both mypy and pytest failures point to a bug in src/poetry/console/commands/show.py: a function returns an int where a set[Package] is expected, causing a static type error, and at runtime an integer is being iterated over, causing a TypeError. These deterministic failures occur across many jobs and OS/Python matrix entries, indicating a regression in the repository code rather than flaky behavior, CI infra problems, or external dependency changes.",
+      "evidence": [
+       {
+        "job_name": "Windows (Python 3.11) / mypy",
+        "log_path": "41_Windows (Python 3.11) _ mypy.txt",
+        "line_start": 473,
+        "line_end": 473,
+        "quote": "src\\poetry\\console\\commands\\show.py:298: error: Incompatible return value type (got \"int\", expected \"set[Package]\")  [return-value]",
+        "why": "Shows that the mypy type check fails due to an incorrect return type in the show command"
+       },
+       {
+        "job_name": "Windows (Python 3.11) / pytest",
+        "log_path": "45_Windows (Python 3.11) _ pytest.txt",
+        "line_start": 7211,
+        "line_end": 7211,
+        "quote": "E           TypeError: argument of type 'int' is not iterable",
+        "why": "Shows that pytest execution triggers a TypeError in the show command, indicating a runtime regression"
+       }
+      ],
+      "suggested_fix": "Fix the return type of the function in src/poetry/console/commands/show.py to return a set[Package] and ensure that locked_packages elements are iterable (e.g., adjust logic to handle integer IDs appropriately)."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "poetry__35364542297",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 6524,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 1.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.9,
+      "summary": "Fix the _required_locked_packages function to not return an int; instead raise a cleo CLI error after printing the error message. This resolves the TypeError and mypy failure.",
+      "reasoning": "The pytest TypeError and mypy type error both point to the same source: the _required_locked_packages method returns the integer 1 in its exception handler, breaking the expected set return type. This bug introduced a regression in the repo's own source. Adjusting the function to raise a cleo CLI error instead of returning 1 fixes the issue.",
+      "evidence": [
+       {
+        "job_name": "Windows (Python 3.11) / pytest",
+        "log_path": "45_Windows (Python 3.11) _ pytest.txt",
+        "line_start": 7203,
+        "line_end": 7205,
+        "quote": "  >           if locked not in required_locked_packages and not show_all:\n                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE           TypeError: argument of type 'int' is not iterable",
+        "why": "Shows TypeError because required_locked_packages is int due to _required_locked_packages returning 1."
+       },
+       {
+        "job_name": "Windows (Python 3.11) / mypy",
+        "log_path": "41_Windows (Python 3.11) _ mypy.txt",
+        "line_start": 473,
+        "line_end": 474,
+        "quote": "src\\poetry\\console\\commands\\show.py:298: error: Incompatible return value type (got \"int\", expected \"set[Package]\")  [return-value]\nFound 1 error in 1 file (checked 380 source files)",
+        "why": "mypy reports returning int where a set is expected, caused by the return 1 in _required_locked_packages."
+       }
+      ],
+      "suggested_fix": "In poetry/console/commands/show.py, replace the `return 1` inside the SolverProblemError except block with raising a `cleo.exceptions.CliError()` after printing the error message, and import `CliError` at the top. This preserves the intended exit code while keeping the return type a set."
+     }
+    }
+   }
+  },
+  "poetry__35455975872": {
+   "name": "poetry__35455975872",
+   "repo": "python-poetry/poetry",
+   "branch": "release/2.5.0",
+   "workflow": "Tests",
+   "html_url": "https://github.com/python-poetry/poetry/actions/runs/35455975872",
+   "head_sha": "2d27f82e3f2a97011a335220075338e95f2f248d",
+   "overview": "repository:  python-poetry/poetry\nworkflow:    Tests\nevent:       pull_request on release/2.5.0\ncommit:      2d27f82e3f2a97011a335220075338e95f2f248d\nconclusion:  failure (attempt 1)\njobs:        2 failed of 59\n\ndistinct failures:\n  1. Status\n     failed at step: Run false\n  2. Windows (Python 3.15) / pytest\n     failed at step: Run poetry run pytest --integration -v",
+   "failed_jobs": [
+    "Windows (Python 3.15) / pytest",
+    "Status"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "poetry__35455975872",
+     "label": null,
+     "predicted": "infra",
+     "correct": null,
+     "confidence": 0.94,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 21265,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0.2,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.94,
+      "summary": "The run fails because the `Status` job executes `false`, which always exits with code 1, a misconfigured workflow step, making this an infra failure.",
+      "reasoning": "The CI run is red because the `Status` job includes an explicit step that runs the `false` command. This command invariably returns exit code 1, which the log records as an error. This is a clear misconfiguration of the workflow rather than a code defect, fitting the definition of an infra failure. While another job also failed due to a test assertion, the deterministic failure of the `Status` job alone is sufficient to classify the overall run as an infrastructure/workflow configuration issue.",
+      "evidence": [
+       {
+        "job_name": "Status",
+        "log_path": "0_Status.txt",
+        "line_start": 30,
+        "line_end": 30,
+        "quote": "false",
+        "why": "The step runs the `false` command, which always exits with a non‑zero status, guaranteeing job failure."
+       },
+       {
+        "job_name": "Status",
+        "log_path": "0_Status.txt",
+        "line_start": 33,
+        "line_end": 33,
+        "quote": "##[error]Process completed with exit code 1.",
+        "why": "The job reports a process exit code of 1, confirming that the step caused the job to fail."
+       }
+      ],
+      "suggested_fix": "Remove or replace the `false` command in the `Status` job with the intended logic or condition, ensuring the step can succeed when appropriate."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "poetry__35455975872",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.92,
+     "route": "human_review",
+     "cited": 3,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 2
+     },
+     "tokens": 27878,
+     "burned": 0,
+     "requests": 10,
+     "cached": false,
+     "seconds": 423.3,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.92,
+      "summary": "The Windows Python 3.15 job failed due to a deterministic assertion error in tests/utils/env/test_env.py, indicating a regression in the env utilities. Fix by revising the subprocess handling for full pipes or adjusting test timeouts.",
+      "reasoning": "The Windows job reports a single test failure in tests/utils/env/test_env.py::test_call_does_not_block_on_full_pipe[sys.stdout]. The failure manifests as an assertion error (E assert ([])), and the log shows the test was marked FAILED. This points to a regression in the project’s own code (the env utilities or their tests), rather than an infrastructure or external dependency issue. There is no evidence of flaky behavior or infrastructure failure, and the test failure is deterministic.",
+      "evidence": [
+       {
+        "job_name": "Windows (Python 3.15) / pytest",
+        "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+        "line_start": 7313,
+        "line_end": 7313,
+        "quote": "[gw0] [ 41%] FAILED tests/utils/env/test_env.py::test_call_does_not_block_on_full_pipe[sys.stdout]",
+        "why": "Indicates the specific test that failed in the Windows Python 3.15 job."
+       },
+       {
+        "job_name": "Windows (Python 3.15) / pytest",
+        "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+        "line_start": 7309,
+        "line_end": 7309,
+        "quote": "E       assert ([])",
+        "why": "Shows the assertion failure in the test, proving a logic error in the env code."
+       },
+       {
+        "job_name": "Windows (Python 3.15) / pytest",
+        "log_path": "51_Windows (Python 3.15) _ pytest.txt",
+        "line_start": 7311,
+        "line_end": 7311,
+        "quote": "D:\\\\a\\\\poetry\\\\poetry\\\\tests\\\\utils\\\\env\\\\test_env.py:263: AssertionError",
+        "why": "Confirms that the assertion failed at the expected line, indicating a regression in the tested code."
+       }
+      ],
+      "suggested_fix": "Update the test or env utilities to handle full stdout pipes correctly on Windows, e.g., increase the thread.join timeout or adjust subprocess buffering to prevent blocking."
+     }
+    }
+   }
+  },
+  "polars__35498835979": {
+   "name": "polars__35498835979",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Lint Rust",
+   "html_url": "https://github.com/pola-rs/polars/actions/runs/35498835979",
+   "head_sha": "077ec01d641075a984592364967ffad695f148f9",
+   "overview": "repository:  pola-rs/polars\nworkflow:    Lint Rust\nevent:       pull_request on decimal-literal-coercion\ncommit:      077ec01d641075a984592364967ffad695f148f9\nconclusion:  failure (attempt 1)\njobs:        1 failed of 5\n\ndistinct failures:\n  1. clippy-nightly\n     failed at step: Run cargo clippy with all features enabled",
+   "failed_jobs": [
+    "clippy-nightly"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "polars__35498835979",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 25670,
+     "burned": 0,
+     "requests": 6,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "The clippy-nightly job fails due to a compile error: `UnknownKind::Float` is now a tuple variant, but the code matches it as a unit variant, indicating a regression.",
+      "reasoning": "The clippy-nightly job aborts with a Rust compile error E0532: the code attempts to match `UnknownKind::Float` as a unit variant, but the type was changed to a tuple variant (it now carries a payload). This mismatch leads to a deterministic compilation failure, indicating a regression introduced by recent code changes. No flaky behavior, infra issues, or external dependency changes are evident.",
+      "evidence": [
+       {
+        "job_name": "clippy-nightly",
+        "log_path": "4_clippy-nightly.txt",
+        "line_start": 1206,
+        "line_end": 1210,
+        "quote": "error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n   --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n     |\n390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {\n    |                                                   ^^^^^^^^^^^^^^^^^^",
+        "why": "Shows that the pyo3-polars crate fails to compile because the pattern matches a tuple variant `UnknownKind::Float` as if it were a unit variant, causing a compile error"
+       }
+      ],
+      "suggested_fix": "Update the pattern in `pyo3-polars/src/types.rs` to match the new tuple variant, e.g., `DataType::Unknown(UnknownKind::Float(_))`, or adjust handling of the payload accordingly."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "polars__35498835979",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 10382,
+     "burned": 10382,
+     "requests": 5,
+     "cached": false,
+     "seconds": 113.9,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8598, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "polars__35499202405": {
+   "name": "polars__35499202405",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Lint Rust",
+   "html_url": "https://github.com/pola-rs/polars/actions/runs/35499202405",
+   "head_sha": "770990ee24b09866c3f6521a178897a29bb273dd",
+   "overview": "repository:  pola-rs/polars\nworkflow:    Lint Rust\nevent:       pull_request on decimal-literal-coercion\ncommit:      770990ee24b09866c3f6521a178897a29bb273dd\nconclusion:  failure (attempt 1)\njobs:        1 failed of 5\n\ndistinct failures:\n  1. clippy-nightly\n     failed at step: Run cargo clippy with all features enabled",
+   "failed_jobs": [
+    "clippy-nightly"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "polars__35499202405",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.94,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 17931,
+     "burned": 0,
+     "requests": 10,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.94,
+      "summary": "The clippy-nightly job failed due to a compile error in pyo3-polars (invalid pattern match on `UnknownKind::Float`), indicating a regression in the code.",
+      "reasoning": "The clippy-nightly job aborts with rustc error E0532 while compiling the pyo3-polars crate. This is a deterministic compile‑time failure caused by a code change that no longer matches the definition of `UnknownKind::Float`. Such a compile error indicates a regression in the repository's source code, not an infrastructure or flaky issue.",
+      "evidence": [
+       {
+        "job_name": "clippy-nightly",
+        "log_path": "0_clippy-nightly.txt",
+        "line_start": 1206,
+        "line_end": 1209,
+        "quote": "error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n   --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n    |\n390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {",
+        "why": "shows a compilation error (E0532) in the pyo3-polars crate caused by an invalid pattern match, which caused the clippy-nightly job to fail"
+       }
+      ],
+      "suggested_fix": "Update the match arm to use the correct tuple pattern, e.g., `DataType::Unknown(UnknownKind::Float(_))`, or import the appropriate unit variant."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "polars__35499202405",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.9,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 0,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 1863,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.9,
+      "summary": "Build failure due to a compile error in the repository’s own code: pyo3‑polars references UnknownKind::Float incorrectly, causing a regression.",
+      "reasoning": "The log shows a Rust compilation error within the repository’s own crates (pyo3‑polars), specifically a mismatch between how UnknownKind::Float is used and how it is defined. The error occurs in the current commit’s code and is deterministic, indicating a regression in the repo’s source rather than a flaky test or infrastructure issue.",
+      "evidence": [
+       {
+        "job_name": "clippy-nightly",
+        "log_path": "0_clippy-nightly.txt",
+        "line_start": 1206,
+        "line_end": 1209,
+        "quote": "1206 |     error[E0532]: expected unit struct, unit variant or constant, found tuple variant `UnknownKind::Float`\n1207 |    --> pyo3-polars/pyo3-polars/src/types.rs:390:51\n1208 |     |\n1209 | 390 |             DataType::Float64 | DataType::Unknown(UnknownKind::Float) => {",
+        "why": "The compiler reports a type‑mismatch error in the repo’s own pyo3‑polars crate, showing the source code refers to UnknownKind::Float as a unit variant but the definition is a tuple variant. This indicates a breaking change in the repository’s source code that causes the build to fail."
+       }
+      ],
+      "suggested_fix": "Update pyo3‑polars/src/types.rs to match the current definition of UnknownKind::Float (e.g., use the tuple‑variant pattern or import the correct variant)."
+     }
+    }
+   }
+  },
+  "polars__35501439993": {
+   "name": "polars__35501439993",
+   "repo": "pola-rs/polars",
+   "branch": "decimal-literal-coercion",
+   "workflow": "Test Python",
+   "html_url": "https://github.com/pola-rs/polars/actions/runs/35501439993",
+   "head_sha": "dcedf380d5ba1528e120bc110384bdfb08ddf7ed",
+   "overview": "repository:  pola-rs/polars\nworkflow:    Test Python\nevent:       pull_request on decimal-literal-coercion\ncommit:      dcedf380d5ba1528e120bc110384bdfb08ddf7ed\nconclusion:  failure (attempt 1)\njobs:        1 failed of 9\n\ndistinct failures:\n  1. test-python (ubuntu-latest, 3.14, 100000)\n     failed at step: Run tests async reader tests",
+   "failed_jobs": [
+    "test-python (ubuntu-latest, 3.14, 100000)"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "polars__35501439993",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.85,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 27909,
+     "burned": 0,
+     "requests": 7,
+     "cached": true,
+     "seconds": 0.2,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.85,
+      "summary": "A pytest-xdist worker crashed during the test_sink_to_file test, indicating a regression in Polars' lazyframe CSV sinking after recent decimal handling changes.",
+      "reasoning": "The logs record a worker crash (node down, worker gw2 crashed) during the test_sink_to_file test. This crash is triggered after recent changes to decimal handling in the repository (see the diff). The crash is a direct consequence of the repository's code, not an external service or configuration issue, and there is no evidence of flaky behavior for this commit. Therefore the failure is a regression introduced by the recent code changes.",
+      "evidence": [
+       {
+        "job_name": "test-python",
+        "log_path": "3_test-python (ubuntu-latest, 3.14, 100000).txt",
+        "line_start": 11477,
+        "line_end": 11479,
+        "quote": ".....................................................................[gw2] node down: Not properly terminated\nF\nworker gw2 crashed and worker restarting disabled",
+        "why": "Shows that a pytest-xdist worker crashed during execution, causing the job to abort."
+       },
+       {
+        "job_name": "test-python",
+        "log_path": "3_test-python (ubuntu-latest, 3.14, 100000).txt",
+        "line_start": 11481,
+        "line_end": 11484,
+        "quote": "=================================== FAILURES ===================================\n__________________________ tests/unit/io/test_sink.py __________________________\n[gw2] linux -- Python 3.14.7 /home/runner/work/polars/polars/py-polars/.venv/bin/python\nworker 'gw2' crashed while running 'tests/unit/io/test_sink.py::test_sink_to_file[scan_csv-sink_csv]'",
+        "why": "Indicates that the test suite failed because the worker process terminated unexpectedly."
+       }
+      ],
+      "suggested_fix": "Investigate the panic/termination in the Polars lazyframe sink_csv implementation, especially the handling of decimal literals introduced by the recent changes. Add a reproducing test if needed, and fix the underlying Rust code to prevent the worker crash."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "polars__35501439993",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 10131,
+     "burned": 10131,
+     "requests": 4,
+     "cached": false,
+     "seconds": 107.3,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8556, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "prefect__33784290671": {
+   "name": "prefect__33784290671",
+   "repo": "PrefectHQ/prefect",
+   "branch": "fix-event-url-template-22957-work",
+   "workflow": "Verify prefect-client build",
+   "html_url": "https://github.com/PrefectHQ/prefect/actions/runs/33784290671",
+   "head_sha": "32ab1510b147527337c0c10dbd50543138758b07",
+   "overview": "repository:  PrefectHQ/prefect\nworkflow:    Verify prefect-client build\nevent:       pull_request on fix-event-url-template-22957-work\ncommit:      32ab1510b147527337c0c10dbd50543138758b07\nconclusion:  failure (attempt 1)\njobs:        1 failed of 1\n\ndistinct failures:\n  1. Build and run prefect-client\n     failed at step: Run deploy and execute smoke test using the built client",
+   "failed_jobs": [
+    "Build and run prefect-client"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "prefect__33784290671",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.87,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 12457,
+     "burned": 0,
+     "requests": 3,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.87,
+      "summary": "The job fails during the smoke test because the client cannot connect to the server, raising an httpx.ConnectError.",
+      "reasoning": "The log shows the smoke test invoking a client request to read a work pool, which results in an httpx.ConnectError indicating the client could not reach the server. Recent runs of this workflow on other commits succeeded, implying the CI environment and dependencies are functional. Therefore the failure is due to a regression introduced in the code (e.g., server startup or client configuration change) rather than infra or flaky issues.",
+      "evidence": [
+       {
+        "job_name": "Build and run prefect-client",
+        "log_path": "0_Build and run prefect-client.txt",
+        "line_start": 2958,
+        "line_end": 2958,
+        "quote": "await client.read_work_pool(\"smoke-test\")",
+        "why": "The smoke test attempts to read a work pool, initiating a client request that later fails."
+       },
+       {
+        "job_name": "Build and run prefect-client",
+        "log_path": "0_Build and run prefect-client.txt",
+        "line_start": 2981,
+        "line_end": 2981,
+        "quote": "httpx.ConnectError: All connection attempts failed",
+        "why": "The client request fails to connect, causing the job to exit with an error."
+       }
+      ],
+      "suggested_fix": "Check recent changes affecting server startup or client configuration; ensure the test server is started and reachable before the client attempts to read the work pool."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "prefect__33784290671",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 19363,
+     "burned": 19363,
+     "requests": 5,
+     "cached": false,
+     "seconds": 124.1,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8054, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "prefect__33784333154": {
+   "name": "prefect__33784333154",
+   "repo": "PrefectHQ/prefect",
+   "branch": "fix-event-url-template-22957-work",
+   "workflow": "Unit tests",
+   "html_url": "https://github.com/PrefectHQ/prefect/actions/runs/33784333154",
+   "head_sha": "c71059093549597feb409123480190033fcd4021",
+   "overview": "repository:  PrefectHQ/prefect\nworkflow:    Unit tests\nevent:       pull_request on fix-event-url-template-22957-work\ncommit:      c71059093549597feb409123480190033fcd4021\nconclusion:  failure (attempt 1)\njobs:        15 failed of 80\n\ndistinct failures:\n  1. Server Tests - python:3.13, postgres:14  [8 jobs]\n     failed at step: Run tests\n  2. Client Tests: Modules - python:3.10, postgres:14  [5 jobs]\n     failed at step: Run tests\n  3. Server Tests - python:3.10, sqlite  [2 jobs]\n     failed at step: Run tests",
+   "failed_jobs": [
+    "Server Tests - python:3.13, postgres:14",
+    "Server Tests - python:3.11, postgres:14",
+    "Server Tests - python:3.12, sqlite",
+    "Server Tests - python:3.10, sqlite",
+    "Server Tests - python:3.10, postgres:14",
+    "Server Tests - python:3.11, sqlite",
+    "Client Tests: Modules - python:3.10, postgres:14",
+    "Client Tests: Modules - python:3.14, postgres:14",
+    "Server Tests - python:3.14, postgres:14",
+    "Client Tests: Modules - python:3.11, postgres:14",
+    "Server Tests - python:3.13, sqlite",
+    "Server Tests - python:3.14, sqlite",
+    "Client Tests: Modules - python:3.13, postgres:14",
+    "Canonical Tests: group 8/18 - python:3.12, postgres:14",
+    "Canonical Tests: group 9/18 - python:3.12, postgres:14"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "prefect__33784333154",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.97,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 23230,
+     "burned": 0,
+     "requests": 5,
+     "cached": true,
+     "seconds": 0.5,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.97,
+      "summary": "Adding a computed `url` field to ReceivedEvent introduced an unexpected `url` key in its JSON output, breaking the `test_json_representation` test across several CI jobs.",
+      "reasoning": "The recent commit adds a computed property `url` to the ReceivedEvent model, which inserts a `url` entry into the event's JSON representation. The failing test `test_json_representation` expects the event dict without this key. The log excerpt shows the actual output containing a `+ 'url': ...` line, leading to an AssertionError. The failure occurs identically across multiple jobs, indicating a deterministic break introduced by the code change, which classifies as a regression.",
+      "evidence": [
+       {
+        "job_name": "Server Tests - python:3.13, postgres:14",
+        "log_path": "69_Server Tests - python3.13, postgres14.txt",
+        "line_start": 3349,
+        "line_end": 3353,
+        "quote": "        'id': '5367d292-aa40-4439-a590-2a5b8d19b8a9',\n        'follows': None,\n        'received': '2021-02-03T04:05:06.000078Z',\n  +     'url': 'http://localhost:52579/events/event/2021-02-03/5367d292-aa40-4439-a590-2a5b8d19b8a9',\n    }",
+        "why": "Shows that the ReceivedEvent JSON includes an unexpected 'url' field, causing the test assertion to fail."
+       }
+      ],
+      "suggested_fix": "Remove or conditionally include the `url` computed field, or update the test to expect the `url` key if the new behavior is intended."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "prefect__33784333154",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 7985,
+     "burned": 7985,
+     "requests": 4,
+     "cached": false,
+     "seconds": 66,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8093, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "prefect__33832652720": {
+   "name": "prefect__33832652720",
+   "repo": "PrefectHQ/prefect",
+   "branch": "codex/tla-plus-deployment-concurrency",
+   "workflow": "Unit tests",
+   "html_url": "https://github.com/PrefectHQ/prefect/actions/runs/33832652720",
+   "head_sha": "149b932fe9bb1799ffa0b16124a9bc369b4dce03",
+   "overview": "repository:  PrefectHQ/prefect\nworkflow:    Unit tests\nevent:       pull_request on codex/tla-plus-deployment-concurrency\ncommit:      149b932fe9bb1799ffa0b16124a9bc369b4dce03\nconclusion:  failure (attempt 1)\njobs:        1 failed of 80\n\ndistinct failures:\n  1. Canonical Tests: group 16/18 - python:3.12, postgres:14\n     failed at step: Run tests",
+   "failed_jobs": [
+    "Canonical Tests: group 16/18 - python:3.12, postgres:14"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "prefect__33832652720",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.86,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 1,
+     "faults": {
+      "quote not in the cited lines": 1
+     },
+     "tokens": 16876,
+     "burned": 0,
+     "requests": 4,
+     "cached": true,
+     "seconds": 0,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.86,
+      "summary": "The unit test suite failed due to a timeout in TestWorkerChannelCleanupDispatcher.test_multiple_workers_receive_distinct_messages, indicating a regression in the code.",
+      "reasoning": "A single test in the suite timed out, causing the entire job to exit with an error. This indicates a deterministic failure likely caused by a code change that introduced a deadlock or performance regression, rather than an external service or flaky behavior. No evidence shows non-deterministic outcomes for this commit, and the failure is reproducible across the matrix, fitting the definition of a regression.",
+      "evidence": [
+       {
+        "job_name": "Canonical Tests: group 16/18 - python:3.12, postgres:14",
+        "log_path": "1_Canonical Tests group 16_18 - python3.12, postgres14.txt",
+        "line_start": 3302,
+        "line_end": 3302,
+        "quote": "E               Failed: Timeout (>90.0s) from pytest-timeout.",
+        "why": "The test timed out, causing the job to fail."
+       },
+       {
+        "job_name": "Canonical Tests: group 16/18 - python:3.12, postgres:14",
+        "log_path": "1_Canonical Tests group 16_18 - python3.12, postgres14.txt",
+        "line_start": 3528,
+        "line_end": 3528,
+        "quote": "FAILED tests/server/orchestration/api/test_worker_channel_cleanup_dispatcher.py::TestWorkerChannelCleanupDispatcher::test_multiple_workers_receive_distinct_messages - Failed: Timeout (>90.0s) from pytest-timeout.",
+        "why": "The summary confirms a timeout failure for a specific test."
+       }
+      ],
+      "suggested_fix": "Investigate the WorkerChannelCleanupDispatcher implementation for deadlocks or long waits introduced by recent changes, and adjust the synchronization logic or increase the timeout if appropriate."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "prefect__33832652720",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 12281,
+     "burned": 12281,
+     "requests": 4,
+     "cached": false,
+     "seconds": 95.1,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8008, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic-ai__35441580741": {
+   "name": "pydantic-ai__35441580741",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix/8413-bracket-ipv6-host-default-port",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic-ai/actions/runs/35441580741",
+   "head_sha": "c257066fd2c4cf188e0581457aac2a5111ff3445",
+   "overview": "repository:  pydantic/pydantic-ai\nworkflow:    CI\nevent:       pull_request on fix/8413-bracket-ipv6-host-default-port\ncommit:      c257066fd2c4cf188e0581457aac2a5111ff3445\nconclusion:  failure (attempt 1)\njobs:        2 failed of 62\n\ndistinct failures:\n  1. check\n     failed at step: Decide whether the needed jobs succeeded or failed\n  2. test on 3.14 (pydantic-evals)\n     failed at step: run tests",
+   "failed_jobs": [
+    "test on 3.14 (pydantic-evals)",
+    "check"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pydantic-ai__35441580741",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.86,
+     "route": "auto_post",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 35576,
+     "burned": 0,
+     "requests": 9,
+     "cached": false,
+     "seconds": 251.2,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.86,
+      "summary": "A test in test_display failed with an AssertionError, causing the CI run to be red; this is a regression.",
+      "reasoning": "The 'check' job reports a failure in the required test job. The detailed test job log shows a single failing test (test_the_banner_asks_the_terminal_itself_how_wide_it_is) with an AssertionError. This deterministic failure is not attributed to infrastructure or flaky behavior (no evidence of intermittent outcomes). Therefore the CI run failed due to a regression introduced by recent changes.",
+      "evidence": [
+       {
+        "job_name": "check",
+        "log_path": "3_check.txt",
+        "line_start": 202,
+        "line_end": 202,
+        "quote": "📝 test → ❌ failure [required to succeed]",
+        "why": "Indicates that the required test job failed, causing the overall CI run to be red."
+       },
+       {
+        "job_name": "test on 3.14 (pydantic-evals)",
+        "log_path": "33_test on 3.14 (pydantic-evals).txt",
+        "line_start": 738,
+        "line_end": 738,
+        "quote": "│  tests/test_display.py  │  test_the_banner_asks_the_terminal_itself_how_wide_it_is  │  580            │  600         │  AssertionError  │",
+        "why": "Shows a specific test failure (AssertionError), confirming a regression in the code or test suite."
+       }
+      ],
+      "suggested_fix": null
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "pydantic-ai__35441580741",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 10582,
+     "burned": 10582,
+     "requests": 4,
+     "cached": false,
+     "seconds": 55.8,
+     "error": "413: Request too large for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Requested 8155, please reduce your message size and try again. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/bill",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic-ai__35453419958": {
+   "name": "pydantic-ai__35453419958",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix-griffe-logging-leak",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic-ai/actions/runs/35453419958",
+   "head_sha": "0af7fe51a90fff27e0569fdfb1e49f2eb0346dc5",
+   "overview": "repository:  pydantic/pydantic-ai\nworkflow:    CI\nevent:       pull_request on fix-griffe-logging-leak\ncommit:      0af7fe51a90fff27e0569fdfb1e49f2eb0346dc5\nconclusion:  failure (attempt 1)\njobs:        2 failed of 62\n\ndistinct failures:\n  1. check\n     failed at step: Decide whether the needed jobs succeeded or failed\n  2. quality checks\n     failed at step: Run pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd",
+   "failed_jobs": [
+    "quality checks",
+    "check"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pydantic-ai__35453419958",
+     "label": null,
+     "predicted": "regression",
+     "correct": null,
+     "confidence": 0.96,
+     "route": "human_review",
+     "cited": 2,
+     "verified": 2,
+     "faults": {},
+     "tokens": 24524,
+     "burned": 0,
+     "requests": 8,
+     "cached": false,
+     "seconds": 226.5,
+     "error": null,
+     "verdict": {
+      "category": "regression",
+      "confidence": 0.96,
+      "summary": "Pyright type-checking fails in test_tools.py because calls to tool_plain lack matching overloads, causing the quality checks job (and the overall CI run) to fail.",
+      "reasoning": "The quality checks job runs pyright across the repository. The logs show two type-check errors in tests/test_tools.py where calls to tool_plain have no matching overloads. Pyright exits with an error, causing the make target to fail, which makes the quality checks job exit with a non-zero status. This deterministic failure originates from recent code changes (new tests and modifications to _griffe.py) that expose missing overload definitions, indicating a regression in the repository's code rather than a flaky, infra, or dependency issue.",
+      "evidence": [
+       {
+        "job_name": "quality checks",
+        "log_path": "26_quality checks.txt",
+        "line_start": 1291,
+        "line_end": 1291,
+        "quote": "  /home/runner/work/pydantic-ai/pydantic-ai/tests/test_tools.py:1111:13 - error: No overloads for \"tool_plain\" match the provided arguments",
+        "why": "Pyright reports a type-check error for a call to tool_plain at line 1111 in test_tools.py, causing the quality checks job to fail"
+       },
+       {
+        "job_name": "quality checks",
+        "log_path": "26_quality checks.txt",
+        "line_start": 1293,
+        "line_end": 1293,
+        "quote": "  /home/runner/work/pydantic-ai/pydantic-ai/tests/test_tools.py:1125:13 - error: No overloads for \"tool_plain\" match the provided arguments",
+        "why": "A second Pyright type-check error for a tool_plain call at line 1125 also fails the job"
+       }
+      ],
+      "suggested_fix": "Add or adjust overload definitions for tool_plain to accept the arguments used in the new tests, or modify the tests to match existing overload signatures, so that pyright type-checking passes."
+     }
+    },
+    "groq:openai/gpt-oss-20b": {
+     "fixture": "pydantic-ai__35453419958",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 14712,
+     "burned": 14712,
+     "requests": 7,
+     "cached": false,
+     "seconds": 145.8,
+     "error": "429: Rate limit reached for model `openai/gpt-oss-20b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197476, Requested 8309. Please try again in 41m39.12s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic-ai__35495282377": {
+   "name": "pydantic-ai__35495282377",
+   "repo": "pydantic/pydantic-ai",
+   "branch": "fix-ssrf-ipv6-percent",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic-ai/actions/runs/35495282377",
+   "head_sha": "c3d28615976f5878d051bf9bf5582cbe7c387e70",
+   "overview": "repository:  pydantic/pydantic-ai\nworkflow:    CI\nevent:       pull_request on fix-ssrf-ipv6-percent\ncommit:      c3d28615976f5878d051bf9bf5582cbe7c387e70\nconclusion:  failure (attempt 1)\njobs:        27 failed of 62\n\ndistinct failures:\n  1. test on 3.11 (lowest-versions, shard 2/2)  [25 jobs]\n     failed at step: run tests\n  2. check\n     failed at step: Decide whether the needed jobs succeeded or failed\n  3. quality checks\n     failed at step: Run pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd",
+   "failed_jobs": [
+    "quality checks",
+    "test on 3.11 (lowest-versions, shard 2/2)",
+    "test on 3.10 (lowest-versions, shard 2/2)",
+    "test on 3.12 (lowest-versions, shard 2/2)",
+    "test on 3.14 (lowest-versions, shard 2/2)",
+    "test on 3.10 (all-extras, shard 2/2)",
+    "test on 3.14 (all-extras, shard 2/2)",
+    "test on 3.11 (all-extras, shard 2/2)",
+    "test on 3.13 (all-extras, shard 2/2)",
+    "test on 3.13 (lowest-versions, shard 2/2)",
+    "test on 3.10 (standard)",
+    "test on 3.11 (pydantic-ai-slim)",
+    "test on 3.12 (all-extras, shard 2/2)",
+    "test on 3.10 (pydantic-ai-slim)",
+    "test on 3.12 (pydantic-evals)",
+    "test on 3.12 (standard)",
+    "test on 3.14 (pydantic-evals)",
+    "test on 3.13 (pydantic-evals)",
+    "test on 3.13 (pydantic-ai-slim)",
+    "test on 3.14 (pydantic-ai-slim)",
+    "test on 3.10 (pydantic-evals)",
+    "test on 3.14 (standard)",
+    "test on 3.11 (pydantic-evals)",
+    "test on 3.13 (standard)",
+    "test on 3.11 (standard)",
+    "test on 3.12 (pydantic-ai-slim)",
+    "check"
+   ],
+   "label": null,
+   "scores": {
+    "google:gemini-3.5-flash": {
+     "fixture": "pydantic-ai__35495282377",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 2332,
+     "burned": 2332,
+     "requests": 1,
+     "cached": false,
+     "seconds": 2.9,
+     "error": "429: You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.",
+     "verdict": null
+    },
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pydantic-ai__35495282377",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 23377,
+     "burned": 23377,
+     "requests": 12,
+     "cached": false,
+     "seconds": 441.7,
+     "error": "UsageLimitExceeded: The next request would exceed the request_limit of 12. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-conc",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic__35248454086": {
+   "name": "pydantic__35248454086",
+   "repo": "pydantic/pydantic",
+   "branch": "sq918/plugin-dead-doc",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic/actions/runs/35248454086",
+   "head_sha": "111557d711ae193b66c143f97c90685da517d4a7",
+   "overview": "repository:  pydantic/pydantic\nworkflow:    CI\nevent:       pull_request on sq918/plugin-dead-doc\ncommit:      111557d711ae193b66c143f97c90685da517d4a7\nconclusion:  failure (attempt 1)\njobs:        7 failed of 66\n\ndistinct failures:\n  1. Lint 3.15  [6 jobs]\n     failed at step: Run pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd\n  2. check\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "Lint 3.15",
+    "Lint 3.12",
+    "Lint 3.13",
+    "Lint 3.14",
+    "Lint 3.11",
+    "Lint 3.10",
+    "check"
+   ],
+   "label": null,
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pydantic__35248454086",
+     "label": null,
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 66364,
+     "burned": 66364,
+     "requests": 12,
+     "cached": false,
+     "seconds": 439.6,
+     "error": "UsageLimitExceeded: The next request would exceed the request_limit of 12. Consider raising the limit, or see the docs on usage limits for budget-aware patterns: https://pydantic.dev/docs/ai/core-conc",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic__35411255497": {
+   "name": "pydantic__35411255497",
+   "repo": "pydantic/pydantic",
+   "branch": "fix-v1-hypothesis-plugin-imports",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic/actions/runs/35411255497",
+   "head_sha": "e78b82f0dd20622a18a9fa439b5ca3ca5514d87d",
+   "overview": "repository:  pydantic/pydantic\nworkflow:    CI\nevent:       pull_request on fix-v1-hypothesis-plugin-imports\ncommit:      e78b82f0dd20622a18a9fa439b5ca3ca5514d87d\nconclusion:  failure (attempt 1)\njobs:        37 failed of 66\n\ndistinct failures:\n  1. core / Test with debug build (3.14)  [36 jobs]\n     failed at step: Run uv run pytest\n  2. check\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "core / Test with debug build (3.14)",
+    "Test typing-extensions (`main` branch) on Python 3.15",
+    "core / Test with debug build (pypy3.11)",
+    "Test memray",
+    "Test macos-latest / 3.13",
+    "Test windows-latest / pypy3.11",
+    "Test typing-extensions (`main` branch) on Python 3.12",
+    "Test macos-latest / 3.11",
+    "Test ubuntu-latest / 3.14",
+    "Test ubuntu-latest / 3.10",
+    "Test typing-extensions (`main` branch) on Python 3.14",
+    "Test ubuntu-latest / 3.13",
+    "Test ubuntu-latest / 3.11",
+    "Test macos-latest / 3.10",
+    "Test macos-latest / 3.15t",
+    "Test typing-extensions (`main` branch) on Python 3.11",
+    "Test ubuntu-latest / 3.15t",
+    "Test windows-latest / 3.13",
+    "Test ubuntu-latest / 3.12",
+    "Test typing-extensions (`main` branch) on Python 3.13",
+    "Test windows-latest / 3.11",
+    "Test macos-latest / pypy3.11",
+    "Test macos-latest / 3.12",
+    "Test windows-latest / 3.15",
+    "Test macos-15-intel / 3.15",
+    "Test windows-latest / 3.12",
+    "Test typing-extensions (`main` branch) on Python 3.10",
+    "Test ubuntu-latest / 3.15",
+    "Test windows-latest / 3.15t",
+    "Test ubuntu-latest / pypy3.11",
+    "Test macos-latest / 3.14",
+    "Test macos-latest / 3.15",
+    "Test windows-latest / 3.14",
+    "Test windows-latest / 3.10",
+    "Test macos-15-intel / 3.15t",
+    "Test build on PyEmscripten (Pyodide) (3.14)",
+    "check"
+   ],
+   "label": {
+    "category": "regression",
+    "root_cause": "The two tests this diff adds (tests/test_v1_hypothesis_plugin.py) fail at import of pydantic.v1._hypothesis_plugin: hypothesis's register_type_strategy reads sys.modules['pydantic.generics'].GenericModel, which trips pydantic's own V2 deprecation shim, and the suite runs warnings-as-errors.",
+    "notes": "Adversarial on two axes. (1) The exception is raised inside hypothesis and inside pydantic/_migration.py, so an agent keying off 'which package raised' will answer dependency. The discriminator is the DEPENDENCY definition's second clause: hypothesis did not change underneath an unpinned reference, the repo's own new code is what reached that path, and 12,828 other tests pass. (2) 37 of 66 jobs are red with byte-identical failures across every OS and Python version, which reads as infra breadth; here it is one deterministic break fanned out over a matrix. History supports this: no green on this commit, and the workflow's background failure rate is 11%.",
+    "labeled_at": "2026-09-20T10:30:13.680845Z"
+   },
+   "scores": {
+    "groq:openai/gpt-oss-120b": {
+     "fixture": "pydantic__35411255497",
+     "label": "regression",
+     "predicted": null,
+     "correct": null,
+     "confidence": null,
+     "route": null,
+     "cited": 0,
+     "verified": 0,
+     "faults": {},
+     "tokens": 18942,
+     "burned": 18942,
+     "requests": 5,
+     "cached": false,
+     "seconds": 87.8,
+     "error": "429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_<redacted>` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196395, Requested 5313. Please try again in 12m17.856s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billi",
+     "verdict": null
+    }
+   }
+  },
+  "pydantic__35499357639": {
+   "name": "pydantic__35499357639",
+   "repo": "pydantic/pydantic",
+   "branch": "fix-create-model-validators-typing",
+   "workflow": "CI",
+   "html_url": "https://github.com/pydantic/pydantic/actions/runs/35499357639",
+   "head_sha": "c91856c5a0a0704ec29a9e21710b5510ac073eb6",
+   "overview": "repository:  pydantic/pydantic\nworkflow:    CI\nevent:       pull_request on fix-create-model-validators-typing\ncommit:      c91856c5a0a0704ec29a9e21710b5510ac073eb6\nconclusion:  failure (attempt 1)\njobs:        7 failed of 66\n\ndistinct failures:\n  1. Lint 3.13  [6 jobs]\n     failed at step: Run pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd\n  2. check\n     failed at step: Decide whether the needed jobs succeeded or failed",
+   "failed_jobs": [
+    "Lint 3.13",
+    "Lint 3.11",
+    "Lint 3.10",
+    "Lint 3.15",
+    "Lint 3.14",
+    "Lint 3.12",
+    "check"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "ruff__35431390053": {
+   "name": "ruff__35431390053",
+   "repo": "astral-sh/ruff",
+   "branch": "micha/ty-uv-project-metadata-watch",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/ruff/actions/runs/35431390053",
+   "head_sha": "fffec50f701932d43db745ce159e3c39314b3f06",
+   "overview": "repository:  astral-sh/ruff\nworkflow:    CI\nevent:       pull_request on micha/ty-uv-project-metadata-watch\ncommit:      fffec50f701932d43db745ce159e3c39314b3f06\nconclusion:  failure (attempt 1)\njobs:        4 failed of 46\n\ndistinct failures:\n  1. all required checks passed\n     failed at step: Check required jobs passed\n  2. cargo clippy\n     failed at step: Clippy\n  3. cargo test (linux)\n     failed at step: Run tests\n  4. cargo test (linux, release)\n     failed at step: Run tests",
+   "failed_jobs": [
+    "cargo clippy",
+    "cargo test (linux, release)",
+    "cargo test (linux)",
+    "all required checks passed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "ruff__35496013565": {
+   "name": "ruff__35496013565",
+   "repo": "astral-sh/ruff",
+   "branch": "lerebear/push-rtoryuwmrrlx",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/ruff/actions/runs/35496013565",
+   "head_sha": "2368734c82d4cf5380597b973247cf6807d797fc",
+   "overview": "repository:  astral-sh/ruff\nworkflow:    CI\nevent:       pull_request on lerebear/push-rtoryuwmrrlx\ncommit:      2368734c82d4cf5380597b973247cf6807d797fc\nconclusion:  failure (attempt 1)\njobs:        4 failed of 45\n\ndistinct failures:\n  1. all required checks passed\n     failed at step: Check required jobs passed\n  2. cargo publish dry-run\n     failed at step: cargo publish dry-run\n  3. cargo test (linux)\n     failed at step: Run tests\n  4. cargo test (linux, release)\n     failed at step: Run tests",
+   "failed_jobs": [
+    "cargo test (linux, release)",
+    "cargo publish dry-run",
+    "cargo test (linux)",
+    "all required checks passed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "ruff__35496014017": {
+   "name": "ruff__35496014017",
+   "repo": "astral-sh/ruff",
+   "branch": "lerebear/push-ownnyrxvlomu",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/ruff/actions/runs/35496014017",
+   "head_sha": "1fc793186718d1aff33c03cb127658065a6923ba",
+   "overview": "repository:  astral-sh/ruff\nworkflow:    CI\nevent:       pull_request on lerebear/push-ownnyrxvlomu\ncommit:      1fc793186718d1aff33c03cb127658065a6923ba\nconclusion:  failure (attempt 1)\njobs:        5 failed of 45\n\ndistinct failures:\n  1. cargo test (linux)  [2 jobs]\n     failed at step: Run tests\n  2. all required checks passed\n     failed at step: Check required jobs passed\n  3. cargo hawk\n     failed at step: Hawk\n  4. cargo publish dry-run\n     failed at step: cargo publish dry-run",
+   "failed_jobs": [
+    "cargo hawk",
+    "cargo test (linux)",
+    "cargo publish dry-run",
+    "cargo test (linux, release)",
+    "all required checks passed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "scikit-learn__35408108521": {
+   "name": "scikit-learn__35408108521",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "fix-random-projection-auto-feature-names-out",
+   "workflow": "Check Changelog",
+   "html_url": "https://github.com/scikit-learn/scikit-learn/actions/runs/35408108521",
+   "head_sha": "b7f4431716a2c32f1f3d7bf3568edf1b16072a42",
+   "overview": "repository:  scikit-learn/scikit-learn\nworkflow:    Check Changelog\nevent:       pull_request on fix-random-projection-auto-feature-names-out\ncommit:      b7f4431716a2c32f1f3d7bf3568edf1b16072a42\nconclusion:  failure (attempt 1)\njobs:        1 failed of 1\n\ndistinct failures:\n  1. A reviewer will let you know if it is required or can be bypassed\n     failed at step: Check changelog entry",
+   "failed_jobs": [
+    "A reviewer will let you know if it is required or can be bypassed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "scikit-learn__35425065902": {
+   "name": "scikit-learn__35425065902",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "doc-fix-34987",
+   "workflow": "Unit tests",
+   "html_url": "https://github.com/scikit-learn/scikit-learn/actions/runs/35425065902",
+   "head_sha": "a61c903fac042cea48303bd06d7dbe94cd8defa4",
+   "overview": "repository:  scikit-learn/scikit-learn\nworkflow:    Unit tests\nevent:       pull_request on doc-fix-34987\ncommit:      a61c903fac042cea48303bd06d7dbe94cd8defa4\nconclusion:  failure (attempt 1)\njobs:        2 failed of 8\n\ndistinct failures:\n  1. Check all job statuses\n     failed at step: Run re-actors/alls-green@release/v1\n  2. Lint\n     failed at step: Run linters",
+   "failed_jobs": [
+    "Lint",
+    "Check all job statuses"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "scikit-learn__35491264734": {
+   "name": "scikit-learn__35491264734",
+   "repo": "scikit-learn/scikit-learn",
+   "branch": "fix_tsne_segfault_32788",
+   "workflow": "Unit tests",
+   "html_url": "https://github.com/scikit-learn/scikit-learn/actions/runs/35491264734",
+   "head_sha": "6df306b0ab7ce1283f027a17f4d5d3497f010b90",
+   "overview": "repository:  scikit-learn/scikit-learn\nworkflow:    Unit tests\nevent:       pull_request on fix_tsne_segfault_32788\ncommit:      6df306b0ab7ce1283f027a17f4d5d3497f010b90\nconclusion:  failure (attempt 1)\njobs:        2 failed of 8\n\ndistinct failures:\n  1. Check all job statuses\n     failed at step: Run re-actors/alls-green@release/v1\n  2. Lint\n     failed at step: Run linters",
+   "failed_jobs": [
+    "Lint",
+    "Check all job statuses"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "sweep__30005314760": {
+   "name": "sweep__30005314760",
+   "repo": "Agence-OOO/sweep",
+   "branch": "v0.1.0",
+   "workflow": "Release desktop app",
+   "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005314760",
+   "head_sha": "84fdc3504b1323a523d23c28512b6cf492fe988d",
+   "overview": "repository:  Agence-OOO/sweep\nworkflow:    Release desktop app\nevent:       push on v0.1.0\ncommit:      84fdc3504b1323a523d23c28512b6cf492fe988d\nconclusion:  failure (attempt 1)\njobs:        4 failed of 4\n\ndistinct failures:\n  1. build (macos-latest, --target aarch64-apple-darwin)  [4 jobs]\n     failed at step: Run tauri-apps/tauri-action@v0",
+   "failed_jobs": [
+    "build (macos-latest, --target aarch64-apple-darwin)",
+    "build (windows-latest)",
+    "build (macos-latest, --target x86_64-apple-darwin)",
+    "build (ubuntu-22.04)"
+   ],
+   "label": {
+    "category": "regression",
+    "root_cause": "Rust compile errors in src-tauri/src/lib.rs:166 — a local 'categories' Vec binding shadows the categories() function",
+    "notes": "Latent: the commit diff only adds .github/workflows/release.yml and never touches lib.rs. This run is the first time CI ever built the crate, which is what exposed it. Good adversarial case — an agent that keys off 'what changed in the diff' will get this wrong.",
+    "labeled_at": "2026-09-19T11:38:06.484279Z"
+   },
+   "scores": {}
+  },
+  "sweep__30005725094": {
+   "name": "sweep__30005725094",
+   "repo": "Agence-OOO/sweep",
+   "branch": "v0.1.0",
+   "workflow": "Release desktop app",
+   "html_url": "https://github.com/Agence-OOO/sweep/actions/runs/30005725094",
+   "head_sha": "1f733da67e40edbfd4c2b25c49f49b8598da02ff",
+   "overview": "repository:  Agence-OOO/sweep\nworkflow:    Release desktop app\nevent:       push on v0.1.0\ncommit:      1f733da67e40edbfd4c2b25c49f49b8598da02ff\nconclusion:  failure (attempt 1)\njobs:        4 failed of 4\n\ndistinct failures:\n  1. build (ubuntu-22.04)  [4 jobs]\n     failed at step: Run tauri-apps/tauri-action@v0",
+   "failed_jobs": [
+    "build (ubuntu-22.04)",
+    "build (macos-latest, --target x86_64-apple-darwin)",
+    "build (macos-latest, --target aarch64-apple-darwin)",
+    "build (windows-latest)"
+   ],
+   "label": {
+    "category": "infra",
+    "root_cause": "Workflow lacks 'contents: write' permission, so tauri-action could not create release v0.1.0",
+    "notes": "All 4 matrix jobs fail identically at the same step; the build itself succeeded and produced artifacts. Fix is a permissions block in the workflow YAML, not a code change.",
+    "labeled_at": "2026-09-19T11:28:50.582729Z"
+   },
+   "scores": {
+    "google:gemini-3.5-flash": {
+     "fixture": "sweep__30005725094",
+     "label": "infra",
+     "predicted": "infra",
+     "correct": true,
+     "confidence": 0.98,
+     "route": "human_review",
+     "cited": 1,
+     "verified": 1,
+     "faults": {},
+     "tokens": 16700,
+     "burned": 0,
+     "requests": 4,
+     "cached": false,
+     "seconds": 11.9,
+     "error": null,
+     "verdict": {
+      "category": "infra",
+      "confidence": 0.98,
+      "summary": " release workflow failed because `GITHUB_TOKEN` lacks write permissions (`contents: write`) required to create a GitHub release for tag `v0.1.0`.",
+      "reasoning": "When running the `tauri-apps/tauri-action` step to create a release for tag `v0.1.0`, GitHub API returned `Resource not accessible by integration`. This is a permission error indicating that the workflow's `GITHUB_TOKEN` does not have `contents: write` permissions (or repository permissions are set to read-only for GITHUB_TOKEN). Because the issue is caused by CI workflow permissions rather than application source code, the category is `infra`.",
+      "evidence": [
+       {
+        "job_name": "build (ubuntu-22.04)",
+        "log_path": "2_build (ubuntu-22.04).txt",
+        "line_start": 1994,
+        "line_end": 1995,
+        "quote": "Couldn't find release with tag v0.1.0. Creating one.\n##[error]Resource not accessible by integration - https://docs.github.com/rest/releases/releases#create-a-release",
+        "why": "The tauri-action step failed when attempting to create a GitHub release due to insufficient GITHUB_TOKEN API permissions."
+       }
+      ],
+      "suggested_fix": "Add `permissions: contents: write` to the workflow configuration file or grant write permissions to `GITHUB_TOKEN` in repository settings under Settings > Actions > General > Workflow permissions."
+     }
+    }
+   }
+  },
+  "uv__35371185310": {
+   "name": "uv__35371185310",
+   "repo": "astral-sh/uv",
+   "branch": "charlie/test-scheduling",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/uv/actions/runs/35371185310",
+   "head_sha": "e29d9f273eed90a7a7688ddc28cf5db343709b22",
+   "overview": "repository:  astral-sh/uv\nworkflow:    CI\nevent:       pull_request on charlie/test-scheduling\ncommit:      e29d9f273eed90a7a7688ddc28cf5db343709b22\nconclusion:  failure (attempt 2)\njobs:        2 failed of 59\n\ndistinct failures:\n  1. all required jobs passed\n     failed at step: Check required jobs passed\n\n1 failed job(s) have no log in this capture: test / cargo test on linux",
+   "failed_jobs": [
+    "test / cargo test on linux",
+    "all required jobs passed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "uv__35371954060": {
+   "name": "uv__35371954060",
+   "repo": "astral-sh/uv",
+   "branch": "ww/test-pub-cleanup",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/uv/actions/runs/35371954060",
+   "head_sha": "8882e37363da4643675aaded28e42c168ebacb0a",
+   "overview": "repository:  astral-sh/uv\nworkflow:    CI\nevent:       pull_request on ww/test-pub-cleanup\ncommit:      8882e37363da4643675aaded28e42c168ebacb0a\nconclusion:  failure (attempt 1)\njobs:        5 failed of 86\n\ndistinct failures:\n  1. check-lint / clippy on linux  [3 jobs]\n     failed at step: Clippy\n  2. all required jobs passed\n     failed at step: Check required jobs passed\n  3. test / cargo test on linux\n     failed at step: Cargo test",
+   "failed_jobs": [
+    "check-lint / clippy on linux",
+    "check-lint / clippy on windows",
+    "check-lint / hawk",
+    "test / cargo test on linux",
+    "all required jobs passed"
+   ],
+   "label": null,
+   "scores": {}
+  },
+  "uv__35372848757": {
+   "name": "uv__35372848757",
+   "repo": "astral-sh/uv",
+   "branch": "charlie/resolver-requirement-scope",
+   "workflow": "CI",
+   "html_url": "https://github.com/astral-sh/uv/actions/runs/35372848757",
+   "head_sha": "b17362d4d2bcc3445e7b201ea536517abf3c3208",
+   "overview": "repository:  astral-sh/uv\nworkflow:    CI\nevent:       pull_request on charlie/resolver-requirement-scope\ncommit:      b17362d4d2bcc3445e7b201ea536517abf3c3208\nconclusion:  failure (attempt 1)\njobs:        1 failed of 122\n\ndistinct failures:\n  1. build-docker / build python:3.9-trixie,python3.9-trixie\n     failed at step: Run docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+   "failed_jobs": [
+    "build-docker / build python:3.9-trixie,python3.9-trixie"
+   ],
+   "label": null,
+   "scores": {}
+  }
+ },
+ "recordings": {
+  "langchain__34329491939": [
+   {
+    "model": "groq:openai/gpt-oss-120b",
+    "path": "demo/recordings/langchain__34329491939/groq_openai_gpt-oss-120b.json",
+    "recorded_at": "2026-11-20T14:22:56.779Z",
+    "duration_ms": 7570,
+    "category": "regression",
+    "evidence_ok": true,
+    "comment": "<!-- ci-triage run:34329491939 -->\n### CI triage: **regression** (confidence 0.99)\n\nThe CI job failed because CLAUDE.md and AGENTS.md are not identical, as shown by the error output and diff, indicating a regression in the repository's documentation.\n\n<details><summary>Evidence — 1 citation(s), each verified against the log</summary>\n\n**verify files are identical** · `0_verify files are identical.txt` lines 143-146\n> The verification script detected differences between CLAUDE.md and AGENTS.md and exited with an error, causing the job to fail.\n\n```text\n❌ CLAUDE.md and AGENTS.md are out of sync!\n\nThese files must contain identical content.\nDifferences:\n```\n\n</details>\n\n<sub>[run 34329491939, attempt 2](https://github.com/langchain-ai/langchain/actions/runs/34329491939) · posted by ci-triage because its confidence cleared the threshold, and every quoted line was found where it says it is.</sub>"
+   }
+  ]
+ }
+}

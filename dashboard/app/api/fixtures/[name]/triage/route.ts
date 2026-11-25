@@ -2,6 +2,7 @@ import { UI_MESSAGE_STREAM_HEADERS } from "ai";
 import type { NextRequest } from "next/server";
 
 import { AgentError, agentFetch } from "@/lib/agent";
+import { DEMO } from "@/lib/demo";
 
 // A triage is several model round trips; on a free tier, a rate-limit wait
 // can sit in the middle of one.
@@ -14,6 +15,8 @@ export const maxDuration = 300;
  * speaks it — so this adds the token and passes the bytes through untouched.
  */
 export async function POST(req: NextRequest, ctx: RouteContext<"/api/fixtures/[name]/triage">) {
+  // A public demo calls no model: anyone could spend the quota.
+  if (DEMO) return new Response("not available in the demo", { status: 404 });
   const { name } = await ctx.params;
   const model = req.nextUrl.searchParams.get("model");
   const query = model ? `?model=${encodeURIComponent(model)}` : "";

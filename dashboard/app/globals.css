@@ -1,51 +1,41 @@
 @import "tailwindcss";
 
+/*
+ * The transit-map world: a midnight enamel ground, porcelain type and rules,
+ * and one line ink per failure category. One theme on purpose: the map is a
+ * lit enamel mural, not a page that flips with the OS.
+ */
 :root {
-  --bg: #fbfbfa;
-  --panel: #ffffff;
-  --sunken: #f3f3f1;
-  --line: #e4e4e0;
-  --fg: #1b1b19;
-  --muted: #6b6b66;
-  --accent: #2f5bd3;
+  color-scheme: dark;
 
-  --ok: #1f7a4d;
-  --ok-bg: #e5f4ec;
-  --bad: #b3261e;
-  --bad-bg: #fbe9e7;
-  --warn: #8a5a00;
-  --warn-bg: #fdf1d8;
+  --bg: #0b1230; /* midnight enamel */
+  --panel: #0f1a3e; /* a raised enamel plate */
+  --sunken: #070c22; /* the log display, recessed */
+  --line: rgb(244 241 234 / 0.14); /* porcelain hairline */
+  --line-strong: rgb(244 241 234 / 0.32);
+  --fg: #f4f1ea; /* porcelain */
+  --muted: #a3adc9;
+  --faint: #7d88ab; /* ≥ 4.8:1 on both the ground and the plates */
+  --accent: #9db8ff; /* links and focus: a pale cobalt that reads on navy */
 
-  --cat-regression: #b3261e;
-  --cat-flaky: #8a5a00;
-  --cat-infra: #2f5bd3;
-  --cat-dependency: #7a3fb5;
-  --cat-unknown: #6b6b66;
-}
+  --ok: #6fdc95;
+  --ok-bg: rgb(34 177 76 / 0.16);
+  --bad: #ff6b72;
+  --bad-bg: rgb(226 29 45 / 0.18);
+  --warn: #ffd257;
+  --warn-bg: rgb(255 194 14 / 0.14);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111110;
-    --panel: #191918;
-    --sunken: #0c0c0b;
-    --line: #2c2c2a;
-    --fg: #ececea;
-    --muted: #9a9a94;
-    --accent: #8aa8ff;
+  /* Line inks: one per category, as on a rail map. */
+  --cat-regression: #e21d2d;
+  --cat-flaky: #ffc20e;
+  --cat-infra: #2f6bff;
+  --cat-dependency: #22b14c;
+  --cat-unknown: #8b93ad;
 
-    --ok: #5fcf96;
-    --ok-bg: #12291d;
-    --bad: #ff8a80;
-    --bad-bg: #3a1714;
-    --warn: #f0c060;
-    --warn-bg: #33270d;
-
-    --cat-regression: #ff8a80;
-    --cat-flaky: #f0c060;
-    --cat-infra: #8aa8ff;
-    --cat-dependency: #c79bff;
-    --cat-unknown: #9a9a94;
-  }
+  /* Pills carry 11px caps in porcelain: the two dark inks go a step deeper
+     there so the type clears 4.5:1. The map's lines keep the brighter inks. */
+  --pill-regression: #c8192a;
+  --pill-infra: #2558e0;
 }
 
 @theme inline {
@@ -53,8 +43,10 @@
   --color-panel: var(--panel);
   --color-sunken: var(--sunken);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-accent: var(--accent);
   --color-ok: var(--ok);
   --color-ok-bg: var(--ok-bg);
@@ -62,21 +54,72 @@
   --color-bad-bg: var(--bad-bg);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-regression: var(--cat-regression);
+  --color-flaky: var(--cat-flaky);
+  --color-infra: var(--cat-infra);
+  --color-dependency: var(--cat-dependency);
+  --color-unknown: var(--cat-unknown);
+  --font-sans: var(--font-barlow);
+  --font-display: var(--font-barlow-condensed);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 body {
   background: var(--bg);
   color: var(--fg);
+  font-feature-settings: "tnum" 0;
+}
+
+::selection {
+  background: rgb(157 184 255 / 0.32);
+  color: var(--fg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Station labels: condensed caps, as on the signage. */
+.label {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 /* Log excerpts and tool output: long lines scroll, never wrap mid-token. */
 .log {
   font-family: var(--font-mono);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.6;
   white-space: pre;
   overflow: auto;
   tab-size: 4;
+}
+
+/* The Action's comment, rendered from its markdown. */
+.comment-body details > summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.comment-body sub {
+  font-size: 12px;
+  color: var(--faint);
+}
+.comment-body h3 {
+  font-size: 16px;
+  font-weight: 600;
 }

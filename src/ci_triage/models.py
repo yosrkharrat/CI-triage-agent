@@ -83,6 +83,8 @@ class WorkflowRun(BaseModel):
 
     id: int
     name: str | None = None
+    #: The run's name as shown, from the workflow's `run-name:` when it sets one.
+    display_title: str | None = None
     head_branch: str | None = None
     head_sha: str
     event: str
@@ -93,6 +95,9 @@ class WorkflowRun(BaseModel):
     html_url: str
     created_at: datetime
     repository: Repository
+    #: Where the commit lives. Differs from `repository` for a fork's PR, and
+    #: delegation never hands a fork's code to an agent with write access.
+    head_repository: Repository | None = None
     pull_requests: list[PullRequestRef] = Field(default_factory=list)
 
     @property

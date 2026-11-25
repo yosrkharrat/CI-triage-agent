@@ -23,7 +23,7 @@ resting on a quote the log does not contain is never posted.
 | **Corpus** | 43 real failed runs captured from open-source repos (pandas, pydantic, …): logs, diff and test history, ~370 MB |
 | **Result so far** | `gpt-oss-120b`: **92%** of citations verified (44 / 48). `gpt-oss-20b`: **52%** (15 / 29), and 2 of its confident verdicts would have posted an invented quote. The service blocks those. |
 | **What runs** | GitHub Action (one workflow file) · CLI + eval harness · FastAPI webhook service for a GitHub App · human review queue · sandbox that reproduces a failure and tests a patch · Next.js dashboard that streams a triage live |
-| **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 233 tests, ruff + mypy in CI |
+| **Engineering** | Idempotent webhook intake, compare-and-set state changes in SQLite (race-tested with 8 concurrent reviewers), content-addressed verdict cache, 377 tests, ruff + mypy in CI |
 
 ```mermaid
 flowchart LR
@@ -124,7 +124,7 @@ uv run ci-triage eval --cached-only       # re-score the stored verdicts, at no 
 [Install](#add-it-to-your-repo-in-two-minutes) · [How it works](#how-it-works) · [Scoring it](#scoring-it) ·
 [Live runs](#running-it-on-live-runs) · [Data model](#the-data-model) ·
 [Dashboard](#the-dashboard) · [Reproducing a failure](#reproducing-a-failure) ·
-[At scale](#what-changes-at-scale) · [Not done yet](#not-done-yet)
+[Handing a fix to Claude](#handing-a-fix-to-claude) · [At scale](#what-changes-at-scale) · [Not done yet](#not-done-yet)
 
 ## Status
 
@@ -132,7 +132,11 @@ uv run ci-triage eval --cached-only       # re-score the stored verdicts, at no 
 harness work end to end against 43 captured runs, and a webhook service runs the
 same agent on live runs, with a review gate for the verdicts it will not post on
 its own. The agent can reproduce a failure in a sandbox when asked to, and a
-dashboard streams a triage as it happens.
+dashboard streams a triage as it happens. The service can also hand a diagnosed
+regression to Claude and follow the fix through CI until a mechanical check
+says it is fixed. It has run end to end on three deliberately broken pull
+requests: one [fixed](reports/delegation-e2e-2026-11-25.md), two honestly
+given up.
 
 **What is not measured yet.** Category accuracy has no score so far. Three of the 43
 fixtures carry a human label (two `regression`, one `infra`), and no sweep has
@@ -331,7 +335,9 @@ re-run rather than stacking another.
 The handler only checks the signature and queues the run in SQLite, keyed on
 `(repo, run, attempt)`, so a redelivered webhook changes nothing. A run
 interrupted by a restart is picked up again on the next start. A run that hits
-the model's quota waits and retries instead of failing. Every verdict, posted
+the model's quota waits and retries instead of failing, and so does one that
+hits a GitHub rate limit: it is deferred to the time GitHub says the limit
+resets. Every verdict, posted
 or not, is at `GET /runs` along with the comment it would have posted.
 
 A verdict in `awaiting_review` is moved on by a person:
@@ -351,7 +357,10 @@ but it cannot post a verdict whose citations failed verification: a person can
 vouch for a judgement, not for a quote the log does not contain. Those can only
 be rejected. Approval still respects the dry-run switch and still needs an open
 pull request, and a run is decided once, so two reviewers acting at the same
-moment cannot both post it — what makes that true, and the test that races it,
+moment cannot both post it. An approval whose post was cut short (the process
+died, or GitHub rate-limited it) stays `approved` and is posted again, at the
+next start or when the limit resets; the comment's marker makes that an edit,
+not a second comment — what makes that true, and the test that races it,
 are under [the data model](#the-data-model).
 
 ```bash
@@ -367,9 +376,121 @@ write**, and a subscription to the **Workflow run** event. The service binds to
 localhost; expose it with a tunnel (`cloudflared`, `ngrok`) rather than a
 public interface, since `/runs` has no authentication.
 
+## Handing a fix to Claude
+
+With `CI_TRIAGE_DELEGATE=review` (or `auto`), a diagnosis that is good enough
+to act on is handed to [claude-code-action](https://github.com/anthropics/claude-code-action),
+and the service follows the fix through CI. It is off by default: it gives an
+agent write access to a branch of the repository.
+
+**What is handed over.** A `regression` whose citations all verified, with
+confidence at or above the posting threshold (0.70), on an open pull request
+from the repository itself. A fork's code is never handed to an agent holding
+write access to the base repository. One delegation is open per pull request at
+a time. In `review` mode it waits as `proposed` until a person approves it;
+approving it also approves the diagnosis, so the PR gets the comment and the
+fix together from one decision.
+
+**What Claude is told.** A brief built from the verified diagnosis: the log
+quotes with their coordinates, the failing command, the files the commit
+changed, the reasoning, the suggested fix marked as an unverified hint, and the
+rules below. The quotes are fenced and labelled as data, not instructions, since
+test output can carry whatever its author printed. It goes out as a
+`repository_dispatch` to [`examples/ci-triage-fix.yml`](examples/ci-triage-fix.yml),
+which cuts `ci-triage/fix-<id>` from the PR head and runs Claude there.
+
+**What "fixed" means.** Not a green checkmark. A run of the same workflow, on
+the fix branch's latest commit, in which every job that failed before concludes
+`success` (skipped does not count), no other job fails, and a diff guard passes.
+The guard ([`guard.py`](src/ci_triage/guard.py)) refuses the ways to turn a red
+test green without fixing it:
+
+- a deleted test file, or a test function deleted or renamed out of collection
+  (`test_x` → `_test_x`, `it(` → `xit(`), counted per file;
+- an added skip, xfail, `.only`, `t.Skip`, `# type: ignore` or `noqa` in any
+  test file;
+- any change under `.github/`, or to test, lint or CI configuration
+  (`pytest.ini`, `addopts`, `--deselect`, conftest collection hooks, jest's
+  ignore patterns, the `test` script);
+- a diff GitHub did not show in full (a file without a patch, or the 300-file
+  limit): the guard fails closed;
+- assertions removed from a test file the log cited are flagged for the
+  reviewer rather than failed, since sometimes the test was what was wrong.
+
+With `CI_TRIAGE_SANDBOX` set, a fix must also reproduce the failure at the
+original commit and pass with the fix applied before it is reported fixed.
+
+**Following it.** Once Claude pushes, the service opens a draft PR from the fix
+branch into the author's branch, which is what starts their `pull_request` CI
+on it. A CI run on the fix branch is checked against its delegation and never
+triaged as a run of its own. A failed attempt is diagnosed again, and the next
+brief carries what went wrong: the new verdict, or the guard's violations. After
+the last attempt (two by default) it gives up and says so on the PR. One comment
+on the PR follows the whole thing, edited at each step. The fix workflow's own run counts
+too: if it fails, or ends without Claude pushing anything (which is what Claude
+is told to do when it cannot fix the failure within the rules), that is a
+failed attempt at once, rather than when the deadline passes. The workflow's
+`run-name` carries the fix branch so the service can tell which delegation a
+run belongs to.
+
+```mermaid
+stateDiagram-v2
+    [*] --> proposed: eligible, review mode
+    [*] --> approved: eligible, auto mode
+    proposed --> approved: a person approves
+    proposed --> rejected: a person rejects
+    approved --> dispatched: repository_dispatch sent
+    dispatched --> fixed: failed jobs pass, nothing else fails, guard passes
+    dispatched --> retry: not fixed, attempts left
+    retry --> dispatched: sent again, with what went wrong
+    dispatched --> gave_up: not fixed, last attempt
+    dispatched --> stale: no CI run before the deadline (2 h)
+    dispatched --> superseded: the author pushed to the PR
+    dispatched --> closed: the PR was closed
+```
+
+Every move is a compare-and-set against a fixed transition table, so a
+redelivered webhook, the worker's poll and a reviewer cannot move the same
+delegation twice. A run on an older fix-branch commit, a re-run of a commit
+already judged, and another workflow's run on the fix branch are all ignored.
+
+**Setting it up.** The App additionally needs **Contents: write** (for the
+dispatch) and **Pull requests: write**, and subscriptions to **Push** and
+**Pull request** so housekeeping wakes when Claude pushes. In the repository:
+
+- copy `examples/ci-triage-fix.yml` to the default branch, with an
+  `ANTHROPIC_API_KEY` secret;
+- install the [Claude GitHub App](https://github.com/apps/claude), so Claude's
+  push uses its token. A push made with the workflow's `GITHUB_TOKEN` starts no
+  CI run, and the fix would never be checked;
+- let CI run on a pull request into a non-default branch: a `pull_request:`
+  trigger without a `branches: [main]` filter.
+
+```bash
+echo 'CI_TRIAGE_DELEGATE=review' >> .env.local   # or auto; off by default
+uv run ci-triage serve
+```
+
+Proposed delegations show on the dashboard's review queue, drawn on the run
+page as one line from the failed run to the outcome, and are at
+`GET /delegations`; `POST /delegations/{id}/approve` and `/reject` take the
+review token. To try it without a public URL for the webhook,
+`scripts/relay_runs.py` polls a repository's runs and delivers them to a local
+service.
+
+**What it has been tried on.** Three pull requests on ci-triage-demo, each
+broken on purpose ([the report](reports/delegation-e2e-2026-11-25.md)). A
+refactor that dropped a quantity was fixed in one attempt with a one-line diff,
+and reported fixed once CI and the guard passed. A test contradicting another,
+and a test needing a plugin CI does not install, were both given up: Claude
+pushed nothing and said why, naming the shortcuts it would not take, and the
+service posted that on the PR. Four bugs the run found are fixed. Three cases
+show the chain works; how often it fixes real regressions is not measured.
+
 ## The data model
 
-The service keeps one table. Every webhook it accepts becomes one row, and that
+The service keeps one table for runs, and a second for
+[delegations](#handing-a-fix-to-claude) when that is switched on. Every webhook it accepts becomes one row, and that
 row carries the run through triage, review and posting:
 
 ```sql
@@ -461,7 +582,7 @@ followed by a write, 50 runs were claimed 197 times.
 stateDiagram-v2
     [*] --> queued: webhook (INSERT OR IGNORE)
     queued --> running: claim_next (CAS)
-    running --> queued: model quota (429), retried in 30 min<br/>or process restart
+    running --> queued: model quota (429), retried in 30 min<br/>GitHub rate limit, at its reset<br/>or process restart
     running --> posted: auto-post, every citation verified
     running --> dry_run: same, posting switched off
     running --> no_pr: postable, no open PR
@@ -469,6 +590,7 @@ stateDiagram-v2
     running --> failed
     awaiting_review --> approved: claim_review (CAS)
     awaiting_review --> rejected: claim_review (CAS)
+    approved --> approved: post cut short<br/>retried at start or at the reset
     approved --> posted
     approved --> dry_run
     approved --> no_pr
@@ -697,10 +819,11 @@ uv.
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- A run left in `approved` stays there. If the process dies between a reviewer
-  approving a run and the comment being recorded, the row has no way out:
-  `claim_review` only moves runs out of `awaiting_review`, and the restart sweep
-  only requeues `running` rows. Posting is idempotent, so the fix is for startup
-  to re-post `approved` rows as it requeues `running` ones.
-- A GitHub rate limit fails a run instead of deferring it to
-  `x-ratelimit-reset`.
+- Delegation on real regressions, not hand-made ones: three demo cases show
+  the chain works, not how often it fixes things. The public dashboard demo
+  replays triages but not yet a delegation chain.
+- In `auto` mode the diagnosis comment of a delegated regression still waits in
+  review while the fix is sent; only `review` mode approves both together.
+- `dependency` failures are not delegated yet. Many of their fixes pin an action
+  under `.github/workflows/`, which the guard refuses; allowing it means a guard
+  rule that accepts a change to nothing but a `uses:` ref.

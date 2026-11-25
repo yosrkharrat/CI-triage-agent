@@ -25,11 +25,19 @@ function argsOf(input: unknown): string {
   return entries.map(([k, v]) => `${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`).join(", ");
 }
 
+/** A call to a tool the agent does not have, which the framework rejected. */
+export function isMalformed(part: ToolPart): boolean {
+  return part.state === "output-error" && !(getToolName(part) in LABEL);
+}
+
 export function ToolCard({ part, compact = false }: { part: ToolPart; compact?: boolean }) {
   const name = getToolName(part);
-  const args = argsOf(part.input);
   const running = part.state === "input-streaming" || part.state === "input-available";
   const failed = part.state === "output-error";
+  // A call to a tool the agent does not have: the framework rejects it and
+  // the model tries again. Say so, rather than show a mystery tool failing.
+  const malformed = isMalformed(part);
+  const args = malformed ? (part.errorText ?? "").split("\n")[0] : argsOf(part.input);
   const output =
     part.state === "output-available"
       ? typeof part.output === "string"
@@ -43,15 +51,13 @@ export function ToolCard({ part, compact = false }: { part: ToolPart; compact?: 
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-sm">
         <span
           className={`size-2 shrink-0 rounded-full ${
-            running ? "animate-pulse bg-accent" : failed ? "bg-bad" : "bg-ok"
+            running ? "motion-safe:animate-pulse bg-accent" : failed ? "bg-bad" : "bg-ok"
           }`}
         />
-        <span className="font-medium">{LABEL[name] ?? name}</span>
-        <code className="truncate font-mono text-xs text-muted">
-          {name}({args})
-        </code>
+        <span className="shrink-0 font-medium">{malformed ? "Malformed call, rejected" : (LABEL[name] ?? name)}</span>
+        <code className="truncate font-mono text-xs text-muted">{malformed ? args : `${name}(${args})`}</code>
         <span className="ml-auto shrink-0 text-xs text-muted">
-          {running ? "running…" : failed ? "failed" : `${lines} line${lines === 1 ? "" : "s"}`}
+          {running ? "running…" : malformed ? "the agent retried" : failed ? "failed" : `${lines} line${lines === 1 ? "" : "s"}`}
         </span>
       </summary>
       {(output || failed) && (

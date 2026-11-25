@@ -31,3 +31,37 @@ served by the Python agent's own tools there, so both read the same evidence.
 
 The review token stays on the Next.js server. The browser only ever talks to
 this app.
+
+## Replay mode: the public demo
+
+A public deployment can't run triages on demand. Each one spends about 19k
+tokens of a free quota that covers about ten a day, and the corpus is about
+400 MB of logs. So the demo replays real triages that were recorded once:
+
+```bash
+uv run ci-triage serve                          # from the repo root
+cd dashboard
+pnpm demo:record                                # snapshot the corpus, spends no tokens
+pnpm demo:record <run> [<run> ...]              # + record each run on both models
+pnpm demo:record --model groq:openai/gpt-oss-20b <run>
+pnpm demo:record --force <run>                  # record that run again
+pnpm build:demo && pnpm start:demo              # or pnpm dev:demo
+```
+
+The recorder saves every chunk the agent streamed, with the time it arrived, in
+`public/demo/recordings/`. It saves the API responses for the corpus and each
+run's detail in `demo/snapshot.json`. It skips a run that ends without a
+verdict (for example, when the quota is spent), so the demo never replays a
+failure by accident. Only corpus runs go in the snapshot, because the service's
+live captures may come from private repos.
+
+With `CI_TRIAGE_DEMO=replay`:
+
+- Every page is prerendered from the snapshot.
+- The browser replays each recording through `ReplayTransport` (`lib/replay.ts`),
+  at the pace the run streamed. Pauses are capped at 1.2 s.
+- The ask and triage routes return 404, and the review queue explains that it
+  needs the service.
+
+No model is called and no key is needed, so the demo can be hosted for free as a
+static site.

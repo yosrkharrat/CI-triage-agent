@@ -46,13 +46,77 @@ class Status(str, Enum):
     #: Postable, but no open pull request to post it on.
     NO_PR = "no_pr"
     #: A human approved it and it is being posted. A row left here means the
-    #: process died mid-post. The comment is keyed on a marker, so posting it
-    #: again would edit rather than duplicate it — but nothing does yet:
-    #: `claim_review` only leaves `awaiting_review`, so such a row is stuck.
+    #: process died mid-post, or GitHub rate-limited the post (then
+    #: `not_before` says when to try again). The worker re-posts both: the
+    #: comment is keyed on a marker, so posting again edits rather than
+    #: duplicates it.
     APPROVED = "approved"
     #: A human decided it should not be posted.
     REJECTED = "rejected"
     FAILED = "failed"
+    #: A run on a fix branch, checked against its delegation rather than
+    #: triaged on its own. `reason` says what the check concluded.
+    CHECKED = "checked"
+
+
+class Kind(str, Enum):
+    #: A failed run, triaged and routed.
+    TRIAGE = "triage"
+    #: A completed run on a delegation's fix branch, of any conclusion. It is
+    #: never triaged as a run of its own: the normal path would look up PRs
+    #: for Claude's commit and could comment on the wrong one.
+    FOLLOW_UP = "follow_up"
+
+
+class DelegationStatus(str, Enum):
+    #: Eligible, waiting for a person (`CI_TRIAGE_DELEGATE=review`).
+    PROPOSED = "proposed"
+    #: Cleared to be sent, by a person or by `auto` mode. Not sent yet.
+    APPROVED = "approved"
+    #: Sent to Claude; waiting for its push and the CI run after it.
+    DISPATCHED = "dispatched"
+    #: An attempt failed and another is allowed. Waiting to be sent again.
+    RETRY = "retry"
+    FIXED = "fixed"
+    GAVE_UP = "gave_up"
+    REJECTED = "rejected"
+    #: Nothing came back before the deadline.
+    STALE = "stale"
+    #: The author pushed to the PR, so the fix was for a commit that is gone.
+    SUPERSEDED = "superseded"
+    #: The pull request was closed or merged.
+    CLOSED = "closed"
+
+
+#: A delegation in one of these is still in flight; at most one per PR.
+OPEN_DELEGATION = (
+    DelegationStatus.PROPOSED,
+    DelegationStatus.APPROVED,
+    DelegationStatus.DISPATCHED,
+    DelegationStatus.RETRY,
+)
+
+#: Every move a delegation may make. Anything else is refused, so a late or
+#: redelivered event cannot reopen a closed one.
+TRANSITIONS: dict[DelegationStatus, frozenset[DelegationStatus]] = {
+    DelegationStatus.PROPOSED: frozenset({
+        DelegationStatus.APPROVED, DelegationStatus.REJECTED,
+        DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED, DelegationStatus.STALE,
+    }),
+    DelegationStatus.APPROVED: frozenset({
+        DelegationStatus.DISPATCHED, DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED,
+    }),
+    DelegationStatus.DISPATCHED: frozenset({
+        DelegationStatus.FIXED, DelegationStatus.RETRY, DelegationStatus.GAVE_UP,
+        DelegationStatus.STALE, DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED,
+        # A dispatch that GitHub refused goes back to wait for the next try.
+        DelegationStatus.APPROVED,
+    }),
+    DelegationStatus.RETRY: frozenset({
+        DelegationStatus.DISPATCHED, DelegationStatus.GAVE_UP,
+        DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED,
+    }),
+}
 
 
 _SCHEMA = """
@@ -80,14 +144,58 @@ CREATE TABLE IF NOT EXISTS runs (
     reviewed_by   TEXT,
     reviewed_at   TEXT,
     review_note   TEXT,
+    kind          TEXT    NOT NULL DEFAULT 'triage',
+    delegation    INTEGER,
     UNIQUE (repo, run_id, run_attempt)
 );
 CREATE INDEX IF NOT EXISTS runs_status ON runs (status, received_at);
+
+CREATE TABLE IF NOT EXISTS delegations (
+    id            INTEGER PRIMARY KEY,
+    repo          TEXT    NOT NULL,
+    pr_number     INTEGER NOT NULL,
+    installation  INTEGER,
+    origin_run    INTEGER NOT NULL REFERENCES runs (id),
+    workflow_id   INTEGER NOT NULL,
+    failed_jobs   TEXT    NOT NULL,
+    head_branch   TEXT    NOT NULL,
+    head_sha      TEXT    NOT NULL,
+    base_branch   TEXT,
+    fix_branch    TEXT    NOT NULL,
+    fix_pr        INTEGER,
+    command       TEXT,
+    cited         TEXT,
+    status        TEXT    NOT NULL,
+    attempt       INTEGER NOT NULL DEFAULT 0,
+    max_attempts  INTEGER NOT NULL DEFAULT 2,
+    brief         TEXT    NOT NULL,
+    history       TEXT    NOT NULL DEFAULT '[]',
+    last_run_id   INTEGER,
+    guard_result  TEXT,
+    closed_reason TEXT,
+    error         TEXT,
+    reviewed_by   TEXT,
+    comment_url   TEXT,
+    created_at    TEXT    NOT NULL,
+    updated_at    TEXT    NOT NULL,
+    deadline      TEXT
+);
+-- SQLite will not take `UNIQUE ... WHERE` as a table constraint; a partial
+-- unique index says the same thing: one open delegation per pull request.
+CREATE UNIQUE INDEX IF NOT EXISTS delegations_one_open ON delegations (repo, pr_number)
+    WHERE status IN ('proposed', 'approved', 'dispatched', 'retry');
+CREATE INDEX IF NOT EXISTS delegations_branch ON delegations (repo, fix_branch);
 """
 
 #: Columns added after the first schema, and so missing from a database the
 #: service created before them. `CREATE TABLE IF NOT EXISTS` will not add them.
-_ADDED_COLUMNS = {"reviewed_by": "TEXT", "reviewed_at": "TEXT", "review_note": "TEXT"}
+_ADDED_COLUMNS = {
+    "reviewed_by": "TEXT",
+    "reviewed_at": "TEXT",
+    "review_note": "TEXT",
+    "kind": "TEXT NOT NULL DEFAULT 'triage'",
+    "delegation": "INTEGER",
+}
 
 
 def _now() -> str:
@@ -119,6 +227,8 @@ class RunRecord:
     reviewed_by: str | None
     reviewed_at: str | None
     review_note: str | None
+    kind: Kind = Kind.TRIAGE
+    delegation: int | None = None
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -129,6 +239,7 @@ class RunRecord:
     def _from_row(cls, row: sqlite3.Row) -> RunRecord:
         d = dict(row)
         d["status"] = Status(d["status"])
+        d["kind"] = Kind(d.get("kind") or Kind.TRIAGE.value)
         d["verdict"] = json.loads(d["verdict"]) if d["verdict"] else None
         d["evidence_ok"] = None if d["evidence_ok"] is None else bool(d["evidence_ok"])
         return cls(**d)
@@ -136,7 +247,69 @@ class RunRecord:
     def to_json(self) -> dict:
         d = dict(self.__dict__)
         d["status"] = self.status.value
+        d["kind"] = self.kind.value
         return d
+
+
+@dataclass(frozen=True)
+class Delegation:
+    id: int
+    repo: str
+    pr_number: int
+    installation: int | None
+    origin_run: int
+    workflow_id: int
+    failed_jobs: list[str]
+    head_branch: str
+    head_sha: str
+    base_branch: str | None
+    fix_branch: str
+    fix_pr: int | None
+    command: str | None
+    cited: str | None
+    status: DelegationStatus
+    attempt: int
+    max_attempts: int
+    brief: str
+    #: One entry per attempt that did not fix it: {attempt, outcome, run_id,
+    #: verdict?, guard?}. Carried into the next brief and shown on the dashboard.
+    history: list[dict]
+    last_run_id: int | None
+    guard_result: dict | None
+    closed_reason: str | None
+    error: str | None
+    reviewed_by: str | None
+    comment_url: str | None
+    created_at: str
+    updated_at: str
+    deadline: str | None
+
+    @property
+    def owner_repo(self) -> tuple[str, str]:
+        owner, repo = self.repo.split("/", 1)
+        return owner, repo
+
+    @property
+    def is_open(self) -> bool:
+        return self.status in OPEN_DELEGATION
+
+    @classmethod
+    def _from_row(cls, row: sqlite3.Row) -> Delegation:
+        d = dict(row)
+        d["status"] = DelegationStatus(d["status"])
+        d["failed_jobs"] = json.loads(d["failed_jobs"])
+        d["history"] = json.loads(d["history"] or "[]")
+        d["guard_result"] = json.loads(d["guard_result"]) if d["guard_result"] else None
+        return cls(**d)
+
+    def to_json(self) -> dict:
+        d = dict(self.__dict__)
+        d["status"] = self.status.value
+        return d
+
+
+class IllegalTransition(Exception):
+    """A delegation move that `TRANSITIONS` does not allow."""
 
 
 class Store:
@@ -179,15 +352,18 @@ class Store:
         html_url: str,
         installation: int | None = None,
         delivery: str | None = None,
+        kind: Kind = Kind.TRIAGE,
+        delegation: int | None = None,
     ) -> int | None:
         """Queue a run. Returns its id, or None when it is already known."""
         now = _now()
         with self._conn() as db:
             cur = db.execute(
                 "INSERT OR IGNORE INTO runs (repo, run_id, run_attempt, installation, delivery,"
-                " html_url, status, received_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                " html_url, status, received_at, updated_at, kind, delegation)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                 (repo, run_id, run_attempt, installation, delivery, html_url,
-                 Status.QUEUED.value, now, now),
+                 Status.QUEUED.value, now, now, kind.value, delegation),
             )
             return cur.lastrowid if cur.rowcount else None
 
@@ -220,6 +396,45 @@ class Store:
                 "UPDATE runs SET status = ?, updated_at = ? WHERE status = ?",
                 (Status.QUEUED.value, _now(), Status.RUNNING.value),
             ).rowcount
+
+    def interrupted_approvals(self) -> list[RunRecord]:
+        """Approved runs a previous process never finished posting.
+
+        Only for startup, before the HTTP server takes requests: at runtime an
+        approved row with no `not_before` is a post in flight, not a stuck one.
+        """
+        with self._conn() as db:
+            rows = db.execute(
+                "SELECT * FROM runs WHERE status = ? AND not_before IS NULL",
+                (Status.APPROVED.value,),
+            ).fetchall()
+        return [RunRecord._from_row(r) for r in rows]
+
+    def defer_approval(self, run: int, until: datetime, error: str) -> None:
+        """Keep an approved run approved, to be posted again after `until`."""
+        with self._conn() as db:
+            db.execute(
+                "UPDATE runs SET not_before = ?, error = ?, updated_at = ?"
+                " WHERE id = ? AND status = ?",
+                (until.isoformat(), error, _now(), run, Status.APPROVED.value),
+            )
+
+    def claim_due_approval(self) -> RunRecord | None:
+        """Take one approved run whose deferred post is due.
+
+        Clearing `not_before` is the claim: a second worker's compare-and-set
+        then matches nothing, so the same comment is not posted twice at once.
+        """
+        now = _now()
+        with self._conn() as db:
+            row = db.execute(
+                "UPDATE runs SET not_before = NULL, updated_at = ?"
+                " WHERE id = (SELECT id FROM runs WHERE status = ? AND not_before IS NOT NULL"
+                "   AND not_before <= ? ORDER BY not_before LIMIT 1)"
+                " AND status = ? AND not_before IS NOT NULL RETURNING *",
+                (now, Status.APPROVED.value, now, Status.APPROVED.value),
+            ).fetchone()
+        return RunRecord._from_row(row) if row else None
 
     def defer(self, run: int, delay: timedelta, error: str) -> None:
         """Queue a run again after `delay` — a quota that resets, not a failure."""
@@ -315,4 +530,154 @@ class Store:
                     "SELECT * FROM runs WHERE status = ? ORDER BY received_at DESC LIMIT ?",
                     (status.value, limit),
                 ).fetchall()
+        return [RunRecord._from_row(r) for r in rows]
+
+    # -- delegations --------------------------------------------------------
+
+    def open_delegation(
+        self,
+        *,
+        repo: str,
+        pr_number: int,
+        installation: int | None,
+        origin_run: int,
+        workflow_id: int,
+        failed_jobs: list[str],
+        head_branch: str,
+        head_sha: str,
+        base_branch: str | None,
+        fix_branch: str,
+        brief: str,
+        status: DelegationStatus,
+        command: str | None = None,
+        cited: str | None = None,
+        max_attempts: int = 2,
+        reviewed_by: str | None = None,
+    ) -> Delegation | None:
+        """Start a delegation. None when one is already open on that PR."""
+        if status not in (DelegationStatus.PROPOSED, DelegationStatus.APPROVED):
+            raise IllegalTransition(f"a delegation starts proposed or approved, not {status.value}")
+        now = _now()
+        try:
+            with self._conn() as db:
+                row = db.execute(
+                    "INSERT INTO delegations (repo, pr_number, installation, origin_run,"
+                    " workflow_id, failed_jobs, head_branch, head_sha, base_branch, fix_branch,"
+                    " command, cited, status, max_attempts, brief, reviewed_by, created_at,"
+                    " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *",
+                    (repo, pr_number, installation, origin_run, workflow_id,
+                     json.dumps(failed_jobs), head_branch, head_sha, base_branch, fix_branch,
+                     command, cited, status.value, max_attempts, brief, reviewed_by, now, now),
+                ).fetchone()
+        except sqlite3.IntegrityError:
+            return None
+        return Delegation._from_row(row)
+
+    def move(
+        self,
+        delegation: int,
+        frm: DelegationStatus | tuple[DelegationStatus, ...],
+        to: DelegationStatus,
+        **fields: object,
+    ) -> Delegation | None:
+        """Compare-and-set a delegation from `frm` to `to`, writing `fields` with it.
+
+        Returns the updated row, or None when it was not in `frm` any more —
+        another thread, or a redelivered webhook, moved it first. Raises on a
+        move `TRANSITIONS` forbids, which is a bug rather than a race.
+        """
+        froms = (frm,) if isinstance(frm, DelegationStatus) else frm
+        for f in froms:
+            if to not in TRANSITIONS.get(f, frozenset()):
+                raise IllegalTransition(f"{f.value} -> {to.value}")
+        allowed = {
+            "fix_pr", "attempt", "brief", "history", "last_run_id", "guard_result",
+            "closed_reason", "error", "reviewed_by", "comment_url", "deadline",
+        }
+        bad = set(fields) - allowed
+        if bad:
+            raise ValueError(f"cannot set {sorted(bad)} on a move")
+        sets = ["status = ?", "updated_at = ?"]
+        args: list[object] = [to.value, _now()]
+        for k, v in fields.items():
+            sets.append(f"{k} = ?")
+            args.append(json.dumps(v) if k in ("history", "guard_result") and v is not None else v)
+        marks = ",".join("?" * len(froms))
+        with self._conn() as db:
+            row = db.execute(
+                f"UPDATE delegations SET {', '.join(sets)} WHERE id = ? AND status IN ({marks})"
+                " RETURNING *",
+                (*args, delegation, *(f.value for f in froms)),
+            ).fetchone()
+        return Delegation._from_row(row) if row else None
+
+    def note_delegation(self, delegation: int, **fields: object) -> Delegation | None:
+        """Write bookkeeping fields without moving the status."""
+        allowed = {"fix_pr", "error", "comment_url", "last_run_id", "deadline"}
+        bad = set(fields) - allowed
+        if bad:
+            raise ValueError(f"cannot note {sorted(bad)}")
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        with self._conn() as db:
+            row = db.execute(
+                f"UPDATE delegations SET {sets}, updated_at = ? WHERE id = ? RETURNING *",
+                (*fields.values(), _now(), delegation),
+            ).fetchone()
+        return Delegation._from_row(row) if row else None
+
+    def get_delegation(self, delegation: int) -> Delegation | None:
+        with self._conn() as db:
+            row = db.execute("SELECT * FROM delegations WHERE id = ?", (delegation,)).fetchone()
+        return Delegation._from_row(row) if row else None
+
+    def delegation_for_branch(self, repo: str, branch: str) -> Delegation | None:
+        """The open delegation working on `branch`, if any."""
+        marks = ",".join("?" * len(OPEN_DELEGATION))
+        with self._conn() as db:
+            row = db.execute(
+                f"SELECT * FROM delegations WHERE repo = ? AND fix_branch = ? AND status IN ({marks})"
+                " ORDER BY id DESC LIMIT 1",
+                (repo, branch, *(s.value for s in OPEN_DELEGATION)),
+            ).fetchone()
+        return Delegation._from_row(row) if row else None
+
+    def open_delegation_on(self, repo: str, pr_number: int) -> Delegation | None:
+        marks = ",".join("?" * len(OPEN_DELEGATION))
+        with self._conn() as db:
+            row = db.execute(
+                f"SELECT * FROM delegations WHERE repo = ? AND pr_number = ? AND status IN ({marks})",
+                (repo, pr_number, *(s.value for s in OPEN_DELEGATION)),
+            ).fetchone()
+        return Delegation._from_row(row) if row else None
+
+    def delegations(
+        self,
+        status: DelegationStatus | tuple[DelegationStatus, ...] | None = None,
+        *,
+        origin_run: int | None = None,
+        limit: int = 50,
+    ) -> list[Delegation]:
+        where: list[str] = []
+        args: list[object] = []
+        if status is not None:
+            states = (status,) if isinstance(status, DelegationStatus) else status
+            where.append(f"status IN ({','.join('?' * len(states))})")
+            args += [s.value for s in states]
+        if origin_run is not None:
+            where.append("origin_run = ?")
+            args.append(origin_run)
+        sql = "SELECT * FROM delegations"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY id DESC LIMIT ?"
+        with self._conn() as db:
+            rows = db.execute(sql, (*args, limit)).fetchall()
+        return [Delegation._from_row(r) for r in rows]
+
+    def follow_ups(self, delegation: int) -> list[RunRecord]:
+        with self._conn() as db:
+            rows = db.execute(
+                "SELECT * FROM runs WHERE delegation = ? AND kind = ? ORDER BY received_at",
+                (delegation, Kind.FOLLOW_UP.value),
+            ).fetchall()
         return [RunRecord._from_row(r) for r in rows]
