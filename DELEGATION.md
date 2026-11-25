@@ -11,7 +11,7 @@ demo is still open. README → "Handing a fix to Claude" documents what was buil
 code at the failing commit, writes ordered steps, and is held to the guard's own
 path rules before Claude sees it; a plan that finds no code fix closes the
 delegation without a Claude run. See README → "The plan" and
-`reports/plan-dry-run-2026-11-25.md`.
+`reports/plan-dry-run-2026-11-25.md` and `reports/plan-e2e-2026-11-25.md`.
 
 ## Goal
 

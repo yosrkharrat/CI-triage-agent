@@ -8,8 +8,8 @@ used), so only planner tokens were spent.
 | PR | expected | result |
 | --- | --- | --- |
 | [#2](https://github.com/yosrkharrat/ci-triage-demo/pull/2) `ci-triage-demo__45617743835` | one edit in `src/checkout/cart.py`, verified by `tests/test_cart.py::test_subtotal_adds_every_line` | **as expected**: 1 step, 4 test ids, 6 of 6 checks passed, no repair, 12,554 tokens over 5 requests |
-| [#4](https://github.com/yosrkharrat/ci-triage-demo/pull/4) `ci-triage-demo__45620354346` | `feasible: false`: the new test contradicts an existing one | **not run yet**: Gemini free-tier daily quota (20 requests) spent |
-| [#5](https://github.com/yosrkharrat/ci-triage-demo/pull/5) `ci-triage-demo__45621615858` | `feasible: false`: CI must install `syrupy`, a `.github/` change | **not run yet**: same quota |
+| [#4](https://github.com/yosrkharrat/ci-triage-demo/pull/4) `ci-triage-demo__45620354346` | `feasible: false`: the new test contradicts an existing one | first a plan that edits the old test's expectation; with the prompt naming that case, **not feasible**, naming both tests and both values |
+| [#5](https://github.com/yosrkharrat/ci-triage-demo/pull/5) `ci-triage-demo__45621615858` | `feasible: false`: CI must install `syrupy`, a `.github/` change | first a plan that drops the snapshot fixture; with the prompt naming that case, **not feasible**: CI must install `syrupy` |
 
 ## #2, as the planner returned it
 
@@ -35,9 +35,6 @@ of quota: refused at 9,802 tokens against the 8,000-token per-request cap. The
 planner's tool budget (40k characters) is sized for Gemini, as the service
 runs it; it is not meant to fit Groq's free tier.
 
-## Still to do
-
-- #4 and #5 on Gemini once its daily quota resets.
-- The end-to-end runs on ci-triage-demo: a new two-file regression that should
-  end **fixed** with the plan on the PR and in the brief, and a #5-style case
-  that should **give up at the plan** with no Claude run.
+#4 and #5 ran later the same day through OpenRouter (`--planner-model
+openrouter:google/gemini-3.5-flash`), once Gemini's free quota was spent. The
+end-to-end runs that followed are in `reports/plan-e2e-2026-11-25.md`.
