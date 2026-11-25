@@ -248,7 +248,10 @@ def triage(
 @app.command()
 def plan(
     fixture: str = typer.Argument(..., help="Fixture directory or name"),
-    model: str | None = typer.Option(None, "--model", "-m", help="Provider:model for both agents"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Provider:model for the diagnosis"),
+    planner_model: str | None = typer.Option(
+        None, "--planner-model", help="Provider:model for the plan; defaults to --model"
+    ),
 ) -> None:
     """Diagnose a captured run (from the cache when it can), then plan its fix.
 
@@ -267,6 +270,7 @@ def plan(
     from ci_triage.planner import GitHubSource, make_plan
 
     chosen = model or os.environ.get("CI_TRIAGE_MODEL") or MODEL
+    planner = planner_model or chosen
     ctx = TriageContext(path)
     run = ctx.run
     try:
@@ -276,14 +280,14 @@ def plan(
         if not ok:
             console.print(f"\n[yellow]not eligible for delegation:[/yellow] {why}; planning anyway")
         owner, repo = run.repository.full_name.split("/", 1)
-        console.print(f"\nplanning the fix with {chosen}, reading {run.repository.full_name}@{run.head_sha[:8]}...")
+        console.print(f"\nplanning the fix with {planner}, reading {run.repository.full_name}@{run.head_sha[:8]}...")
         diff = path / "diff.patch"
         with GitHubClient(token) as client:
             planned = make_plan(
                 run, result.verdict, GitHubSource(client, owner, repo, run.head_sha),
                 diff=ctx.get_diff(), failing_command=ctx.failing_command(),
                 files=changed_files(diff.read_text(errors="replace")) if diff.exists() else [],
-                model=chosen,
+                model=planner,
             )
     except UserError as exc:
         console.print(f"[red]{exc}[/red]")
