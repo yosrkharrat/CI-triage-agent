@@ -4,6 +4,7 @@
     ci-triage fetch <run-url>      capture a failed run to fixtures/
     ci-triage inspect <fixture>    show exactly what the agent will be shown
     ci-triage triage <fixture>     run the agent and print its verdict
+    ci-triage plan <fixture>       plan the fix for a diagnosed run, and check the plan
     ci-triage label <fixture>      record human ground truth for the eval set
     ci-triage eval                 score the agent over the whole corpus
     ci-triage ls                   list fixtures and their labels
@@ -242,6 +243,58 @@ def triage(
         console.print("\n[yellow]fixture is unlabelled[/yellow] — nothing to score against")
     if not result.evidence_ok:
         console.print("\n[red]some citations could not be verified against the logs[/red]")
+
+
+@app.command()
+def plan(
+    fixture: str = typer.Argument(..., help="Fixture directory or name"),
+    model: str | None = typer.Option(None, "--model", "-m", help="Provider:model for both agents"),
+) -> None:
+    """Diagnose a captured run (from the cache when it can), then plan its fix.
+
+    Reads the source at the run's commit through GITHUB_TOKEN and prints the
+    plan with every check it passed or failed. Spends planner tokens only when
+    the verdict is cached. Nothing is posted and nothing is delegated.
+    """
+    path = _resolve(fixture)
+    token = _token()
+
+    from pydantic_ai.exceptions import ModelHTTPError, UserError
+
+    from ci_triage.agent import MODEL
+    from ci_triage.agent import triage as run_triage
+    from ci_triage.delegate import changed_files, worth_a_look
+    from ci_triage.planner import GitHubSource, make_plan
+
+    chosen = model or os.environ.get("CI_TRIAGE_MODEL") or MODEL
+    ctx = TriageContext(path)
+    run = ctx.run
+    try:
+        result = run_triage(path, model=chosen)
+        console.print(result.render(), highlight=False, markup=False)
+        ok, why = worth_a_look(result)
+        if not ok:
+            console.print(f"\n[yellow]not eligible for delegation:[/yellow] {why}; planning anyway")
+        owner, repo = run.repository.full_name.split("/", 1)
+        console.print(f"\nplanning the fix with {chosen}, reading {run.repository.full_name}@{run.head_sha[:8]}...")
+        diff = path / "diff.patch"
+        with GitHubClient(token) as client:
+            planned = make_plan(
+                run, result.verdict, GitHubSource(client, owner, repo, run.head_sha),
+                diff=ctx.get_diff(), failing_command=ctx.failing_command(),
+                files=changed_files(diff.read_text(errors="replace")) if diff.exists() else [],
+                model=chosen,
+            )
+    except UserError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from None
+    except ModelHTTPError as exc:
+        console.print(f"[red]{exc.model_name} returned {exc.status_code}[/red]: {exc}")
+        raise typer.Exit(1) from None
+    console.print()
+    console.print(planned.render(), highlight=False, markup=False)
+    if not planned.usable:
+        raise typer.Exit(2)
 
 
 @app.command()
