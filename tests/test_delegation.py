@@ -711,10 +711,11 @@ def test_process_of_a_follow_up_without_a_delegation_just_records_it(tmp_path: P
 def _fix_run(gh: FakeGitHub, client, worker, d, conclusion: str) -> dict:
     """The fix workflow finishes, its run named after the fix branch."""
     run_id = next(_ids)
-    raw = {**RUN, "id": run_id, "name": "ci-triage fix", "event": "repository_dispatch",
+    # As GitHub reports it: with a `run-name:`, `name` is the run name too.
+    title = f"ci-triage fix {d.fix_branch} attempt {d.attempt}"
+    raw = {**RUN, "id": run_id, "name": title, "event": "repository_dispatch",
            "head_branch": "main", "head_sha": "e" * 40, "conclusion": conclusion,
-           "workflow_id": WORKFLOW + 50,
-           "display_title": f"ci-triage fix {d.fix_branch} attempt {d.attempt}",
+           "workflow_id": WORKFLOW + 50, "display_title": title,
            "html_url": f"https://github.com/{REPO}/actions/runs/{run_id}"}
     gh.runs[run_id] = WorkflowRun.model_validate(raw)
     r = _post(client, {"action": "completed", "workflow_run": raw}, delivery=f"d-{run_id}").json()
@@ -758,7 +759,7 @@ def test_a_fix_workflow_run_for_no_open_delegation_is_ignored(make):
     gh = FakeGitHub(_result())
     client, store, _worker = make(gh)
     r = _post(client, {"action": "completed", "workflow_run": {
-        **RUN, "name": "ci-triage fix", "event": "repository_dispatch",
+        **RUN, "name": "ci-triage fix ci-triage/fix-77 attempt 1", "event": "repository_dispatch",
         "display_title": "ci-triage fix ci-triage/fix-77 attempt 1"}}).json()
     assert "fix workflow" in r["ignored"]
     assert store.recent() == []

@@ -600,6 +600,18 @@ DISPATCH_EVENT = "ci-triage-fix"
 FIX_WORKFLOW = "ci-triage fix"
 
 
+def is_fix_run(run: WorkflowRun) -> bool:
+    """Whether `run` is the fix workflow's own run.
+
+    By prefix, not equality: the workflow sets a `run-name:` carrying the fix
+    branch, and GitHub then reports that run name in `name` as well as in
+    `display_title`, so the bare workflow name matches neither.
+    """
+    return run.event == "repository_dispatch" and any(
+        (t or "").startswith(FIX_WORKFLOW) for t in (run.name, run.display_title)
+    )
+
+
 def delegation_marker(delegation: int) -> str:
     return f"<!-- ci-triage delegation:{delegation} -->"
 
@@ -912,7 +924,7 @@ def follow_up(record: RunRecord, store: Store, pipeline: Pipeline, settings: Set
 
     try:
         run = pipeline.get_run(d, record.run_id)
-        if run.event == "repository_dispatch" and run.name == FIX_WORKFLOW:
+        if is_fix_run(run):
             return checked(_fix_workflow_done(d, run, record, store, pipeline, settings))
         if run.workflow_id != d.workflow_id:
             return checked("a different workflow; only the one that failed counts")
@@ -1245,7 +1257,7 @@ def create_app(
             worker.wake.set()
             return {"ok": True, "queued": queued, "follow_up": d.id}
 
-        if run.event == "repository_dispatch" and run.name == FIX_WORKFLOW:
+        if is_fix_run(run):
             # Its run name carries the fix branch (see examples/ci-triage-fix.yml),
             # which is how a finished attempt finds its delegation.
             m = re.search(r"ci-triage/fix-\d+", run.display_title or "")
