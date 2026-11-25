@@ -272,6 +272,14 @@ Return it by calling `final_result`.
   under `.github/`, a test or lint configuration change, or a decision only a
   person can make. Then set `blocker` to what a person must do, leave `steps`
   empty, and still write `goal`.
+- Two tests that expect contradictory results from the same code are such a
+  decision. Changing what an existing test expects so that another one can
+  pass picks which requirement wins, and that belongs to a person, not to the
+  fix. Say which tests disagree and on what.
+- When CI lacks something the code or its tests need (a package, a pytest
+  plugin or fixture, a service, a secret), the fix is in CI. Rewriting a test
+  so it no longer needs the missing piece changes what the test checks; it is
+  not a fix. Say what CI must provide.
 - `steps`: 1 to {MAX_PLAN_STEPS}, in order. Each names one file (a path from
   the repository root), whether to `edit` it or `create` it, the change in
   enough detail to make it, and which piece of evidence it answers.
