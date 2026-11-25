@@ -382,6 +382,15 @@ def repair_hint(ctx: TriageContext, ev: Evidence, reason: str) -> str:
     return f"{where}: this text is not in that log. Re-read the log with get_logs and quote it verbatim."
 
 
+def _trail_line(what: str, shown: str) -> str:
+    """One step of the trail, saying so when the run's tool budget withheld it."""
+    if shown.startswith("Not shown:"):
+        return f"{what} (not shown: the run's tool budget was spent)"
+    if "\n... cut here:" in shown:
+        return f"{what} (cut short by the run's tool budget)"
+    return what
+
+
 def build_agent(
     model: str | Model = MODEL, *, retries: int = RETRIES, sandbox: bool = False
 ) -> Agent[TriageContext, Verdict]:
@@ -435,12 +444,23 @@ def build_agent(
             job_name: A specific failed job. Omit for one representative per
                 distinct failure, which is the right default.
         """
-        return ctx.deps.metered(ctx.deps.get_logs(job_name))
+        shown = ctx.deps.metered(ctx.deps.get_logs(job_name))
+        if job_name is not None:
+            what = f"read the log of {job_name!r}"
+        else:
+            groups, failed = len(ctx.deps.groups), len(ctx.deps.failed_jobs)
+            what = f"read the logs: {failed} failed job(s), {groups} distinct failure(s)"
+        ctx.deps.note(_trail_line(what, shown))
+        return shown
 
     @agent.tool
     def get_diff(ctx: RunContext[TriageContext]) -> str:
         """The unified diff of the commit under test, when one was captured."""
-        return ctx.deps.metered(ctx.deps.get_diff())
+        shown = ctx.deps.metered(ctx.deps.get_diff())
+        files = ctx.deps.diff_files()
+        what = f"read the diff ({len(files)} file(s))" if files else "asked for the diff: none available"
+        ctx.deps.note(_trail_line(what, shown))
+        return shown
 
     @agent.tool
     def test_history(ctx: RunContext[TriageContext]) -> str:
@@ -448,7 +468,9 @@ def build_agent(
 
         The only evidence that can support or rule out `flaky`.
         """
-        return ctx.deps.metered(ctx.deps.test_history())
+        shown = ctx.deps.metered(ctx.deps.test_history())
+        ctx.deps.note(_trail_line(ctx.deps.describe_history(), shown))
+        return shown
 
     if sandbox:
 
@@ -474,7 +496,13 @@ def build_agent(
             cmd = command or ctx.deps.failing_command()
             if not cmd:
                 return "The failing step ran an action, not a command; pass `command`."
-            return ctx.deps.metered(ctx.deps.reproduce(cmd, patch))
+            shown = ctx.deps.metered(ctx.deps.reproduce(cmd, patch))
+            last = ctx.deps.reproductions[-1] if ctx.deps.reproductions else None
+            what = f"ran `{cmd.splitlines()[0][:80]}` in the sandbox{' with a patch' if patch else ''}"
+            if last is not None:
+                what += f": {last.outcome()}"
+            ctx.deps.note(_trail_line(what, shown))
+            return shown
 
     return agent
 
@@ -519,6 +547,10 @@ class TriageResult:
     #: numbers are the model's own accuracy at quoting; `checks` is what ships.
     repairs: int = 0
     first_try: tuple[int, int] | None = None
+    #: The tool calls that led to the verdict, one line each (see
+    #: `TriageContext.trail`). Kept with a cached verdict, so a cache hit still
+    #: says how it was reached.
+    trail: tuple[str, ...] = ()
 
     @property
     def evidence_ok(self) -> bool:
@@ -530,8 +562,10 @@ class TriageResult:
             f"route:      {self.route.value} — {self.route_reason}",
             f"summary:    {self.verdict.summary}",
             "",
-            "evidence:",
         ]
+        if self.trail:
+            lines += ["how it was diagnosed:", *(f"  {i}. {t}" for i, t in enumerate(self.trail, 1)), ""]
+        lines += ["evidence:"]
         for check in self.checks:
             mark = "ok  " if check.ok else "BAD "
             ev = check.evidence
@@ -641,7 +675,7 @@ def _cache_extras(key: str) -> dict:
         blob = json.loads((CACHE_DIR / f"{key}.json").read_text())
     except (OSError, ValueError):
         return {}
-    return {k: blob[k] for k in ("repair_policy", "repairs", "first_try") if k in blob}
+    return {k: blob[k] for k in ("repair_policy", "repairs", "first_try", "trail") if k in blob}
 
 
 def _needs_repair_run(ctx: TriageContext, key: str, verdict: Verdict) -> bool:
@@ -686,12 +720,14 @@ def _store_verdict(
     *,
     repairs: int = 0,
     first_try: tuple[int, int] | None = None,
+    trail: list[str] | tuple[str, ...] = (),
 ) -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     blob: dict = {
         "verdict": verdict.model_dump(mode="json"),
         "repair_policy": MAX_REPAIRS,
         "repairs": repairs,
+        "trail": list(trail),
     }
     if first_try is not None:
         blob["first_try"] = list(first_try)
@@ -834,6 +870,7 @@ def triage(
         earlier_try = (sum(c.ok for c in old), len(old))
         hit = None
     repairs, first_try = 0, None
+    trail: tuple[str, ...] = ()
     if hit is not None:
         verdict, usage = hit
         cached = True
@@ -841,6 +878,7 @@ def triage(
         repairs = int(extras.get("repairs", 0))
         if "first_try" in extras:
             first_try = (int(extras["first_try"][0]), int(extras["first_try"][1]))
+        trail = tuple(str(t) for t in extras.get("trail") or ())
     else:
         agent = build_agent(model, sandbox=sandbox is not None)
         # What earlier attempts spent. The verdict's cost is every attempt it
@@ -876,7 +914,8 @@ def triage(
         else:
             verdict, usage = run.output, _add(spent, run.usage)
         repairs, first_try = ctx.repairs, earlier_try or ctx.first_try
-        _store_verdict(key, verdict, usage, repairs=repairs, first_try=first_try)
+        trail = tuple(ctx.trail)
+        _store_verdict(key, verdict, usage, repairs=repairs, first_try=first_try, trail=trail)
         cached = False
 
     checks = check_evidence(ctx, verdict)
@@ -893,4 +932,5 @@ def triage(
         # A verdict that needed no repair was right first time; say so rather
         # than leave old cache entries without a first try.
         first_try=first_try or (sum(c.ok for c in checks), len(checks)),
+        trail=trail,
     )

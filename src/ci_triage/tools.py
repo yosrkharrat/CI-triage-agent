@@ -272,6 +272,9 @@ class TriageContext:
         #: The first verdict the model returned, kept so a repair turn that
         #: fails cannot cost the run the answer it already had.
         self.first_verdict: object | None = None
+        #: One line per tool call the agent made, in order: how the verdict was
+        #: reached. Written here from the calls themselves, never by the model.
+        self.trail: list[str] = []
         self.max_lines = max_lines
         self.max_chars = max_chars
         self.run_chars = run_chars
@@ -545,6 +548,36 @@ class TriageContext:
         self.repairs = 0
         self.first_try = None
         self.first_verdict = None
+        self.trail = []
+
+    def note(self, line: str) -> None:
+        """Add one step to the investigation trail."""
+        self.trail.append(line)
+
+    def diff_files(self) -> list[str]:
+        """Files the captured diff touches, in order. Empty when there is none."""
+        patch = self.fixture / "diff.patch"
+        if not patch.exists():
+            return []
+        text = patch.read_text(encoding="utf-8", errors="replace")
+        return list(dict.fromkeys(_DIFF_FILE.findall(text)))
+
+    def describe_history(self) -> str:
+        """What `test_history` showed, in one line for the trail."""
+        h = self.history
+        if h is None:
+            return "checked run history: none was captured"
+        parts = []
+        if h.same_commit:
+            both = h.passed_and_failed_on_same_commit
+            parts.append(
+                f"{len(h.same_commit)} run(s) on this commit"
+                + (", which has both passed and failed" if both else ", none passing")
+            )
+        others = [r for r in h.same_workflow if r.conclusion]
+        if others:
+            parts.append(f"{sum(r.failed for r in others)} of {len(others)} recent run(s) on other commits failed")
+        return "checked run history: " + ("; ".join(parts) or "nothing recorded around this run")
 
     def failing_command(self) -> str | None:
         """The script of the step that failed, from the first failed job that ran one."""
