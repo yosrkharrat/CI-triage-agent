@@ -1,9 +1,11 @@
 # Plan: from failed run to verified fix
 
-**Status (23 Nov 2026):** Phases 0–6 and 8 are built and tested against a
-scripted GitHub (`tests/test_guard.py`, `tests/test_delegate.py`,
-`tests/test_delegation.py`). Phase 7, the end-to-end runs on ci-triage-demo,
-is not done. README → "Handing a fix to Claude" documents what was built.
+**Status (25 Nov 2026):** every phase is done. Phases 0–6 and 8 are tested
+against a scripted GitHub (`tests/test_guard.py`, `tests/test_delegate.py`,
+`tests/test_delegation.py`). Phase 7 ran on ci-triage-demo: one fixed, two
+honest give-ups, and four bugs found and fixed
+(`reports/delegation-e2e-2026-11-25.md`). Recording a chain for the public
+demo is still open. README → "Handing a fix to Claude" documents what was built.
 
 ## Goal
 

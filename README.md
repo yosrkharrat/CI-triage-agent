@@ -134,8 +134,9 @@ same agent on live runs, with a review gate for the verdicts it will not post on
 its own. The agent can reproduce a failure in a sandbox when asked to, and a
 dashboard streams a triage as it happens. The service can also hand a diagnosed
 regression to Claude and follow the fix through CI until a mechanical check
-says it is fixed; that part is built and tested against a scripted GitHub, and
-not yet run end to end on a real repository.
+says it is fixed. It has run end to end on three deliberately broken pull
+requests: one [fixed](reports/delegation-e2e-2026-11-25.md), two honestly
+given up.
 
 **What is not measured yet.** Category accuracy has no score so far. Three of the 43
 fixtures carry a human label (two `regression`, one `infra`), and no sweep has
@@ -473,9 +474,18 @@ uv run ci-triage serve
 Proposed delegations show on the dashboard's review queue, drawn on the run
 page as one line from the failed run to the outcome, and are at
 `GET /delegations`; `POST /delegations/{id}/approve` and `/reject` take the
-review token. **This is unmeasured.** The tests play out every path against a
-scripted GitHub; how often Claude actually fixes a real regression within these
-rules has not been tried yet.
+review token. To try it without a public URL for the webhook,
+`scripts/relay_runs.py` polls a repository's runs and delivers them to a local
+service.
+
+**What it has been tried on.** Three pull requests on ci-triage-demo, each
+broken on purpose ([the report](reports/delegation-e2e-2026-11-25.md)). A
+refactor that dropped a quantity was fixed in one attempt with a one-line diff,
+and reported fixed once CI and the guard passed. A test contradicting another,
+and a test needing a plugin CI does not install, were both given up: Claude
+pushed nothing and said why, naming the shortcuts it would not take, and the
+service posted that on the PR. Four bugs the run found are fixed. Three cases
+show the chain works; how often it fixes real regressions is not measured.
 
 ## The data model
 
@@ -809,10 +819,11 @@ uv.
 
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
-- Running delegation end to end on a real repository: a simple regression that
-  should be fixed on the first attempt, a test that tempts a model to skip it,
-  and a failure no code change can fix. Each run, recorded, would also give the
-  public demo a real chain to replay.
+- Delegation on real regressions, not hand-made ones: three demo cases show
+  the chain works, not how often it fixes things. The public dashboard demo
+  replays triages but not yet a delegation chain.
+- In `auto` mode the diagnosis comment of a delegated regression still waits in
+  review while the fix is sent; only `review` mode approves both together.
 - `dependency` failures are not delegated yet. Many of their fixes pin an action
   under `.github/workflows/`, which the guard refuses; allowing it means a guard
   rule that accepts a change to nothing but a `uses:` ref.
