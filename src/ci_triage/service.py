@@ -915,7 +915,7 @@ def _fix_workflow_done(
         before = next((h["sha"] for h in reversed(d.history) if h.get("sha")), d.head_sha)
         if head is not None and head != before:
             return f"attempt {d.attempt}: Claude pushed {head[:8]}; waiting for its CI"
-        outcome = "Claude finished without pushing a fix; its reason is in the run's log"
+        outcome = "Claude finished without pushing a fix; its reason is on the run's summary page"
     else:
         outcome = f"the fix workflow ended {run.conclusion} before a fix was pushed"
     entry = {"attempt": d.attempt, "outcome": outcome, "run_id": record.run_id,

@@ -66,7 +66,8 @@ jobs:
             git checkout -b "$FIX_BRANCH" "$HEAD_SHA"
           fi
 
-      - uses: anthropics/claude-code-action@v1
+      - id: claude
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           # Or, with a Claude subscription:
@@ -77,3 +78,18 @@ jobs:
           claude_args: >-
             --max-turns 30
             --allowedTools "Read,Edit,Glob,Grep,Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(pip install:*),Bash(pytest:*),Bash(python -m pytest:*)"
+
+      # The action hides Claude's messages from the log. Its last one says why it
+      # changed what it did, or why it stopped without a fix, so put that on the
+      # run's summary page, where ci-triage's note on the PR points.
+      - name: Say what Claude concluded
+        if: always() && steps.claude.outputs.execution_file != ''
+        env:
+          EXEC: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          {
+            echo "## What Claude concluded"
+            echo
+            jq -r 'if type == "array" then ([.[] | select(.type? == "result")] | last) else . end
+                   | .result // "(no final message)"' "$EXEC" || echo "(could not read $EXEC)"
+          } >> "$GITHUB_STEP_SUMMARY"
