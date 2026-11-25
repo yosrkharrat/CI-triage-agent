@@ -302,6 +302,7 @@ class Pipeline(Protocol):
     def jobs(self, on: Target, run_id: int) -> list[Job]: ...
     def compare(self, on: Target, base: str, head: str) -> tuple[list[ChangedFile], bool]: ...
     def try_fix(self, on: Target, sha: str, command: str, base: str, head: str) -> PatchTrial | None: ...
+    def claude_said(self, on: Target, run_id: int) -> str | None: ...
 
 
 class GitHubPipeline:
@@ -394,6 +395,21 @@ class GitHubPipeline:
         files = [ChangedFile.from_api(f) for f in payload.get("files") or []]
         # The API reports no "truncated" flag; it just stops at 300 files.
         return files, len(files) >= 300
+
+    def claude_said(self, on: Target, run_id: int) -> str | None:
+        """Claude's final message on a fix run, from the annotation the workflow leaves.
+
+        The action hides Claude's messages from the log, and a run's summary page
+        has no API, so the fix workflow writes the last message as a notice
+        annotation titled `CLAUDE_SAID`. None when there is none.
+        """
+        owner, repo = on.owner_repo
+        with self._client(on) as client:
+            for job in client.get_jobs(owner, repo, run_id)[0]:
+                for note in client.annotations(owner, repo, job.id):
+                    if note.get("title") == CLAUDE_SAID:
+                        return str(note.get("message") or "")[:2000] or None
+        return None
 
     def try_fix(self, on: Target, sha: str, command: str, base: str, head: str) -> PatchTrial | None:
         """Reproduce at the original commit, then with the fix applied (Phase 8).
@@ -606,6 +622,9 @@ def reject(record: RunRecord, reviewer: str, note: str | None, store: Store) -> 
 # --------------------------------------------------------------------------
 # Delegation: hand a regression to Claude, follow it until it is fixed
 # --------------------------------------------------------------------------
+
+#: The annotation title the fix workflow gives Claude's final message.
+CLAUDE_SAID = "What Claude concluded"
 
 #: The `repository_dispatch` event type the fix workflow listens for.
 DISPATCH_EVENT = "ci-triage-fix"
@@ -915,11 +934,23 @@ def _fix_workflow_done(
         before = next((h["sha"] for h in reversed(d.history) if h.get("sha")), d.head_sha)
         if head is not None and head != before:
             return f"attempt {d.attempt}: Claude pushed {head[:8]}; waiting for its CI"
-        outcome = "Claude finished without pushing a fix; its reason is on the run's summary page"
+        outcome = "Claude finished without pushing a fix"
     else:
         outcome = f"the fix workflow ended {run.conclusion} before a fix was pushed"
+    try:
+        said = pipeline.claude_said(d, record.run_id)
+    except RateLimited:
+        raise
+    except Exception:
+        log.warning("delegation %s: could not read what Claude concluded", d.id, exc_info=True)
+        said = None
     entry = {"attempt": d.attempt, "outcome": outcome, "run_id": record.run_id,
              "html_url": run.html_url}
+    if said:
+        # Claude's own words: shown to the next attempt, and on the PR. Data
+        # from a model, quoted, never acted on by the service.
+        entry["claude_said"] = said
+        entry["outcome"] = f"{outcome}. It said: {said}"
     return _attempt_failed(d, entry, record.run_id, run.html_url, None, store, pipeline, settings)
 
 

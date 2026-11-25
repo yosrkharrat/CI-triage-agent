@@ -93,6 +93,7 @@ class FakeGitHub:
         self.jobs_: dict[int, list[Job]] = {}
         self.diffs: dict[str, list[ChangedFile]] = {}
         self.trial: PatchTrial | None = None
+        self.said: str | None = None
         self.fail_dispatch: Exception | None = None
 
     # the triage path
@@ -137,6 +138,9 @@ class FakeGitHub:
 
     def try_fix(self, on, sha, command, base, head):
         return self.trial
+
+    def claude_said(self, on, run_id):
+        return self.said
 
     def notes(self) -> list[str]:
         return [body for _, body, marker in self.posted if "delegation:" in marker]
@@ -763,3 +767,14 @@ def test_a_fix_workflow_run_for_no_open_delegation_is_ignored(make):
         "display_title": "ci-triage fix ci-triage/fix-77 attempt 1"}}).json()
     assert "fix workflow" in r["ignored"]
     assert store.recent() == []
+
+
+def test_claudes_reason_for_stopping_reaches_the_next_brief_and_the_pr(make):
+    gh, client, store, worker, _rid, d = _dispatched(make)
+    gh.said = "The new test expects 35.63 and an existing one 35.64 for the same cart."
+    _fix_run(gh, client, worker, d, "success")
+    d = store.get_delegation(d.id)
+    assert d.history[0]["claude_said"] == gh.said
+    assert gh.said in gh.dispatched[1]["brief"]
+    _fix_run(gh, client, worker, d, "success")
+    assert any(gh.said in n and "gave up" in n for n in gh.notes())

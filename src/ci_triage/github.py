@@ -412,6 +412,13 @@ class GitHubClient:
         )
         return int(pr["number"])
 
+    def annotations(self, owner: str, repo: str, check_run: int) -> list[dict]:
+        """A check run's annotations. A job's id is its check run's id."""
+        payload = self._get(
+            f"/repos/{owner}/{repo}/check-runs/{check_run}/annotations", params={"per_page": 50}
+        ).json()
+        return list(payload) if isinstance(payload, list) else []
+
     def pulls_for_branch(self, owner: str, repo: str, head: str, base: str) -> list[int]:
         """Open PRs from `head` (a branch of this repo) into `base`."""
         pulls = self._get(

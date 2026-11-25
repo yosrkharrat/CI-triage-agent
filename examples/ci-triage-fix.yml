@@ -80,16 +80,18 @@ jobs:
             --allowedTools "Read,Edit,Glob,Grep,Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push origin HEAD:*),Bash(pip install:*),Bash(pytest:*),Bash(python -m pytest:*)"
 
       # The action hides Claude's messages from the log. Its last one says why it
-      # changed what it did, or why it stopped without a fix, so put that on the
-      # run's summary page, where ci-triage's note on the PR points.
+      # changed what it did, or why it stopped without a fix. It goes on the run's
+      # summary page for a person, and into an annotation, which ci-triage reads
+      # (a summary page has no API) to quote on the PR and in the next brief.
       - name: Say what Claude concluded
         if: always() && steps.claude.outputs.execution_file != ''
         env:
           EXEC: ${{ steps.claude.outputs.execution_file }}
         run: |
-          {
-            echo "## What Claude concluded"
-            echo
-            jq -r 'if type == "array" then ([.[] | select(.type? == "result")] | last) else . end
-                   | .result // "(no final message)"' "$EXEC" || echo "(could not read $EXEC)"
-          } >> "$GITHUB_STEP_SUMMARY"
+          said=$(jq -r 'if type == "array" then ([.[] | select(.type? == "result")] | last) else . end
+                        | .result // "(no final message)"' "$EXEC" 2>/dev/null | head -c 4000)
+          said=${said:-"(could not read the execution log)"}
+          printf '## What Claude concluded\n\n%s\n' "$said" >> "$GITHUB_STEP_SUMMARY"
+          # One line, so nothing in the message can start a workflow command.
+          esc=${said//'%'/'%25'}; esc=${esc//$'\r'/'%0D'}; esc=${esc//$'\n'/'%0A'}
+          echo "::notice title=What Claude concluded::$esc"
