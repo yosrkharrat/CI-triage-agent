@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from pydantic_ai.models.anthropic import AnthropicModelSettings
     from pydantic_ai.models.google import GoogleModelSettings
     from pydantic_ai.models.groq import GroqModelSettings
+    from pydantic_ai.models.openrouter import OpenRouterModelSettings
 
 #: Triage is a judgement call on ambiguous evidence. The default is an
 #: open-weights reasoning model on Groq's free tier: 120B, 131k context, native
@@ -308,6 +309,15 @@ def _model_settings(model: str | Model) -> ModelSettings:
             thinking["thinking_level"] = "HIGH"
         google: GoogleModelSettings = {"max_tokens": max_tokens, "google_thinking_config": thinking}  # type: ignore[typeddict-item]
         return google
+    if provider == "openrouter":
+        # The same "think hard" the direct providers get, through OpenRouter's
+        # unified reasoning setting, so a model reached this way is not a
+        # quieter version of itself.
+        openrouter: OpenRouterModelSettings = {
+            "max_tokens": max_tokens,
+            "openrouter_reasoning": {"effort": "high", "enabled": True},
+        }
+        return openrouter
     return {"max_tokens": max_tokens}
 
 
