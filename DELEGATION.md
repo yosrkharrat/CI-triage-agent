@@ -7,6 +7,12 @@ honest give-ups, and four bugs found and fixed
 (`reports/delegation-e2e-2026-11-25.md`). Recording a chain for the public
 demo is still open. README → "Handing a fix to Claude" documents what was built.
 
+**Follow-on (25 Nov 2026):** the brief is now a checked plan. A planner reads the
+code at the failing commit, writes ordered steps, and is held to the guard's own
+path rules before Claude sees it; a plan that finds no code fix closes the
+delegation without a Claude run. See README → "The plan" and
+`reports/plan-dry-run-2026-11-25.md`.
+
 ## Goal
 
 When CI fails on a pull request, ci-triage diagnoses it. If the fix is a code

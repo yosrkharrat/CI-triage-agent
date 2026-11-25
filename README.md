@@ -175,6 +175,7 @@ ci-triage hunt <owner/repo>   find failed runs worth capturing
 ci-triage fetch <run-url>     capture run, jobs, logs, diff and history
 ci-triage inspect <fixture>   show exactly what the agent will be shown
 ci-triage triage <fixture>    run the agent, print and check its verdict
+ci-triage plan <fixture>      plan the fix for that verdict, and check the plan
 ci-triage label <fixture>     record human ground truth for the eval set
 ci-triage eval                score the agent over the whole corpus
 ci-triage serve               triage live runs as GitHub reports them
@@ -389,12 +390,33 @@ from the repository itself. A fork's code is never handed to an agent holding
 write access to the base repository. One delegation is open per pull request at
 a time. In `review` mode it waits as `proposed` until a person approves it;
 approving it also approves the diagnosis, so the PR gets the comment and the
-fix together from one decision.
+fix together from one decision. In `auto` mode the diagnosis is posted with the
+delegation, its footer saying it was handed to Claude automatically. The PR
+comment carries the trail of how the diagnosis was reached and its reasoning,
+both collapsed.
 
-**What Claude is told.** A brief built from the verified diagnosis: the log
-quotes with their coordinates, the failing command, the files the commit
-changed, the reasoning, the suggested fix marked as an unverified hint, and the
-rules below. The quotes are fenced and labelled as data, not instructions, since
+**The plan.** Before the delegation is stored, a second agent, the planner
+([`planner.py`](src/ci_triage/planner.py)), reads the code at the failing commit
+(contents and trees APIs, read-only) and writes the fix as ordered steps: the
+file, the change, the evidence it answers, and the tests that must pass after.
+The plan is checked like a citation, mechanically and before it is used: every
+file a step edits exists at the commit, no step touches a path the diff guard
+forbids (the same `forbidden()` rule), and every `path::test` it names is a test
+that is there. A failing plan is sent back with the reasons, up to twice, then
+dropped; the delegation then goes ahead with the plain brief, so a weak plan
+never blocks a fix. The planner can also answer that no code fix is possible
+within the rules (a secret, a permission, a `.github/` change, a contradiction
+only a person can settle). The delegation then closes as `gave_up` at once,
+with what a person must do on the PR, and no Claude run is spent. In `review`
+mode the person approving sees the plan first. The triage agent is unchanged:
+its prompt is part of the verdict cache key.
+
+**What Claude is told.** A brief built from the verified diagnosis: how it was
+diagnosed (one line per tool call the triage agent made), the log quotes with
+their coordinates, the failing command, the files the commit changed, the
+reasoning, the checked plan (or, without one, the suggested fix marked as an
+unverified hint), and the rules below. Claude is told to follow the plan, or to
+say in its final message which step it changed and why. The quotes are fenced and labelled as data, not instructions, since
 test output can carry whatever its author printed. It goes out as a
 `repository_dispatch` to [`examples/ci-triage-fix.yml`](examples/ci-triage-fix.yml),
 which cuts `ci-triage/fix-<id>` from the PR head and runs Claude there.
@@ -437,6 +459,8 @@ run belongs to.
 stateDiagram-v2
     [*] --> proposed: eligible, review mode
     [*] --> approved: eligible, auto mode
+    proposed --> gave_up: the plan finds no code fix
+    approved --> gave_up: the plan finds no code fix
     proposed --> approved: a person approves
     proposed --> rejected: a person rejects
     approved --> dispatched: repository_dispatch sent
@@ -822,8 +846,6 @@ uv.
 - Delegation on real regressions, not hand-made ones: three demo cases show
   the chain works, not how often it fixes things. The public dashboard demo
   replays triages but not yet a delegation chain.
-- In `auto` mode the diagnosis comment of a delegated regression still waits in
-  review while the fix is sent; only `review` mode approves both together.
 - `dependency` failures are not delegated yet. Many of their fixes pin an action
   under `.github/workflows/`, which the guard refuses; allowing it means a guard
   rule that accepts a change to nothing but a `uses:` ref.
