@@ -156,6 +156,23 @@ def test_the_suggested_fix_is_marked_unverified():
     assert "unverified" not in no_fix
 
 
+def test_a_plan_replaces_the_hint_and_the_trail_says_how_it_was_diagnosed():
+    from ci_triage.models import FixPlan, PlanStep
+
+    plan = FixPlan(feasible=True, goal="add() adds", verify=["tests/test_core.py::test_add"],
+                   steps=[PlanStep(file="src/core.py", action="edit", change="return a + b",
+                                   why="FAILED tests/test_core.py::test_add")])
+    b = _brief(plan=plan, trail=["read the logs", "read the diff (1 file(s))"])
+    assert "## How it was diagnosed" in b and "2. read the diff (1 file(s))" in b
+    assert "## Plan" in b and "1. **edit `src/core.py`**: return a + b" in b
+    assert "- `tests/test_core.py::test_add`" in b
+    assert "That is checked; whether the change is right is not." in b
+    assert "A hint, unverified" not in b
+    # A plan that says there is no fix is never handed over as one.
+    nofix = plan.model_copy(update={"feasible": False, "steps": [], "blocker": "x"})
+    assert "## Plan" not in _brief(plan=nofix)
+
+
 def test_the_brief_states_every_rule_the_guard_checks():
     b = _brief()
     for rule in RULES:

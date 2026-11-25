@@ -22,7 +22,14 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ci_triage.guard import RULES
-from ci_triage.models import CONFIDENCE_THRESHOLD, FailureCategory, Job, Verdict, WorkflowRun
+from ci_triage.models import (
+    CONFIDENCE_THRESHOLD,
+    FailureCategory,
+    FixPlan,
+    Job,
+    Verdict,
+    WorkflowRun,
+)
 
 if TYPE_CHECKING:
     from ci_triage.agent import TriageResult
@@ -174,12 +181,18 @@ def render_brief(
     attempt: int = 1,
     max_attempts: int = 2,
     previous: list[Attempt] | None = None,
+    plan: FixPlan | None = None,
+    trail: list[str] | tuple[str, ...] = (),
 ) -> str:
     """What Claude is told. The prompt of the fix workflow, verbatim.
 
     Log quotes are fenced and marked as data. They are text from the test
     output, and test output can carry whatever its author printed; an agent
     with write access must not take it as instructions.
+
+    With a `plan` (feasible, and past the planner's checks), Claude is handed
+    the steps and told to follow them or say which it changed. Without one,
+    the diagnosis's own `suggested_fix` is shown as an unverified hint.
     """
     repo = run.repository.full_name
     out = [
@@ -205,6 +218,10 @@ def render_brief(
         verdict.reasoning,
         "",
     ]
+    if trail:
+        out += ["## How it was diagnosed", ""]
+        out += [f"{i}. {t}" for i, t in enumerate(trail, 1)]
+        out.append("")
     if failing_command:
         out += ["The step that failed ran:", "", f"{_fence(failing_command)}sh", failing_command,
                 _fence(failing_command), ""]
@@ -231,7 +248,30 @@ def render_brief(
         out += [f"**{ev.job_name}** · `{ev.log_path}` {span}: {ev.why}", "",
                 f"{fence}text", ev.quote, fence, ""]
 
-    if verdict.suggested_fix:
+    if plan is not None and plan.feasible:
+        out += [
+            "## Plan",
+            "",
+            "A planner read the code at this commit and wrote these steps. Every file it edits "
+            "exists there, no step touches a path the rules forbid, and every test named below "
+            "exists. That is checked; whether the change is right is not.",
+            "",
+            f"Goal: {plan.goal}",
+            "",
+        ]
+        for i, step in enumerate(plan.steps, 1):
+            out.append(f"{i}. **{step.action} `{step.file}`**: {step.change} (answers: {step.why})")
+        out.append("")
+        if plan.verify:
+            out += ["Done when these pass:", "", *(f"- `{v}`" for v in plan.verify), ""]
+        if plan.risks:
+            out += [f"Risks: {plan.risks}", ""]
+        out += [
+            "Follow the plan. If you find a step is wrong, do what the code needs instead, and say "
+            "in your final message which step you changed and why.",
+            "",
+        ]
+    elif verdict.suggested_fix:
         out += [
             "## A hint, unverified",
             "",

@@ -21,7 +21,17 @@ from ci_triage.agent import EvidenceCheck, TriageResult
 from ci_triage.delegate import PullInfo
 from ci_triage.github import RateLimited
 from ci_triage.guard import ChangedFile
-from ci_triage.models import Evidence, FailureCategory, Job, Verdict, WorkflowRun, route
+from ci_triage.models import (
+    Evidence,
+    FailureCategory,
+    FixPlan,
+    Job,
+    PlanStep,
+    Verdict,
+    WorkflowRun,
+    route,
+)
+from ci_triage.planner import PlanCheck, PlanResult
 from ci_triage.sandbox import PatchTrial, Reproduction
 from ci_triage.service import Settings, create_app, housekeep, process
 from ci_triage.store import (
@@ -95,6 +105,9 @@ class FakeGitHub:
         self.trial: PatchTrial | None = None
         self.said: str | None = None
         self.fail_dispatch: Exception | None = None
+        #: What the planner returns. No plan by default, as before it existed.
+        self.planned: PlanResult | Exception = PlanResult(None, dropped="no planner in this test")
+        self.planned_for: list[str] = []
 
     # the triage path
     def capture(self, record: RunRecord) -> Path:
@@ -141,6 +154,12 @@ class FakeGitHub:
 
     def claude_said(self, on, run_id):
         return self.said
+
+    def plan(self, on, run, verdict, fixture) -> PlanResult:
+        self.planned_for.append(run.head_sha)
+        if isinstance(self.planned, Exception):
+            raise self.planned
+        return self.planned
 
     def notes(self) -> list[str]:
         return [body for _, body, marker in self.posted if "delegation:" in marker]
@@ -778,3 +797,124 @@ def test_claudes_reason_for_stopping_reaches_the_next_brief_and_the_pr(make):
     assert gh.said in gh.dispatched[1]["brief"]
     _fix_run(gh, client, worker, d, "success")
     assert any(gh.said in n and "gave up" in n for n in gh.notes())
+
+
+# -- the plan -------------------------------------------------------------------
+
+PLAN = FixPlan(
+    feasible=True, goal="the build compiles",
+    steps=[PlanStep(file="src-tauri/src/lib.rs", action="edit", change="use `z`, not `y`",
+                    why="error[E0425]: cannot find value")],
+    verify=["cargo build"], risks="none known",
+)
+NO_FIX = FixPlan(feasible=False, goal="the build has the permission it needs", steps=[],
+                 blocker="Grant the workflow token `contents: write` in the repository settings.")
+
+
+def _planned(plan: FixPlan) -> PlanResult:
+    return PlanResult(plan, (PlanCheck("steps", True, "1 step(s)"),), trail=("read src-tauri/src/lib.rs",))
+
+
+def test_a_checked_plan_is_in_the_brief_in_place_of_the_hint(make):
+    gh = FakeGitHub(_result())
+    gh.planned = _planned(PLAN)
+    client, store, worker = make(gh)
+    _fail(client, worker)
+    [d] = store.delegations()
+    assert d.status is DelegationStatus.PROPOSED  # a person still sees it first
+    assert gh.planned_for == [SHA]
+    assert FixPlan.model_validate(d.plan) == PLAN
+    assert d.plan_checks["ok"] is True
+    assert "## Plan" in d.brief and "src-tauri/src/lib.rs" in d.brief
+    assert "Done when these pass" in d.brief
+    assert "say in your final message which step you changed" in d.brief
+    assert "A hint, unverified" not in d.brief
+
+    _act(client, "delegations", d.id, "approve")
+    assert any("The plan Claude was given" in n for n in gh.notes())
+
+
+def test_no_code_fix_closes_the_delegation_without_a_claude_run(make):
+    gh = FakeGitHub(_result())
+    gh.planned = _planned(NO_FIX)
+    client, store, worker = make(gh, mode="auto")
+    rid = _fail(client, worker)
+    [d] = store.delegations()
+    assert d.status is DelegationStatus.GAVE_UP
+    assert d.closed_reason == f"planner: {NO_FIX.blocker}"
+    assert gh.dispatched == []
+    [note] = gh.notes()
+    assert "no code fix, over to you" in note and "contents: write" in note
+    # Auto mode still posts the diagnosis the note refers to.
+    assert store.get(rid).status is Status.POSTED
+
+
+def test_no_code_fix_in_review_mode_is_closed_too(make):
+    gh = FakeGitHub(_result())
+    gh.planned = _planned(NO_FIX)
+    client, store, worker = make(gh)
+    rid = _fail(client, worker)
+    [d] = store.delegations()
+    assert d.status is DelegationStatus.GAVE_UP
+    assert gh.dispatched == []
+    assert store.get(rid).status is Status.AWAITING_REVIEW  # still a person's call
+
+
+def test_a_planner_that_fails_never_blocks_the_fix(make):
+    gh = FakeGitHub(_result())
+    gh.planned = RuntimeError("the model was down")
+    client, store, worker = make(gh, mode="auto")
+    _fail(client, worker)
+    [d] = store.delegations()
+    assert d.status is DelegationStatus.DISPATCHED
+    assert d.plan is None
+    assert "the model was down" in d.plan_checks["dropped"]
+    assert "A hint, unverified" in d.brief
+
+
+def test_a_dropped_plan_is_recorded_and_the_hint_is_used(make):
+    gh = FakeGitHub(_result())
+    gh.planned = PlanResult(PLAN, (PlanCheck("step 1", False, "gone"),), dropped="1 check(s) still failed")
+    client, store, worker = make(gh)
+    _fail(client, worker)
+    [d] = store.delegations()
+    assert d.plan is None
+    assert d.plan_checks == {"ok": False, "dropped": "1 check(s) still failed", "repairs": 0,
+                             "checks": [{"check": "step 1", "ok": False, "detail": "gone"}]}
+    assert "A hint, unverified" in d.brief
+
+
+def test_a_retry_keeps_the_plan(make):
+    gh = FakeGitHub(_result())
+    gh.planned = _planned(PLAN)
+    client, store, worker = make(gh, mode="auto")
+    _fail(client, worker)
+    _push(gh, store, client, "c1")
+    _ci(gh, client, worker, "c1", _jobs(**{FAILED[0]: "failure"}))
+    retry = gh.dispatched[1]["brief"]
+    assert "## Plan" in retry and "Attempt 1 did not fix it" in retry
+    assert gh.planned_for == [SHA]  # planned once, not per attempt
+
+
+def test_auto_mode_posts_the_diagnosis_it_hands_over(make):
+    _gh, _client, store, _worker, rid, _d = _dispatched(make)
+    run = store.get(rid)
+    assert run.status is Status.POSTED
+    assert "handed to Claude automatically" in run.comment
+    assert "after review by @" not in run.comment
+
+
+def test_an_old_database_gains_the_plan_columns(tmp_path: Path):
+    path = tmp_path / "old.sqlite"
+    Store(path)
+    db = sqlite3.connect(path)
+    db.execute("ALTER TABLE delegations DROP COLUMN plan")
+    db.execute("ALTER TABLE delegations DROP COLUMN plan_checks")
+    db.execute("ALTER TABLE delegations DROP COLUMN trail")
+    db.execute("ALTER TABLE runs DROP COLUMN trail")
+    db.commit()
+    db.close()
+    store = Store(path)
+    cols = {r[1] for r in sqlite3.connect(path).execute("PRAGMA table_info(delegations)")}
+    assert {"plan", "plan_checks", "trail"} <= cols
+    assert store.delegations() == []

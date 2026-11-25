@@ -72,7 +72,7 @@ from ci_triage.github import (
     save_fixture,
 )
 from ci_triage.guard import ChangedFile, GuardResult, guard
-from ci_triage.models import Job, Route, Verdict, WorkflowRun
+from ci_triage.models import FixPlan, Job, Route, Verdict, WorkflowRun
 from ci_triage.store import (
     Delegation,
     DelegationStatus,
@@ -84,6 +84,7 @@ from ci_triage.store import (
 
 if TYPE_CHECKING:
     from ci_triage.agent import TriageResult
+    from ci_triage.planner import PlanResult
     from ci_triage.sandbox import PatchTrial
 
 log = logging.getLogger("ci_triage.service")
@@ -205,7 +206,18 @@ def _fence(text: str) -> str:
     return "`" * max(3, longest + 1)
 
 
-def render_comment(run: WorkflowRun, v: Verdict, *, approved_by: str | None = None) -> str:
+#: Who "approved" a diagnosis posted alongside an automatic delegation. Not a
+#: valid GitHub login, so no person can be mistaken for it.
+AUTO_REVIEWER = "ci-triage[auto]"
+
+
+def render_comment(
+    run: WorkflowRun,
+    v: Verdict,
+    *,
+    approved_by: str | None = None,
+    trail: list[str] | tuple[str, ...] = (),
+) -> str:
     """The PR comment for one verdict.
 
     Every quote is shown with its coordinates, and the footer says why the
@@ -241,13 +253,20 @@ def render_comment(run: WorkflowRun, v: Verdict, *, approved_by: str | None = No
             "",
         ]
     lines += ["</details>", ""]
+    if trail:
+        lines += ["<details><summary>How it was diagnosed</summary>", ""]
+        lines += [f"{i}. {t}" for i, t in enumerate(trail, 1)]
+        lines += ["", "</details>", ""]
+    if v.reasoning.strip():
+        lines += ["<details><summary>Reasoning</summary>", "", v.reasoning, "", "</details>", ""]
     if v.suggested_fix:
         lines += ["**Suggested fix**", "", v.suggested_fix, ""]
-    why = (
-        f"after review by @{approved_by}"
-        if approved_by
-        else "because its confidence cleared the threshold"
-    )
+    if approved_by == AUTO_REVIEWER:
+        why = "with its fix handed to Claude automatically (`CI_TRIAGE_DELEGATE=auto`)"
+    elif approved_by:
+        why = f"after review by @{approved_by}"
+    else:
+        why = "because its confidence cleared the threshold"
     lines.append(
         f"<sub>[run {run.id}, attempt {run.run_attempt}]({run.html_url}) · posted by ci-triage "
         f"{why}, and every quoted line was found where it says it is.</sub>"
@@ -303,6 +322,7 @@ class Pipeline(Protocol):
     def compare(self, on: Target, base: str, head: str) -> tuple[list[ChangedFile], bool]: ...
     def try_fix(self, on: Target, sha: str, command: str, base: str, head: str) -> PatchTrial | None: ...
     def claude_said(self, on: Target, run_id: int) -> str | None: ...
+    def plan(self, on: Target, run: WorkflowRun, verdict: Verdict, fixture: Path) -> PlanResult: ...
 
 
 class GitHubPipeline:
@@ -411,6 +431,20 @@ class GitHubPipeline:
                         return str(note.get("message") or "")[:2000] or None
         return None
 
+    def plan(self, on: Target, run: WorkflowRun, verdict: Verdict, fixture: Path) -> PlanResult:
+        """Plan the fix, reading the source at the run's commit from GitHub."""
+        from ci_triage.agent import MODEL
+        from ci_triage.planner import GitHubSource, make_plan
+        from ci_triage.tools import TriageContext
+
+        command, files = _brief_inputs(fixture)
+        diff = TriageContext(fixture).get_diff()
+        owner, repo = on.owner_repo
+        with self._client(on) as client:
+            source = GitHubSource(client, owner, repo, run.head_sha)
+            return make_plan(run, verdict, source, diff=diff, failing_command=command,
+                             files=files, model=self.settings.model or MODEL)
+
     def try_fix(self, on: Target, sha: str, command: str, base: str, head: str) -> PatchTrial | None:
         """Reproduce at the original commit, then with the fix applied (Phase 8).
 
@@ -483,7 +517,7 @@ def process(record: RunRecord, store: Store, pipeline: Pipeline, settings: Setti
         return Status.FAILED
 
     run, _, _ = load_fixture(fixture)
-    body = render_comment(run, result.verdict)
+    body = render_comment(run, result.verdict, trail=result.trail)
 
     def done(status: Status, **kw: str | None) -> Status:
         store.finish(
@@ -494,6 +528,7 @@ def process(record: RunRecord, store: Store, pipeline: Pipeline, settings: Setti
             route=result.route.value,
             evidence_ok=result.evidence_ok,
             comment=body,
+            trail=list(result.trail),
             **kw,
         )
         return status
@@ -548,8 +583,12 @@ def _post_approved(
     """
     assert claimed.fixture is not None and claimed.verdict is not None
     run, _, _ = load_fixture(Path(claimed.fixture))
-    body = render_comment(run, Verdict.model_validate(claimed.verdict), approved_by=reviewer)
-    reason = f"approved by {reviewer}"
+    body = render_comment(run, Verdict.model_validate(claimed.verdict), approved_by=reviewer,
+                          trail=claimed.trail)
+    reason = (
+        "posted with an automatic delegation" if reviewer == AUTO_REVIEWER
+        else f"approved by {reviewer}"
+    )
     try:
         pulls = pipeline.pulls(claimed, run)
         if not pulls:
@@ -655,6 +694,14 @@ def render_delegation_note(d: Delegation, headline: str, detail: str = "") -> st
     lines = [delegation_marker(d.id), f"### ci-triage fix: {headline}", ""]
     if detail:
         lines += [detail, ""]
+    plan = _plan_of(d)
+    if plan is not None and plan.feasible:
+        from ci_triage.planner import render_plan
+
+        lines += [
+            "<details><summary>The plan Claude was given, checked against the code</summary>",
+            "", render_plan(plan), "", "</details>", "",
+        ]
     branch = f"`{d.fix_branch}`"
     where = f"draft PR #{d.fix_pr}" if d.fix_pr else f"branch {branch}"
     lines.append(
@@ -663,6 +710,16 @@ def render_delegation_note(d: Delegation, headline: str, detail: str = "") -> st
         "fails, and the diff deletes, skips and reconfigures no test.</sub>"
     )
     return "\n".join(lines)
+
+
+def _plan_of(d: Delegation) -> FixPlan | None:
+    """The delegation's plan, or None when there is none (or it no longer parses)."""
+    if not d.plan:
+        return None
+    try:
+        return FixPlan.model_validate(d.plan)
+    except ValidationError:
+        return None
 
 
 def _note(d: Delegation, headline: str, detail: str, store: Store, pipeline: Pipeline,
@@ -749,9 +806,12 @@ def propose(
     _, jobs, _ = load_fixture(fixture)
     command, files = _brief_inputs(fixture)
     branch = fix_branch(record.id)
+    planned = _plan_for(record, run, result.verdict, fixture, pipeline)
+    plan = planned.plan if planned is not None and planned.usable else None
     brief = render_brief(
         run, result.verdict, branch=branch, pr_number=pull.number, failing_command=command,
         files=files, attempt=1, max_attempts=settings.delegate_attempts,
+        plan=plan, trail=result.trail,
     )
     auto = settings.delegate == "auto"
     d = store.open_delegation(
@@ -771,6 +831,9 @@ def propose(
         cited="\n".join(ev.quote for ev in result.verdict.evidence),
         max_attempts=settings.delegate_attempts,
         reviewed_by="auto" if auto else None,
+        plan=plan.model_dump(mode="json") if plan is not None else None,
+        plan_checks=_plan_checks(planned),
+        trail=list(result.trail),
     )
     if d is None:
         log.info("run %s: a delegation is already open on #%s", record.id, pull.number)
@@ -779,9 +842,64 @@ def propose(
         d.id, deadline=(datetime.now(UTC) + settings.proposal_deadline).isoformat()
     )
     log.info("run %s: delegation %s %s on #%s", record.id, d.id, d.status.value, pull.number)
+
+    if plan is not None and not plan.feasible:
+        # The planner read the code and found no fix within the rules. Say
+        # what a person must do, and spend no Claude run finding that out.
+        gave = store.move(d.id, d.status, DelegationStatus.GAVE_UP,
+                          closed_reason=f"planner: {plan.blocker}")
+        log.info("run %s: delegation %s gave up at the plan: %s", record.id, d.id, plan.blocker)
+        if gave is None:
+            return store.get_delegation(d.id)
+        if auto:
+            _post_diagnosis(gave, store, pipeline, settings)
+        _note(gave, "no code fix, over to you",
+              f"ci-triage read the code at `{gave.head_sha[:8]}` and found no fix it may make "
+              f"within its rules, so nothing was handed to Claude.\n\n**What a person must do:** "
+              f"{plan.blocker}", store, pipeline, settings)
+        return store.get_delegation(d.id)
+
     if auto:
+        _post_diagnosis(d, store, pipeline, settings)
         return dispatch(d, store, pipeline, settings)
     return store.get_delegation(d.id)
+
+
+def _plan_for(
+    record: RunRecord, run: WorkflowRun, verdict: Verdict, fixture: Path, pipeline: Pipeline
+) -> PlanResult | None:
+    """Plan the fix. None when the planner itself failed: the delegation then
+    goes ahead with the plain brief, since a missing plan must never block a fix."""
+    try:
+        planned = pipeline.plan(record, run, verdict, fixture)
+    except Exception as exc:
+        log.warning("run %s: the planner failed, delegating without a plan: %s", record.id, exc)
+        from ci_triage.planner import PlanResult
+
+        return PlanResult(None, dropped=f"the planner failed: {type(exc).__name__}: {exc}"[:500])
+    if planned.dropped:
+        log.info("run %s: plan dropped: %s", record.id, planned.dropped)
+    return planned
+
+
+def _plan_checks(planned: PlanResult | None) -> dict | None:
+    return planned.checks_json() if planned is not None else None
+
+
+def _post_diagnosis(d: Delegation, store: Store, pipeline: Pipeline, settings: Settings) -> None:
+    """Post the diagnosis a delegation in auto mode rests on.
+
+    A regression with a proposed fix waits in review for its comment; in auto
+    mode nobody reviews it, so without this the PR would get a note that Claude
+    is fixing something it was never told about.
+    """
+    origin = store.get(d.origin_run)
+    if origin is None or origin.status is not Status.AWAITING_REVIEW or not origin.evidence_ok:
+        return
+    claimed = store.claim_review(origin.id, Status.APPROVED, reviewer=AUTO_REVIEWER,
+                                 note="posted with an automatic delegation")
+    if claimed is not None:
+        _post_approved(claimed, AUTO_REVIEWER, store, pipeline, settings)
 
 
 def dispatch(d: Delegation, store: Store, pipeline: Pipeline, settings: Settings) -> Delegation:
@@ -895,6 +1013,7 @@ def _attempt_failed(
                 o_run, o_verdict, branch=d.fix_branch, pr_number=d.pr_number,
                 failing_command=command, files=touched, attempt=d.attempt + 1,
                 max_attempts=d.max_attempts, previous=_attempts(history),
+                plan=_plan_of(d), trail=d.trail,
             )
         moved = store.move(
             d.id, DelegationStatus.DISPATCHED, DelegationStatus.RETRY,
