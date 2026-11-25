@@ -27,11 +27,12 @@ comparison with earlier eval sweeps.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol
 
-from pydantic_ai import Agent, ModelRetry, RunContext, capture_run_messages
+from pydantic_ai import Agent, AgentRunResult, ModelRetry, RunContext, capture_run_messages
 from pydantic_ai.capabilities import ProcessHistory
 from pydantic_ai.models import Model
 from pydantic_ai.usage import RunUsage, UsageLimits
@@ -530,10 +531,19 @@ def make_plan(
     ctx = PlanContext(run=run, verdict=verdict, source=source, diff=diff,
                       failing_command=failing_command, files=list(files or []))
     agent = build_planner(model)
+
+    async def _run() -> AgentRunResult[FixPlan]:
+        # Inside `async with agent`, so the model's HTTP client is closed on the
+        # event loop that opened it. With `run_sync`, an OpenRouter client
+        # outlived its loop and crashed the interpreter in its last garbage
+        # collection (a bus error, exit 138) after every plan.
+        async with agent:
+            return await agent.run(ctx.brief(), deps=ctx,
+                                   usage_limits=UsageLimits(request_limit=REQUEST_LIMIT))
+
     with capture_run_messages() as messages:
         try:
-            out = agent.run_sync(ctx.brief(), deps=ctx,
-                                 usage_limits=UsageLimits(request_limit=REQUEST_LIMIT))
+            out = asyncio.run(_run())
         except Exception as exc:
             setattr(exc, SPENT_ATTR, _usage_of(messages))
             raise
