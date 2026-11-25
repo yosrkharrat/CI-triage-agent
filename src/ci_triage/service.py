@@ -95,6 +95,11 @@ TRIAGE_CONCLUSIONS = frozenset({"failure", "timed_out", "startup_failure"})
 #: How long a run waits after the model's quota ran out, and how many times.
 #: Groq's daily cap is a rolling window, so an hour usually buys something back.
 QUOTA_BACKOFF = timedelta(minutes=30)
+#: How long a run waits after the provider said it is overloaded or down. A
+#: 503 "high demand" passes in minutes; failing the run for it loses the run.
+OUTAGE_BACKOFF = timedelta(minutes=5)
+#: Provider answers that mean "not now", not "not this request".
+_OUTAGE_STATUS = frozenset({500, 502, 503, 504, 529})
 MAX_ATTEMPTS = 6
 
 
@@ -417,6 +422,12 @@ def _quota_exhausted(exc: BaseException) -> bool:
     return isinstance(exc, ModelHTTPError) and exc.status_code == 429
 
 
+def _provider_outage(exc: BaseException) -> bool:
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    return isinstance(exc, ModelHTTPError) and exc.status_code in _OUTAGE_STATUS
+
+
 def _until(reset: datetime) -> timedelta:
     """How long to wait for a GitHub rate limit to reset, with a little slack."""
     return max(reset - datetime.now(UTC), timedelta(0)) + timedelta(seconds=5)
@@ -433,6 +444,10 @@ def _wait_out(record: RunRecord, exc: BaseException, store: Store) -> Status | N
     if _quota_exhausted(exc):
         log.warning("run %s: model quota exhausted, retrying in %s", record.id, QUOTA_BACKOFF)
         store.defer(record.id, QUOTA_BACKOFF, f"model quota exhausted: {exc}")
+        return Status.QUEUED
+    if _provider_outage(exc):
+        log.warning("run %s: model provider unavailable, retrying in %s", record.id, OUTAGE_BACKOFF)
+        store.defer(record.id, OUTAGE_BACKOFF, f"model provider unavailable: {exc}")
         return Status.QUEUED
     return None
 

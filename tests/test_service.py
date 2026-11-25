@@ -262,6 +262,28 @@ def test_a_failed_triage_is_recorded_not_raised(make):
     assert "boom" in record.error
 
 
+@pytest.mark.parametrize("status", [500, 503, 529])
+def test_a_provider_outage_defers_rather_than_fails(make, status):
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    busy = ModelHTTPError(status, "gemini-3.5-flash", {"error": {"message": "high demand"}})
+    client, store, worker = make(FakePipeline(busy))
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    record = store.get(rid)
+    assert record.status is Status.QUEUED
+    assert "provider unavailable" in record.error
+
+
+def test_a_bad_request_still_fails(make):
+    from pydantic_ai.exceptions import ModelHTTPError
+
+    client, store, worker = make(FakePipeline(ModelHTTPError(400, "m", {"error": "bad"})))
+    rid = _post(client, _payload()).json()["queued"]
+    worker.drain()
+    assert store.get(rid).status is Status.FAILED
+
+
 def test_an_exhausted_quota_defers_rather_than_fails(make):
     from pydantic_ai.exceptions import ModelHTTPError
 
