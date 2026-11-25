@@ -17,6 +17,9 @@
 #   - Your CI must run on a pull request into a non-default branch, i.e. a
 #     `pull_request:` trigger without a `branches: [main]` filter.
 name: ci-triage fix
+# ci-triage reads the fix branch back from the run name, to judge a finished
+# attempt as soon as this workflow ends. Keep the branch in it.
+run-name: ci-triage fix ${{ github.event.client_payload.fix_branch }} attempt ${{ github.event.client_payload.attempt }}
 
 on:
   repository_dispatch:

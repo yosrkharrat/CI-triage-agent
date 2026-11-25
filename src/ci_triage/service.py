@@ -37,6 +37,7 @@ import hmac
 import json
 import logging
 import os
+import re
 import threading
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -594,8 +595,8 @@ def reject(record: RunRecord, reviewer: str, note: str | None, store: Store) -> 
 #: The `repository_dispatch` event type the fix workflow listens for.
 DISPATCH_EVENT = "ci-triage-fix"
 
-#: The fix workflow's own runs. A failure there is Claude's attempt failing,
-#: which the deadline catches; it is not a CI failure to triage.
+#: The fix workflow's own runs. Never triaged as a CI failure: a finished one
+#: is judged as an attempt of the delegation its run name points to.
 FIX_WORKFLOW = "ci-triage fix"
 
 
@@ -825,6 +826,76 @@ def _close(d: Delegation, to: DelegationStatus, reason: str, store: Store, pipel
     return moved
 
 
+def _attempt_failed(
+    d: Delegation,
+    entry: dict,
+    run_id: int,
+    run_url: str,
+    guard_json: dict | None,
+    store: Store,
+    pipeline: Pipeline,
+    settings: Settings,
+) -> str:
+    """Record an attempt that did not fix it, then send the next one or give up."""
+    outcome = entry["outcome"]
+    history = [*d.history, entry]
+    if d.attempt < d.max_attempts:
+        origin = _origin(d, store)
+        brief = d.brief
+        if origin is not None:
+            o_run, o_verdict, o_fixture = origin
+            command, touched = _brief_inputs(o_fixture)
+            brief = render_brief(
+                o_run, o_verdict, branch=d.fix_branch, pr_number=d.pr_number,
+                failing_command=command, files=touched, attempt=d.attempt + 1,
+                max_attempts=d.max_attempts, previous=_attempts(history),
+            )
+        moved = store.move(
+            d.id, DelegationStatus.DISPATCHED, DelegationStatus.RETRY,
+            history=history, brief=brief, guard_result=guard_json, last_run_id=run_id,
+        )
+        if moved is not None:
+            dispatch(moved, store, pipeline, settings)
+        return f"attempt {d.attempt} not fixed ({outcome}); retrying"
+    moved = store.move(
+        d.id, DelegationStatus.DISPATCHED, DelegationStatus.GAVE_UP,
+        history=history, guard_result=guard_json, last_run_id=run_id, closed_reason=outcome,
+    )
+    if moved is not None:
+        _note(
+            moved, "gave up, over to you",
+            f"{d.max_attempts} attempt(s) did not fix it. The last one: {outcome} "
+            f"([run]({run_url})). The diagnosis above still stands; this one needs a person.",
+            store, pipeline, settings,
+        )
+    return f"attempt {d.attempt} not fixed ({outcome}); gave up"
+
+
+def _fix_workflow_done(
+    d: Delegation, run: WorkflowRun, record: RunRecord, store: Store, pipeline: Pipeline,
+    settings: Settings,
+) -> str:
+    """Judge a finished run of the fix workflow itself.
+
+    A failure there (Claude could not start, ran out of turns, could not push)
+    is a failed attempt now, not two hours from now. A success that left the
+    fix branch where it was means Claude pushed nothing, which it is told to do
+    when it cannot fix the failure within the rules: that is a failed attempt
+    too, and the run's log holds its reason.
+    """
+    if run.conclusion == "success":
+        head = pipeline.branch_head(d, d.fix_branch)
+        before = next((h["sha"] for h in reversed(d.history) if h.get("sha")), d.head_sha)
+        if head is not None and head != before:
+            return f"attempt {d.attempt}: Claude pushed {head[:8]}; waiting for its CI"
+        outcome = "Claude finished without pushing a fix; its reason is in the run's log"
+    else:
+        outcome = f"the fix workflow ended {run.conclusion} before a fix was pushed"
+    entry = {"attempt": d.attempt, "outcome": outcome, "run_id": record.run_id,
+             "html_url": run.html_url}
+    return _attempt_failed(d, entry, record.run_id, run.html_url, None, store, pipeline, settings)
+
+
 def follow_up(record: RunRecord, store: Store, pipeline: Pipeline, settings: Settings) -> Status:
     """Judge a completed run on a fix branch: fixed, another attempt, or give up."""
     d = store.get_delegation(record.delegation) if record.delegation is not None else None
@@ -841,6 +912,8 @@ def follow_up(record: RunRecord, store: Store, pipeline: Pipeline, settings: Set
 
     try:
         run = pipeline.get_run(d, record.run_id)
+        if run.event == "repository_dispatch" and run.name == FIX_WORKFLOW:
+            return checked(_fix_workflow_done(d, run, record, store, pipeline, settings))
         if run.workflow_id != d.workflow_id:
             return checked("a different workflow; only the one that failed counts")
         if any(h.get("sha") == run.head_sha for h in d.history):
@@ -915,42 +988,10 @@ def follow_up(record: RunRecord, store: Store, pipeline: Pipeline, settings: Set
             entry["verdict"] = new_verdict
         if result is not None and not result.ok:
             entry["guard"] = list(result.violations)
-        history = [*d.history, entry]
         guard_json = result.to_json() if result is not None else None
-
-        if d.attempt < d.max_attempts:
-            origin = _origin(d, store)
-            brief = d.brief
-            if origin is not None:
-                o_run, o_verdict, o_fixture = origin
-                command, touched = _brief_inputs(o_fixture)
-                brief = render_brief(
-                    o_run, o_verdict, branch=d.fix_branch, pr_number=d.pr_number,
-                    failing_command=command, files=touched, attempt=d.attempt + 1,
-                    max_attempts=d.max_attempts, previous=_attempts(history),
-                )
-            moved = store.move(
-                d.id, DelegationStatus.DISPATCHED, DelegationStatus.RETRY,
-                history=history, brief=brief, guard_result=guard_json, last_run_id=record.run_id,
-            )
-            if moved is not None:
-                dispatch(moved, store, pipeline, settings)
-            status_reason = f"attempt {d.attempt} not fixed ({outcome}); retrying"
-        else:
-            moved = store.move(
-                d.id, DelegationStatus.DISPATCHED, DelegationStatus.GAVE_UP,
-                history=history, guard_result=guard_json, last_run_id=record.run_id,
-                closed_reason=outcome,
-            )
-            if moved is not None:
-                _note(
-                    moved, "gave up, over to you",
-                    f"{d.max_attempts} attempt(s) did not fix it. The last one: {outcome} "
-                    f"([run]({run.html_url})). The diagnosis above still stands; this one needs "
-                    "a person.",
-                    store, pipeline, settings,
-                )
-            status_reason = f"attempt {d.attempt} not fixed ({outcome}); gave up"
+        status_reason = _attempt_failed(
+            d, entry, record.run_id, run.html_url, guard_json, store, pipeline, settings
+        )
         return checked(
             status_reason,
             fixture=str(fixture) if fixture else None,
@@ -1205,7 +1246,26 @@ def create_app(
             return {"ok": True, "queued": queued, "follow_up": d.id}
 
         if run.event == "repository_dispatch" and run.name == FIX_WORKFLOW:
-            return {"ok": True, "ignored": "the fix workflow itself"}
+            # Its run name carries the fix branch (see examples/ci-triage-fix.yml),
+            # which is how a finished attempt finds its delegation.
+            m = re.search(r"ci-triage/fix-\d+", run.display_title or "")
+            d = store.delegation_for_branch(run.repository.full_name, m.group(0)) if m else None
+            if d is None:
+                return {"ok": True, "ignored": "the fix workflow itself"}
+            queued = store.enqueue(
+                repo=run.repository.full_name,
+                run_id=run.id,
+                run_attempt=run.run_attempt,
+                html_url=run.html_url,
+                installation=event.installation.id if event.installation else None,
+                delivery=x_github_delivery or None,
+                kind=Kind.FOLLOW_UP,
+                delegation=d.id,
+            )
+            if queued is None:
+                return {"ok": True, "duplicate": True}
+            worker.wake.set()
+            return {"ok": True, "queued": queued, "fix_workflow": d.id}
         if run.conclusion not in TRIAGE_CONCLUSIONS:
             return {"ok": True, "ignored": f"conclusion {run.conclusion!r}"}
 

@@ -83,6 +83,8 @@ class WorkflowRun(BaseModel):
 
     id: int
     name: str | None = None
+    #: The run's name as shown, from the workflow's `run-name:` when it sets one.
+    display_title: str | None = None
     head_branch: str | None = None
     head_sha: str
     event: str

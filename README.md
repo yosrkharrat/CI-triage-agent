@@ -425,7 +425,12 @@ on it. A CI run on the fix branch is checked against its delegation and never
 triaged as a run of its own. A failed attempt is diagnosed again, and the next
 brief carries what went wrong: the new verdict, or the guard's violations. After
 the last attempt (two by default) it gives up and says so on the PR. One comment
-on the PR follows the whole thing, edited at each step.
+on the PR follows the whole thing, edited at each step. The fix workflow's own run counts
+too: if it fails, or ends without Claude pushing anything (which is what Claude
+is told to do when it cannot fix the failure within the rules), that is a
+failed attempt at once, rather than when the deadline passes. The workflow's
+`run-name` carries the fix branch so the service can tell which delegation a
+run belongs to.
 
 ```mermaid
 stateDiagram-v2
@@ -811,5 +816,3 @@ uv.
 - `dependency` failures are not delegated yet. Many of their fixes pin an action
   under `.github/workflows/`, which the guard refuses; allowing it means a guard
   rule that accepts a change to nothing but a `uses:` ref.
-- A failed run of the fix workflow itself (Claude erroring out, or giving up
-  without pushing) is noticed only when the attempt's deadline passes.

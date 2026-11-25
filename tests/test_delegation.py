@@ -703,3 +703,62 @@ def test_process_of_a_follow_up_without_a_delegation_just_records_it(tmp_path: P
     assert record is not None and record.id == rid
     settings = Settings(webhook_secret=SECRET, db_path=tmp_path / "db.sqlite", delegate="auto")
     assert process(record, store, FakeGitHub(_result()), settings) is Status.CHECKED
+
+
+# -- the fix workflow's own runs ---------------------------------------------
+
+
+def _fix_run(gh: FakeGitHub, client, worker, d, conclusion: str) -> dict:
+    """The fix workflow finishes, its run named after the fix branch."""
+    run_id = next(_ids)
+    raw = {**RUN, "id": run_id, "name": "ci-triage fix", "event": "repository_dispatch",
+           "head_branch": "main", "head_sha": "e" * 40, "conclusion": conclusion,
+           "workflow_id": WORKFLOW + 50,
+           "display_title": f"ci-triage fix {d.fix_branch} attempt {d.attempt}",
+           "html_url": f"https://github.com/{REPO}/actions/runs/{run_id}"}
+    gh.runs[run_id] = WorkflowRun.model_validate(raw)
+    r = _post(client, {"action": "completed", "workflow_run": raw}, delivery=f"d-{run_id}").json()
+    worker.drain()
+    return r
+
+
+def test_a_failed_fix_workflow_is_a_failed_attempt_at_once(make):
+    gh, client, store, worker, _rid, d = _dispatched(make)
+    r = _fix_run(gh, client, worker, d, "failure")
+    assert r["fix_workflow"] == d.id
+    d = store.get_delegation(d.id)
+    assert d.status is DelegationStatus.DISPATCHED and d.attempt == 2
+    assert "fix workflow ended failure" in d.history[0]["outcome"]
+    assert "fix workflow ended failure" in gh.dispatched[1]["brief"]
+    assert gh.triaged == 1  # nothing to diagnose: no CI ran
+
+    _fix_run(gh, client, worker, d, "failure")
+    assert store.get_delegation(d.id).status is DelegationStatus.GAVE_UP
+
+
+def test_claude_finishing_without_a_push_is_a_failed_attempt(make):
+    gh, client, store, worker, _rid, d = _dispatched(make)
+    _fix_run(gh, client, worker, d, "success")
+    d = store.get_delegation(d.id)
+    assert d.attempt == 2
+    assert "without pushing" in d.history[0]["outcome"]
+
+
+def test_claude_finishing_with_a_push_waits_for_ci(make):
+    gh, client, store, worker, _rid, d = _dispatched(make)
+    gh.branches[d.fix_branch] = "c1"
+    _fix_run(gh, client, worker, d, "success")
+    d = store.get_delegation(d.id)
+    assert d.status is DelegationStatus.DISPATCHED and d.attempt == 1
+    _ci(gh, client, worker, "c1", _jobs())
+    assert store.get_delegation(d.id).status is DelegationStatus.FIXED
+
+
+def test_a_fix_workflow_run_for_no_open_delegation_is_ignored(make):
+    gh = FakeGitHub(_result())
+    client, store, _worker = make(gh)
+    r = _post(client, {"action": "completed", "workflow_run": {
+        **RUN, "name": "ci-triage fix", "event": "repository_dispatch",
+        "display_title": "ci-triage fix ci-triage/fix-77 attempt 1"}}).json()
+    assert "fix workflow" in r["ignored"]
+    assert store.recent() == []
