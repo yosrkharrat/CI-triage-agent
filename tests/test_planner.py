@@ -22,6 +22,7 @@ from pydantic_ai.models.function import FunctionModel
 
 import ci_triage.planner as planner_mod
 from ci_triage.agent import MAX_REPAIRS
+from ci_triage.guard import PIN_RULE
 from ci_triage.models import Evidence, FailureCategory, FixPlan, PlanStep, Verdict, WorkflowRun
 from ci_triage.planner import DictSource, check_plan, make_plan, render_plan
 
@@ -130,7 +131,7 @@ def scripted(monkeypatch):
     """Run `make_plan` against a model that reads one file, then answers `answers` in turn."""
     seen: list[list] = []
 
-    def run(answers: list[FixPlan]):
+    def run(answers: list[FixPlan], verdict: Verdict = VERDICT, source: DictSource = SOURCE):
         def model(messages, info):
             seen.append(messages)
             if not any(isinstance(p, ToolReturnPart) for m in messages for p in m.parts):
@@ -141,7 +142,7 @@ def scripted(monkeypatch):
 
         real = planner_mod.build_planner
         monkeypatch.setattr(planner_mod, "build_planner", lambda *a, **kw: real(FunctionModel(model)))
-        return make_plan(RUN, VERDICT, SOURCE, files=["src/checkout/cart.py"]), seen
+        return make_plan(RUN, verdict, source, files=["src/checkout/cart.py"]), seen
 
     return run
 
@@ -220,3 +221,38 @@ def test_github_source_reads_through_the_tree_and_contents_apis():
     assert source.read("src/missing.py") is None  # answered from the tree, no request
     assert source.read("src/checkout/cart.py") is not None  # cached
     assert asked == ["/repos/o/r/git/trees/" + "a" * 40, "/repos/o/r/contents/src/checkout/cart.py"]
+
+
+# -- a dependency fix may pin an action ---------------------------------------
+
+WORKFLOW_SOURCE = DictSource({
+    **SOURCE.files,
+    ".github/workflows/ci.yml": "jobs:\n  test:\n    steps:\n      - uses: actions/setup-python@v5\n",
+})
+DEPENDENCY = VERDICT.model_copy(update={"category": FailureCategory.DEPENDENCY})
+PIN = PlanStep(file=".github/workflows/ci.yml", action="edit",
+               change="pin actions/setup-python to v5.1.0", why="setup-python v5.2 broke the cache")
+
+
+def test_a_pin_step_passes_its_checks_only_for_a_dependency_fix():
+    plan = _plan(steps=[PIN], verify=["pytest -q"])
+    assert all(c.ok for c in check_plan(plan, WORKFLOW_SOURCE, allow_pins=True))
+    assert not all(c.ok for c in check_plan(plan, WORKFLOW_SOURCE))
+    # Pins open workflow files, not test configuration.
+    cfg = _plan(steps=[PlanStep(file="pytest.ini", action="edit", change="x", why="y")])
+    assert not all(c.ok for c in check_plan(cfg, WORKFLOW_SOURCE, allow_pins=True))
+
+
+def _instructions(seen) -> str:
+    return "\n".join(m.instructions or "" for msgs in seen for m in msgs if isinstance(m, ModelRequest))
+
+
+def test_the_planner_is_told_about_pins_for_a_dependency_and_keeps_the_plan(scripted):
+    result, seen = scripted([_plan(steps=[PIN], verify=["pytest -q"])], DEPENDENCY, WORKFLOW_SOURCE)
+    assert result.usable and result.repairs == 0
+    assert PIN_RULE in _instructions(seen)
+
+
+def test_the_planner_is_not_told_about_pins_for_a_regression(scripted):
+    _, seen = scripted([_plan()])
+    assert PIN_RULE not in _instructions(seen)

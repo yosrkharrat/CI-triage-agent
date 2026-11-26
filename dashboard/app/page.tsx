@@ -75,6 +75,9 @@ export default async function HomePage() {
                       Replay a triage <Arrow />
                     </Link>
                   )}
+                  <Link href="/runs" className={PLATE_OUTLINE}>
+                    See a fix chain
+                  </Link>
                   <a href="#install" className={PLATE_OUTLINE}>
                     Add it to a repo
                   </a>

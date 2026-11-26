@@ -931,3 +931,62 @@ def test_a_fix_branch_that_already_exists_is_never_reused(make):
     _fail(client, worker)
     assert store.delegations() == []
     assert gh.dispatched == [] and gh.opened == []
+
+
+# -- a dependency fix may pin an action --------------------------------------
+
+PIN = [ChangedFile(".github/workflows/ci.yml", "modified",
+                   "@@ -9 +9 @@\n-      - uses: actions/setup-python@v5\n"
+                   "+      - uses: actions/setup-python@v5.1.0\n")]
+
+
+def test_a_dependency_fix_that_pins_an_action_is_fixed(make):
+    gh = FakeGitHub(_result(category=FailureCategory.DEPENDENCY))
+    client, store, worker = make(gh, mode="auto")
+    _fail(client, worker)
+    [d] = store.delegations()
+    assert d.category == "dependency"
+    assert "uses:" in gh.dispatched[0]["brief"]  # the pin rule rides in the brief
+    _push(gh, store, client, "c1")
+    gh.diffs["c1"] = PIN
+    _ci(gh, client, worker, "c1", _jobs())
+    d = store.get_delegation(d.id)
+    assert d.status is DelegationStatus.FIXED, d.closed_reason
+    assert d.guard_result["ok"] is True
+
+
+def test_a_regression_fix_that_pins_an_action_fails_the_guard(make):
+    gh, client, store, worker, _rid, d = _dispatched(make)
+    assert d.category == "regression"
+    _push(gh, store, client, "c1")
+    gh.diffs["c1"] = PIN
+    _ci(gh, client, worker, "c1", _jobs())
+    d = store.get_delegation(d.id)
+    assert d.status is DelegationStatus.DISPATCHED and d.attempt == 2
+    assert ".github/" in d.guard_result["violations"][0]
+
+
+def test_a_dependency_fix_that_edits_a_run_step_fails_the_guard(make):
+    gh = FakeGitHub(_result(category=FailureCategory.DEPENDENCY))
+    client, store, worker = make(gh, mode="auto")
+    _fail(client, worker)
+    [d] = store.delegations()
+    _push(gh, store, client, "c1")
+    gh.diffs["c1"] = [ChangedFile(".github/workflows/ci.yml", "modified",
+                                  "@@ -9 +9 @@\n-        run: pytest\n+        run: pytest || true\n")]
+    _ci(gh, client, worker, "c1", _jobs())
+    d = store.get_delegation(d.id)
+    assert d.guard_result["ok"] is False
+
+
+def test_an_old_database_gains_the_category_column_as_regression(tmp_path: Path):
+    path = tmp_path / "old.sqlite"
+    Store(path)
+    db = sqlite3.connect(path)
+    db.execute("ALTER TABLE delegations DROP COLUMN category")
+    db.commit()
+    db.close()
+    Store(path)
+    cols = {r[1]: r for r in sqlite3.connect(path).execute("PRAGMA table_info(delegations)")}
+    # Every delegation before the column was a regression; it reads back as one.
+    assert cols["category"][4] == "'regression'"

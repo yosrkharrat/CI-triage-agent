@@ -55,6 +55,7 @@ from ci_triage.delegate import (
     MODES,
     Attempt,
     PullInfo,
+    allows_pins,
     changed_files,
     check_fixed,
     eligible,
@@ -842,6 +843,7 @@ def propose(
         plan=plan.model_dump(mode="json") if plan is not None else None,
         plan_checks=_plan_checks(planned),
         trail=list(result.trail),
+        category=result.verdict.category.value,
     )
     if d is None:
         log.info("run %s: a delegation is already open on #%s", record.id, pull.number)
@@ -1122,7 +1124,8 @@ def follow_up(record: RunRecord, store: Store, pipeline: Pipeline, settings: Set
         trial_note: str | None = None
         if fixed:
             files, truncated = pipeline.compare(d, d.head_sha, run.head_sha)
-            result = guard(files, truncated=truncated, cited=d.cited or "")
+            result = guard(files, truncated=truncated, cited=d.cited or "",
+                           allow_pins=allows_pins(d.category))
             if result.ok and d.command:
                 trial = pipeline.try_fix(d, d.head_sha, d.command, d.head_sha, run.head_sha)
                 if trial is not None:

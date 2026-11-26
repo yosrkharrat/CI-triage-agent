@@ -16,6 +16,9 @@
 #     token, and pushes made with it do start CI.
 #   - Your CI must run on a pull request into a non-default branch, i.e. a
 #     `pull_request:` trigger without a `branches: [main]` filter.
+#   - A `dependency` fix may pin an action under .github/workflows/. GitHub
+#     refuses such a push unless the token may change workflow files
+#     (Workflows: write); without it, that attempt fails and is reported.
 name: ci-triage fix
 # ci-triage reads the fix branch back from the run name, to judge a finished
 # attempt as soon as this workflow ends. Keep the branch in it.

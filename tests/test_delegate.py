@@ -21,7 +21,7 @@ from ci_triage.delegate import (
     fix_branch,
     render_brief,
 )
-from ci_triage.guard import RULES
+from ci_triage.guard import PIN_RULE, RULES
 from ci_triage.models import Evidence, FailureCategory, Job, Repository, Verdict, WorkflowRun, route
 
 REPO = "o/r"
@@ -86,7 +86,7 @@ def test_a_proposed_fix_does_not_stop_it():
     ("kw", "why"),
     [
         ({"result": _result(category=FailureCategory.FLAKY)}, "flaky is not delegated"),
-        ({"result": _result(category=FailureCategory.DEPENDENCY)}, "dependency is not delegated"),
+        ({"result": _result(category=FailureCategory.INFRA)}, "infra is not delegated"),
         ({"result": _result(ok=False)}, "failed verification"),
         ({"result": _result(confidence=0.69)}, "below 0.70"),
         ({"mode": "off"}, "off"),
@@ -111,6 +111,10 @@ def test_no_pull_request_is_ineligible():
     assert eligible(_result(), _run(), None, mode="auto", already_open=False) == (
         False, "no open pull request for this commit"
     )
+
+
+def test_a_dependency_failure_is_eligible_too():
+    assert _ok(_result(category=FailureCategory.DEPENDENCY)) == (True, "eligible")
 
 
 def test_the_threshold_is_the_posting_threshold():
@@ -177,6 +181,15 @@ def test_the_brief_states_every_rule_the_guard_checks():
     b = _brief()
     for rule in RULES:
         assert rule in b
+
+
+def test_only_a_dependency_brief_allows_pinning_actions():
+    assert PIN_RULE not in _brief()
+    dep = render_brief(_run(), _verdict(category=FailureCategory.DEPENDENCY), branch="b",
+                       pr_number=7, failing_command=None, files=[])
+    assert PIN_RULE in dep
+    for rule in RULES:
+        assert rule in dep
 
 
 def test_a_retry_brief_carries_what_went_wrong():

@@ -384,7 +384,7 @@ to act on is handed to [claude-code-action](https://github.com/anthropics/claude
 and the service follows the fix through CI. It is off by default: it gives an
 agent write access to a branch of the repository.
 
-**What is handed over.** A `regression` whose citations all verified, with
+**What is handed over.** A `regression` or a `dependency` whose citations all verified, with
 confidence at or above the posting threshold (0.70), on an open pull request
 from the repository itself. A fork's code is never handed to an agent holding
 write access to the base repository. One delegation is open per pull request at
@@ -433,7 +433,13 @@ test green without fixing it:
   test file;
 - any change under `.github/`, or to test, lint or CI configuration
   (`pytest.ini`, `addopts`, `--deselect`, conftest collection hooks, jest's
-  ignore patterns, the `test` script);
+  ignore patterns, the `test` script). One exception, for a `dependency` fix
+  only: in a file under `.github/workflows/`, the ref after `@` on a `uses:`
+  line may change to a full commit SHA or an exact version tag (`v1.2.3`), for
+  the same action. Every changed line must be such a pin; a new step, an
+  edited `run:`, a `continue-on-error` or a floating ref like `v2` or `main`
+  fails. The planner and the brief are told the same rule, for that category
+  alone;
 - a diff GitHub did not show in full (a file without a patch, or the 300-file
   limit): the guard fails closed;
 - assertions removed from a test file the log cited are flagged for the
@@ -488,7 +494,11 @@ dispatch) and **Pull requests: write**, and subscriptions to **Push** and
   push uses its token. A push made with the workflow's `GITHUB_TOKEN` starts no
   CI run, and the fix would never be checked;
 - let CI run on a pull request into a non-default branch: a `pull_request:`
-  trigger without a `branches: [main]` filter.
+  trigger without a `branches: [main]` filter;
+- for a `dependency` fix that pins an action, the token Claude pushes with
+  must be allowed to change workflow files (GitHub's **Workflows: write**
+  permission). Without it GitHub refuses the push, and the attempt ends as a
+  failed one. This has not been tried on ci-triage-demo yet.
 
 ```bash
 echo 'CI_TRIAGE_DELEGATE=review' >> .env.local   # or auto; off by default
@@ -676,6 +686,9 @@ arrives as a new `run_attempt`, and so as a new row.
   post. A run's page re-checks each citation against the capture, so a
   reviewer sees *which* quote failed, and it will not offer to approve one that
   did.
+- **See a fix chain.** The public demo replays two recorded delegation chains
+  from ci-triage-demo, from the failed run to the outcome: one fixed in a
+  single attempt, one the planner handed to a person without a Claude run.
 
 The review token stays on the Next.js server; the browser only talks to the
 app.
@@ -844,8 +857,7 @@ uv.
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
 - Delegation on real regressions, not hand-made ones: three demo cases show
-  the chain works, not how often it fixes things. The public dashboard demo
-  replays triages but not yet a delegation chain.
-- `dependency` failures are not delegated yet. Many of their fixes pin an action
-  under `.github/workflows/`, which the guard refuses; allowing it means a guard
-  rule that accepts a change to nothing but a `uses:` ref.
+  the chain works, not how often it fixes things.
+- `dependency` delegation is tested against a scripted GitHub only. Whether
+  the Claude GitHub App's token may push a workflow change has not been tried
+  on ci-triage-demo.

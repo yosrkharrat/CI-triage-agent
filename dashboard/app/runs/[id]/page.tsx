@@ -5,41 +5,51 @@ import { ReviewForm } from "@/components/review-form";
 import { VerdictCard } from "@/components/verdict-card";
 import { CategoryBadge, ErrorPanel, Panel, StatusBadge } from "@/components/ui";
 import { AgentError, agentJson } from "@/lib/agent";
-import { DEMO } from "@/lib/demo";
+import { DEMO, getRecordedRun } from "@/lib/demo";
 import type { CheckedVerdict, Delegation, RunRecord } from "@/lib/types";
 
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;
-  if (DEMO) {
-    return (
-      <ErrorPanel
-        title="The review queue needs the webhook service"
-        detail="This demo replays recorded triages and runs no service. Run the dashboard locally against ci-triage serve to review live runs."
-      />
-    );
-  }
   let r: RunRecord;
-  try {
-    r = await agentJson<RunRecord>(`/runs/${encodeURIComponent(id)}`);
-  } catch (err) {
-    return <ErrorPanel title={`Run ${id} could not be loaded`} detail={(err as AgentError).message} />;
-  }
-  const fixture = r.fixture?.split("/").pop();
-  const parent =
-    r.kind === "follow_up" && r.delegation != null
-      ? await agentJson<Delegation>(`/delegations/${r.delegation}`).catch(() => null)
+  let parent: Delegation | null = null;
+  let checked: CheckedVerdict | null = null;
+  if (DEMO) {
+    // The demo runs no service: it shows a chain recorded on ci-triage-demo.
+    const recorded = getRecordedRun(id);
+    if (!recorded) {
+      return (
+        <ErrorPanel
+          title={`No recorded chain ${id}`}
+          detail="This demo replays recorded runs and runs no service. The recorded fix chains are listed under Fix chains."
+        />
+      );
+    }
+    r = recorded.run;
+    checked = recorded.verdict;
+  } else {
+    try {
+      r = await agentJson<RunRecord>(`/runs/${encodeURIComponent(id)}`);
+    } catch (err) {
+      return <ErrorPanel title={`Run ${id} could not be loaded`} detail={(err as AgentError).message} />;
+    }
+    parent =
+      r.kind === "follow_up" && r.delegation != null
+        ? await agentJson<Delegation>(`/delegations/${r.delegation}`).catch(() => null)
+        : null;
+    // Re-checked against the capture, so a reviewer sees which citation failed,
+    // not only that one did. Missing when the capture has since been removed.
+    checked = r.verdict
+      ? await agentJson<CheckedVerdict>(`/api/runs/${r.id}/verdict`).catch(() => null)
       : null;
-  // Re-checked against the capture, so a reviewer sees which citation failed,
-  // not only that one did. Missing when the capture has since been removed.
-  const checked = r.verdict
-    ? await agentJson<CheckedVerdict>(`/api/runs/${r.id}/verdict`).catch(() => null)
-    : null;
+  }
+  // A live capture is not in the demo's corpus, so it gets no link there.
+  const fixture = DEMO ? undefined : r.fixture?.split("/").pop();
 
   return (
     <div className="space-y-6">
       <div>
         <Link href="/runs" className="text-xs text-muted hover:text-fg">
-          ← Review queue
+          {DEMO ? "← Fix chains" : "← Review queue"}
         </Link>
         <h1 className="mt-1 text-lg font-semibold">
           {r.repo} <span className="font-mono">#{r.run_id}</span>
@@ -62,6 +72,12 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
             </a>
           )}
         </div>
+        {DEMO && (
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            A recording of a real run on the public ci-triage-demo repository, from failed CI to the fix&apos;s
+            outcome, shown as the service recorded it. Nothing here runs live.
+          </p>
+        )}
         {(r.reason || r.error) && <p className="mt-2 text-sm text-muted">{r.error ?? r.reason}</p>}
         {r.kind === "follow_up" && (
           <p className="mt-1 text-sm text-muted">
@@ -84,7 +100,7 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
         )}
       </div>
 
-      {r.status === "awaiting_review" && (
+      {!DEMO && r.status === "awaiting_review" && (
         <Panel title="Decide">
           <ReviewForm id={r.id} canApprove={r.evidence_ok === true} />
         </Panel>

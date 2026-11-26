@@ -4,14 +4,22 @@
 against a scripted GitHub (`tests/test_guard.py`, `tests/test_delegate.py`,
 `tests/test_delegation.py`). Phase 7 ran on ci-triage-demo: one fixed, two
 honest give-ups, and four bugs found and fixed
-(`reports/delegation-e2e-2026-11-25.md`). Recording a chain for the public
-demo is still open. README → "Handing a fix to Claude" documents what was built.
+(`reports/delegation-e2e-2026-11-25.md`). The public demo replays two real
+chains from the plan run, one fixed and one the planner handed to a person
+(`scripts/export_demo_chains.py` → `dashboard/demo/chains.json`). README → "Handing a fix to Claude" documents what was built.
 
 **Follow-on (25 Nov 2026):** the brief is now a checked plan. A planner reads the
 code at the failing commit, writes ordered steps, and is held to the guard's own
 path rules before Claude sees it; a plan that finds no code fix closes the
 delegation without a Claude run. See README → "The plan" and
 `reports/plan-dry-run-2026-11-25.md` and `reports/plan-e2e-2026-11-25.md`.
+
+**Follow-on (26 Nov 2026):** `dependency` is delegated too. The guard lets a
+`dependency` fix change one thing under `.github/`: the ref of a `uses:` line in
+a workflow file, to a full SHA or an exact version tag, for the same action
+(`guard.pin_only`). The delegation stores its category so the guard knows which
+rule holds. Not yet run on ci-triage-demo; the push needs a token allowed to
+change workflow files.
 
 ## Goal
 
