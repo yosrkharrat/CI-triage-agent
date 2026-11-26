@@ -119,6 +119,8 @@ export type RunRecord = {
   delegation?: number | null;
   /** On `/runs/{id}` only: the delegations this run's diagnosis started. */
   delegations?: Delegation[];
+  /** How the verdict was reached: one line per tool call the agent made. */
+  trail?: string[];
 };
 
 export type DelegationStatus =
@@ -148,6 +150,27 @@ export type AttemptRecord = {
   guard?: string[];
 };
 
+/** One step of a fix plan: one change to one file. */
+export type PlanStep = { file: string; action: "edit" | "create"; change: string; why: string };
+
+/** The planner's answer, checked against the code at the failing commit. */
+export type FixPlan = {
+  feasible: boolean;
+  blocker: string | null;
+  goal: string;
+  steps: PlanStep[];
+  verify: string[];
+  risks: string | null;
+};
+
+/** What the planner's checks found, and why a plan was dropped when it was. */
+export type PlanChecks = {
+  ok: boolean;
+  dropped: string | null;
+  repairs: number;
+  checks: { check: string; ok: boolean; detail: string }[];
+};
+
 export type Delegation = {
   id: number;
   repo: string;
@@ -175,6 +198,11 @@ export type Delegation = {
   created_at: string;
   updated_at: string;
   deadline: string | null;
+  /** The plan Claude was handed, when one passed its checks. */
+  plan?: FixPlan | null;
+  plan_checks?: PlanChecks | null;
+  /** How the diagnosis was reached, as on the run. */
+  trail?: string[];
   /** On `/delegations/{id}` only. */
   follow_ups?: RunRecord[];
 };

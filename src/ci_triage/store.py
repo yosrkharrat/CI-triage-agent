@@ -27,7 +27,7 @@ import sqlite3
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
@@ -99,12 +99,16 @@ OPEN_DELEGATION = (
 #: Every move a delegation may make. Anything else is refused, so a late or
 #: redelivered event cannot reopen a closed one.
 TRANSITIONS: dict[DelegationStatus, frozenset[DelegationStatus]] = {
+    # Either can go straight to `gave_up` when the planner finds no code fix
+    # within the rules: nothing is sent, and no Claude run is spent.
     DelegationStatus.PROPOSED: frozenset({
         DelegationStatus.APPROVED, DelegationStatus.REJECTED,
         DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED, DelegationStatus.STALE,
+        DelegationStatus.GAVE_UP,
     }),
     DelegationStatus.APPROVED: frozenset({
         DelegationStatus.DISPATCHED, DelegationStatus.SUPERSEDED, DelegationStatus.CLOSED,
+        DelegationStatus.GAVE_UP,
     }),
     DelegationStatus.DISPATCHED: frozenset({
         DelegationStatus.FIXED, DelegationStatus.RETRY, DelegationStatus.GAVE_UP,
@@ -146,6 +150,7 @@ CREATE TABLE IF NOT EXISTS runs (
     review_note   TEXT,
     kind          TEXT    NOT NULL DEFAULT 'triage',
     delegation    INTEGER,
+    trail         TEXT,
     UNIQUE (repo, run_id, run_attempt)
 );
 CREATE INDEX IF NOT EXISTS runs_status ON runs (status, received_at);
@@ -178,7 +183,10 @@ CREATE TABLE IF NOT EXISTS delegations (
     comment_url   TEXT,
     created_at    TEXT    NOT NULL,
     updated_at    TEXT    NOT NULL,
-    deadline      TEXT
+    deadline      TEXT,
+    plan          TEXT,
+    plan_checks   TEXT,
+    trail         TEXT
 );
 -- SQLite will not take `UNIQUE ... WHERE` as a table constraint; a partial
 -- unique index says the same thing: one open delegation per pull request.
@@ -195,6 +203,13 @@ _ADDED_COLUMNS = {
     "review_note": "TEXT",
     "kind": "TEXT NOT NULL DEFAULT 'triage'",
     "delegation": "INTEGER",
+    "trail": "TEXT",
+}
+#: The same, for `delegations`.
+_ADDED_DELEGATION_COLUMNS = {
+    "plan": "TEXT",
+    "plan_checks": "TEXT",
+    "trail": "TEXT",
 }
 
 
@@ -229,6 +244,8 @@ class RunRecord:
     review_note: str | None
     kind: Kind = Kind.TRIAGE
     delegation: int | None = None
+    #: How the verdict was reached: one line per tool call.
+    trail: list[str] = field(default_factory=list)
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -242,6 +259,7 @@ class RunRecord:
         d["kind"] = Kind(d.get("kind") or Kind.TRIAGE.value)
         d["verdict"] = json.loads(d["verdict"]) if d["verdict"] else None
         d["evidence_ok"] = None if d["evidence_ok"] is None else bool(d["evidence_ok"])
+        d["trail"] = json.loads(d["trail"]) if d.get("trail") else []
         return cls(**d)
 
     def to_json(self) -> dict:
@@ -283,6 +301,12 @@ class Delegation:
     created_at: str
     updated_at: str
     deadline: str | None
+    #: The planner's `FixPlan`, when one was made and passed its checks.
+    plan: dict | None = None
+    #: What the planner's checks found, and why a plan was dropped if it was.
+    plan_checks: dict | None = None
+    #: How the diagnosis was reached, from the triage's tool calls.
+    trail: list[str] = field(default_factory=list)
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -300,6 +324,9 @@ class Delegation:
         d["failed_jobs"] = json.loads(d["failed_jobs"])
         d["history"] = json.loads(d["history"] or "[]")
         d["guard_result"] = json.loads(d["guard_result"]) if d["guard_result"] else None
+        for k in ("plan", "plan_checks"):
+            d[k] = json.loads(d[k]) if d.get(k) else None
+        d["trail"] = json.loads(d["trail"]) if d.get("trail") else []
         return cls(**d)
 
     def to_json(self) -> dict:
@@ -327,10 +354,11 @@ class Store:
         self._lock = threading.Lock()
         with self._conn() as db:
             db.executescript(_SCHEMA)
-            have = {r["name"] for r in db.execute("PRAGMA table_info(runs)")}
-            for name, kind in _ADDED_COLUMNS.items():
-                if name not in have:
-                    db.execute(f"ALTER TABLE runs ADD COLUMN {name} {kind}")
+            for table, added in (("runs", _ADDED_COLUMNS), ("delegations", _ADDED_DELEGATION_COLUMNS)):
+                have = {r["name"] for r in db.execute(f"PRAGMA table_info({table})")}
+                for name, kind in added.items():
+                    if name not in have:
+                        db.execute(f"ALTER TABLE {table} ADD COLUMN {name} {kind}")
 
     @contextmanager
     def _conn(self) -> Iterator[sqlite3.Connection]:
@@ -457,12 +485,13 @@ class Store:
         comment: str | None = None,
         comment_url: str | None = None,
         error: str | None = None,
+        trail: list[str] | None = None,
     ) -> None:
         with self._conn() as db:
             db.execute(
                 "UPDATE runs SET status = ?, fixture = ?, verdict = ?, route = ?, reason = ?,"
                 " evidence_ok = ?, comment = ?, comment_url = ?, error = ?,"
-                " not_before = NULL,"
+                " trail = COALESCE(?, trail), not_before = NULL,"
                 " updated_at = ? WHERE id = ?",
                 (
                     status.value,
@@ -474,6 +503,7 @@ class Store:
                     comment,
                     comment_url,
                     error,
+                    json.dumps(trail) if trail is not None else None,
                     _now(),
                     run,
                 ),
@@ -553,6 +583,9 @@ class Store:
         cited: str | None = None,
         max_attempts: int = 2,
         reviewed_by: str | None = None,
+        plan: dict | None = None,
+        plan_checks: dict | None = None,
+        trail: list[str] | None = None,
     ) -> Delegation | None:
         """Start a delegation. None when one is already open on that PR."""
         if status not in (DelegationStatus.PROPOSED, DelegationStatus.APPROVED):
@@ -564,10 +597,14 @@ class Store:
                     "INSERT INTO delegations (repo, pr_number, installation, origin_run,"
                     " workflow_id, failed_jobs, head_branch, head_sha, base_branch, fix_branch,"
                     " command, cited, status, max_attempts, brief, reviewed_by, created_at,"
-                    " updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *",
+                    " updated_at, plan, plan_checks, trail)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *",
                     (repo, pr_number, installation, origin_run, workflow_id,
                      json.dumps(failed_jobs), head_branch, head_sha, base_branch, fix_branch,
-                     command, cited, status.value, max_attempts, brief, reviewed_by, now, now),
+                     command, cited, status.value, max_attempts, brief, reviewed_by, now, now,
+                     json.dumps(plan) if plan is not None else None,
+                     json.dumps(plan_checks) if plan_checks is not None else None,
+                     json.dumps(trail or [])),
                 ).fetchone()
         except sqlite3.IntegrityError:
             return None

@@ -31,6 +31,7 @@ import time
 import zipfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 import httpx
 
@@ -418,6 +419,28 @@ class GitHubClient:
             f"/repos/{owner}/{repo}/check-runs/{check_run}/annotations", params={"per_page": 50}
         ).json()
         return list(payload) if isinstance(payload, list) else []
+
+    def get_tree(self, owner: str, repo: str, sha: str) -> tuple[list[dict], bool]:
+        """Every entry of the repository at `sha`, recursively, and whether
+        GitHub truncated the listing (it does past ~100k entries)."""
+        payload = self._get(f"/repos/{owner}/{repo}/git/trees/{sha}", params={"recursive": "1"}).json()
+        return list(payload.get("tree") or []), bool(payload.get("truncated"))
+
+    def get_file(self, owner: str, repo: str, path: str, ref: str) -> str | None:
+        """A file's text at `ref`, or None when there is none (or it is a directory)."""
+        try:
+            r = self._get(
+                f"/repos/{owner}/{repo}/contents/{quote(path, safe='/')}",
+                params={"ref": ref},
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+        except GitHubError as exc:
+            if isinstance(exc, RateLimited):
+                raise
+            return None
+        if r.headers.get("content-type", "").startswith("application/json"):
+            return None  # a directory listing, not a file
+        return r.content.decode("utf-8", errors="replace")
 
     def pulls_for_branch(self, owner: str, repo: str, head: str, base: str) -> list[int]:
         """Open PRs from `head` (a branch of this repo) into `base`."""

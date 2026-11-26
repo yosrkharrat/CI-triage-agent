@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -330,6 +331,62 @@ class Verdict(BaseModel):
     suggested_fix: str | None = Field(
         default=None,
         description="Concrete remedy, if one is well-supported by the evidence. Null otherwise.",
+    )
+
+
+# --------------------------------------------------------------------------
+# The fix plan — what the planner hands Claude, checked against the code
+# --------------------------------------------------------------------------
+
+#: Most steps a plan may have. A fix that needs more is not a CI fix.
+MAX_PLAN_STEPS = 8
+
+
+class PlanStep(BaseModel):
+    """One change to one file."""
+
+    model_config = ConfigDict(frozen=True)
+
+    file: str = Field(description="Repository-relative path of the file to change.")
+    action: Literal["edit", "create"] = Field(
+        description="`edit` an existing file, or `create` a new one."
+    )
+    change: str = Field(description="What to change in that file, concretely enough to do it.")
+    why: str = Field(description="Which piece of the diagnosis's evidence this step answers.")
+
+
+class FixPlan(BaseModel):
+    """An ordered plan to fix a diagnosed failure, or the reason there is none.
+
+    Checked mechanically before it is used (`planner.check_plan`): every file
+    an `edit` names exists at the commit, no step touches a path the diff guard
+    forbids, and every `path::test` in `verify` names a test that is there.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    feasible: bool = Field(
+        description="False when no code change within the rules can fix this failure."
+    )
+    blocker: str | None = Field(
+        default=None,
+        description="When not feasible: what a person has to do instead. Null otherwise.",
+    )
+    goal: str = Field(description="One sentence: what fixed means for this failure.")
+    steps: list[PlanStep] = Field(
+        default_factory=list,
+        max_length=MAX_PLAN_STEPS,
+        description=f"1 to {MAX_PLAN_STEPS} ordered steps when feasible; empty when not.",
+    )
+    verify: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Tests or commands that must pass after the change, as `path::test_name` "
+            "where possible."
+        ),
+    )
+    risks: str | None = Field(
+        default=None, description="What else the change could break. Null if nothing notable."
     )
 
 

@@ -180,6 +180,21 @@ _ASSERTION = re.compile(
 )
 
 
+def forbidden(path: str) -> str | None:
+    """Why a fix may not touch `path` at all, or None when it may.
+
+    Only the rules that need nothing but the path: anything under `.github/`,
+    and files whose whole purpose is deciding what runs or how strictly. The
+    guard checks a diff against it, and the planner checks a plan's steps
+    against it, so the two are held to one definition.
+    """
+    if path.startswith(".github/"):
+        return "changes under .github/ are not allowed"
+    if _CONFIG_NAMES.match(PurePosixPath(path).name):
+        return "test, lint or CI configuration changed"
+    return None
+
+
 def _test_defs(lines: list[str]) -> Counter[str]:
     found: Counter[str] = Counter()
     for line in lines:
@@ -229,8 +244,8 @@ def guard(
         before = f.previous_filename or path
         test = is_test_file(path) or is_test_file(before)
 
-        if path.startswith(".github/") or before.startswith(".github/"):
-            violations.append(f"{path}: changes under .github/ are not allowed")
+        if why := forbidden(path) or forbidden(before):
+            violations.append(f"{path}: {why}")
             continue
 
         if f.status == "removed":
@@ -257,9 +272,6 @@ def guard(
 
         removed, added = f.lines()
 
-        if _CONFIG_NAMES.match(name):
-            violations.append(f"{path}: test, lint or CI configuration changed")
-            continue
         if (pattern := _CONFIG_LINES.get(name)) and any(
             pattern.search(line) for line in removed + added
         ):

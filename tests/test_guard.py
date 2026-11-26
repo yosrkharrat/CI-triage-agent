@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from ci_triage.guard import ChangedFile, guard, is_test_file
+from ci_triage.guard import ChangedFile, forbidden, guard, is_test_file
 
 
 def _patch(removed: list[str] = (), added: list[str] = ()) -> str:  # type: ignore[assignment]
@@ -218,3 +218,24 @@ def test_violations_are_reported_once_each():
     assert len(r.violations) == 1
     assert r.to_json()["ok"] is False
     assert "FAILED" in r.render()
+
+
+@pytest.mark.parametrize(
+    ("path", "why"),
+    [
+        (".github/workflows/ci.yml", ".github/"),
+        ("pytest.ini", "configuration"),
+        ("sub/jest.config.ts", "configuration"),
+        ("src/checkout/cart.py", None),
+        ("tests/test_cart.py", None),
+        ("pyproject.toml", None),  # only some of its lines are configuration
+    ],
+)
+def test_forbidden_is_one_rule_for_plans_and_diffs(path: str, why: str | None):
+    got = forbidden(path)
+    assert (got is None) if why is None else (why in (got or ""))
+
+
+def test_deleting_a_config_file_is_a_violation():
+    result = guard([ChangedFile("pytest.ini", "removed")])
+    assert not result.ok

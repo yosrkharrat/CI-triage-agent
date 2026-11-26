@@ -327,6 +327,16 @@ def test_comment_quotes_each_citation_with_its_coordinates():
     assert run.html_url in body
 
 
+def test_comment_explains_how_the_verdict_was_reached():
+    run = WorkflowRun.model_validate_json((FIXTURE / "run.json").read_text())
+    trail = ("read the logs: 4 failed job(s), 1 distinct failure(s)", "read the diff (2 file(s))")
+    body = render_comment(run, _result().verdict, trail=trail)
+    assert "<summary>How it was diagnosed</summary>" in body
+    assert "1. read the logs: 4 failed job(s)" in body and "2. read the diff (2 file(s))" in body
+    assert "<summary>Reasoning</summary>" in body
+    assert "How it was diagnosed" not in render_comment(run, _result().verdict)
+
+
 def test_a_quote_containing_backticks_cannot_break_out_of_its_fence():
     assert _fence("plain") == "```"
     assert _fence("a ``` b") == "````"
