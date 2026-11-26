@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from ci_triage.guard import ChangedFile, forbidden, guard, is_test_file
+from ci_triage.guard import ChangedFile, forbidden, guard, is_test_file, pin_only
 
 
 def _patch(removed: list[str] = (), added: list[str] = ()) -> str:  # type: ignore[assignment]
@@ -239,3 +239,90 @@ def test_forbidden_is_one_rule_for_plans_and_diffs(path: str, why: str | None):
 def test_deleting_a_config_file_is_a_violation():
     result = guard([ChangedFile("pytest.ini", "removed")])
     assert not result.ok
+
+
+# -- pinning actions, for a dependency fix ---------------------------------
+
+SHA = "8e5e7e5ab8b370d6c329ec480221332ada57f0ab"
+CI = ".github/workflows/ci.yml"
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    [
+        ("      - uses: actions/setup-python@v5", "      - uses: actions/setup-python@v5.1.0"),
+        ("      - uses: actions/setup-python@v5", f"      - uses: actions/setup-python@{SHA} # v5.1.0"),
+        ("        uses: 'org/action/sub@main'", f"        uses: 'org/action/sub@{SHA}'"),
+        ("      - uses: actions/cache@v4  # cache", "      - uses: actions/cache@4.0.2"),
+    ],
+)
+def test_pinning_an_action_passes_for_a_dependency_fix(old, new):
+    r = guard([_f(CI, [old], [new])], allow_pins=True)
+    assert r.ok, r.violations
+
+
+def test_pinning_an_action_still_fails_for_any_other_fix():
+    r = guard([_f(CI, ["  - uses: a/b@v1"], ["  - uses: a/b@v1.2.3"])])
+    assert not r.ok and ".github/" in r.violations[0]
+
+
+def test_a_pin_and_a_code_change_pass_together():
+    r = guard([
+        _f(CI, ["  - uses: a/b@v1"], [f"  - uses: a/b@{SHA}"]),
+        _f("requirements.txt", ["foo>=1"], ["foo==1.4.2"]),
+    ], allow_pins=True)
+    assert r.ok, r.violations
+
+
+@pytest.mark.parametrize(
+    ("removed", "added", "why"),
+    [
+        (["  - uses: a/b@v1"], ["  - uses: a/b@v2"], "not pinned"),
+        (["  - uses: a/b@v1"], ["  - uses: a/b@main"], "not pinned"),
+        (["  - uses: a/b@v1"], [f"  - uses: evil/b@{SHA}"], "which action"),
+        (["  - uses: a/b@v1"], ["  - uses: a/b@v1.2.3", "    continue-on-error: true"], "more than"),
+        (["    run: pytest"], ["    run: pytest || true"], "more than"),
+        (["    run: pytest -q"], ["    run: pytest -q -k 'not slow'"], "more than"),
+        ([], ["    continue-on-error: true"], "more than"),
+        (["    if: always()"], [], "more than"),
+        (["  - uses: a/b@v1"], ["  - run: echo a/b@v1.2.3"], "more than"),
+        (["  - uses: a/b@v1"], ["  - uses: a/b@v1.2.3", ], None),
+    ],
+)
+def test_anything_but_a_pin_in_a_workflow_fails(removed, added, why):
+    r = guard([_f(CI, removed, added)], allow_pins=True)
+    if why is None:
+        assert r.ok
+    else:
+        assert not r.ok and why in r.violations[0]
+
+
+@pytest.mark.parametrize("status", ["added", "removed", "renamed"])
+def test_a_workflow_file_may_only_be_modified(status):
+    f = _f(CI, ["  - uses: a/b@v1"], [f"  - uses: a/b@{SHA}"], status=status,
+           previous_filename=".github/workflows/old.yml" if status == "renamed" else None)
+    assert not guard([f], allow_pins=True).ok
+
+
+@pytest.mark.parametrize(
+    "path",
+    [".github/actions/setup/action.yml", ".github/CODEOWNERS", ".github/workflows/sub/x.yml",
+     ".github/dependabot.yml"],
+)
+def test_pins_open_workflow_files_and_nothing_else_under_dot_github(path):
+    r = guard([_f(path, ["  - uses: a/b@v1"], [f"  - uses: a/b@{SHA}"])], allow_pins=True)
+    assert not r.ok
+
+
+def test_a_workflow_file_without_a_patch_fails_closed():
+    f = ChangedFile(CI, "modified", None, changes=4)
+    assert pin_only(f) is not None
+    assert not guard([f], allow_pins=True).ok
+
+
+def test_forbidden_with_pins_opens_workflow_files_only():
+    assert forbidden(CI, allow_pins=True) is None
+    assert forbidden(".github/workflows/release.yaml", allow_pins=True) is None
+    assert forbidden(".github/CODEOWNERS", allow_pins=True) is not None
+    assert forbidden("pytest.ini", allow_pins=True) is not None
+    assert forbidden(CI) is not None

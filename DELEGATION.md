@@ -13,6 +13,13 @@ path rules before Claude sees it; a plan that finds no code fix closes the
 delegation without a Claude run. See README → "The plan" and
 `reports/plan-dry-run-2026-11-25.md` and `reports/plan-e2e-2026-11-25.md`.
 
+**Follow-on (26 Nov 2026):** `dependency` is delegated too. The guard lets a
+`dependency` fix change one thing under `.github/`: the ref of a `uses:` line in
+a workflow file, to a full SHA or an exact version tag, for the same action
+(`guard.pin_only`). The delegation stores its category so the guard knows which
+rule holds. Not yet run on ci-triage-demo; the push needs a token allowed to
+change workflow files.
+
 ## Goal
 
 When CI fails on a pull request, ci-triage diagnoses it. If the fix is a code

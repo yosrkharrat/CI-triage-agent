@@ -48,7 +48,8 @@ from ci_triage.agent import (
     _usage_of,
     drop_reasoning,
 )
-from ci_triage.guard import RULES, forbidden
+from ci_triage.delegate import allows_pins
+from ci_triage.guard import PIN_RULE, RULES, forbidden
 from ci_triage.models import MAX_PLAN_STEPS, FixPlan, Verdict, WorkflowRun
 
 if TYPE_CHECKING:
@@ -187,12 +188,15 @@ def _has_test(text: str, name: str) -> bool:
     )
 
 
-def check_plan(plan: FixPlan, source: SourceReader) -> tuple[PlanCheck, ...]:
+def check_plan(
+    plan: FixPlan, source: SourceReader, *, allow_pins: bool = False
+) -> tuple[PlanCheck, ...]:
     """Every check a plan must pass before Claude is handed it.
 
     Pure apart from reading `source`. What it cannot see, it does not vouch
     for: a `verify` entry that is a command, not a test id, is listed as
-    unchecked rather than passed.
+    unchecked rather than passed. `allow_pins` (a `dependency` fix) lets a
+    step edit a workflow file; the guard holds the diff to pinning actions.
     """
     checks: list[PlanCheck] = []
     if not plan.feasible:
@@ -214,7 +218,7 @@ def check_plan(plan: FixPlan, source: SourceReader) -> tuple[PlanCheck, ...]:
         if path is None or not path:
             checks.append(PlanCheck(f"step {i}", False, f"{step.file!r} is not a path inside the repository"))
             continue
-        if why := forbidden(path):
+        if why := forbidden(path, allow_pins=allow_pins):
             checks.append(PlanCheck(f"step {i}", False, f"{path}: {why}; the diff guard would fail it"))
             continue
         exists = source.read(path) is not None
@@ -367,6 +371,19 @@ def build_planner(model: str | Model = MODEL, *, retries: int = RETRIES) -> Agen
         capabilities=[ProcessHistory(drop_reasoning)],
     )
 
+    @agent.instructions
+    def pin_rule(ctx: RunContext[PlanContext]) -> str:
+        """For a dependency fix only: the one change under `.github/` allowed."""
+        if not allows_pins(ctx.deps.verdict.category):
+            return ""
+        return (
+            "## One exception for this failure\n\n"
+            f"{PIN_RULE}\n\nSo a step that pins an action in a workflow file is a fix, not a "
+            "blocker. Say in `change` which `uses:` line, and the exact SHA or version to pin "
+            "it to, and only when the log or the code shows which version works; when it does "
+            "not, the plan is not feasible and `blocker` says what a person must decide."
+        )
+
     @agent.output_validator
     def plan_holds(ctx: RunContext[PlanContext], plan: FixPlan) -> FixPlan:
         """Check the plan against the code; send it back when a check fails."""
@@ -374,7 +391,8 @@ def build_planner(model: str | Model = MODEL, *, retries: int = RETRIES) -> Agen
             return plan
         if ctx.deps.first_plan is None:
             ctx.deps.first_plan = plan
-        bad = [c for c in check_plan(plan, ctx.deps.source) if not c.ok]
+        pins = allows_pins(ctx.deps.verdict.category)
+        bad = [c for c in check_plan(plan, ctx.deps.source, allow_pins=pins) if not c.ok]
         if not bad or ctx.deps.repairs >= MAX_REPAIRS:
             return plan
         ctx.deps.repairs += 1
@@ -548,7 +566,7 @@ def make_plan(
             setattr(exc, SPENT_ATTR, _usage_of(messages))
             raise
     plan = out.output
-    checks = check_plan(plan, source)
+    checks = check_plan(plan, source, allow_pins=allows_pins(verdict.category))
     bad = [c for c in checks if not c.ok]
     dropped = None
     if bad:

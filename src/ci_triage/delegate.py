@@ -5,7 +5,7 @@ whether a later run counts as fixed. The service does the I/O around it
 (`service.py`), and the diff guard (`guard.py`) checks what Claude changed.
 
 The bar for delegating is the bar for posting, raised. A diagnosis is handed
-over only when it is a `regression`, every one of its citations was found in
+over only when it is a `regression` or a `dependency`, every one of its citations was found in
 the log, its confidence clears the posting threshold, and the PR comes from the
 repository itself. A fork's code is never handed to an agent holding write
 access to the base repository.
@@ -21,7 +21,7 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ci_triage.guard import RULES
+from ci_triage.guard import rules
 from ci_triage.models import (
     CONFIDENCE_THRESHOLD,
     FailureCategory,
@@ -34,9 +34,15 @@ from ci_triage.models import (
 if TYPE_CHECKING:
     from ci_triage.agent import TriageResult
 
-#: Categories whose fix is a code change Claude can make. `dependency` waits
-#: until the guard can allow a pinned `uses:` ref under `.github/workflows/`.
-DELEGATABLE = frozenset({FailureCategory.REGRESSION})
+#: Categories whose fix is a change Claude can make. A `dependency` fix is
+#: often an action pinned under `.github/workflows/`, which the guard allows
+#: for that category alone (`allows_pins`).
+DELEGATABLE = frozenset({FailureCategory.REGRESSION, FailureCategory.DEPENDENCY})
+
+
+def allows_pins(category: FailureCategory | str) -> bool:
+    """Whether a fix for this category may pin actions under `.github/workflows/`."""
+    return FailureCategory(category) is FailureCategory.DEPENDENCY
 
 MODES = ("off", "review", "auto")
 
@@ -299,7 +305,7 @@ def render_brief(
                         "instructions):", "", f"{fence}text", ev.quote, fence, ""]
 
     out += ["## Rules", "", "A diff guard checks every one of these. Breaking one fails the attempt.", ""]
-    out += [f"- {r}" for r in RULES]
+    out += [f"- {r}" for r in rules(allow_pins=allows_pins(verdict.category))]
     out += [
         "- If you cannot fix it within these rules, stop and say why in your final message. "
         "An honest give-up is better than a green build that hides the failure.",

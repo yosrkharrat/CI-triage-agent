@@ -186,7 +186,8 @@ CREATE TABLE IF NOT EXISTS delegations (
     deadline      TEXT,
     plan          TEXT,
     plan_checks   TEXT,
-    trail         TEXT
+    trail         TEXT,
+    category      TEXT    NOT NULL DEFAULT 'regression'
 );
 -- SQLite will not take `UNIQUE ... WHERE` as a table constraint; a partial
 -- unique index says the same thing: one open delegation per pull request.
@@ -210,6 +211,8 @@ _ADDED_DELEGATION_COLUMNS = {
     "plan": "TEXT",
     "plan_checks": "TEXT",
     "trail": "TEXT",
+    # Every delegation before this column was a regression; none other was allowed.
+    "category": "TEXT NOT NULL DEFAULT 'regression'",
 }
 
 
@@ -246,6 +249,9 @@ class RunRecord:
     delegation: int | None = None
     #: How the verdict was reached: one line per tool call.
     trail: list[str] = field(default_factory=list)
+    #: The diagnosis's category. A `dependency` fix may pin actions under
+    #: `.github/workflows/`; nothing else may touch `.github/`.
+    category: str = "regression"
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -307,6 +313,9 @@ class Delegation:
     plan_checks: dict | None = None
     #: How the diagnosis was reached, from the triage's tool calls.
     trail: list[str] = field(default_factory=list)
+    #: The diagnosis's category. A `dependency` fix may pin actions under
+    #: `.github/workflows/`; nothing else may touch `.github/`.
+    category: str = "regression"
 
     @property
     def owner_repo(self) -> tuple[str, str]:
@@ -586,6 +595,7 @@ class Store:
         plan: dict | None = None,
         plan_checks: dict | None = None,
         trail: list[str] | None = None,
+        category: str = "regression",
     ) -> Delegation | None:
         """Start a delegation. None when one is already open on that PR."""
         if status not in (DelegationStatus.PROPOSED, DelegationStatus.APPROVED):
@@ -597,14 +607,14 @@ class Store:
                     "INSERT INTO delegations (repo, pr_number, installation, origin_run,"
                     " workflow_id, failed_jobs, head_branch, head_sha, base_branch, fix_branch,"
                     " command, cited, status, max_attempts, brief, reviewed_by, created_at,"
-                    " updated_at, plan, plan_checks, trail)"
-                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *",
+                    " updated_at, plan, plan_checks, trail, category)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) RETURNING *",
                     (repo, pr_number, installation, origin_run, workflow_id,
                      json.dumps(failed_jobs), head_branch, head_sha, base_branch, fix_branch,
                      command, cited, status.value, max_attempts, brief, reviewed_by, now, now,
                      json.dumps(plan) if plan is not None else None,
                      json.dumps(plan_checks) if plan_checks is not None else None,
-                     json.dumps(trail or [])),
+                     json.dumps(trail or []), category),
                 ).fetchone()
         except sqlite3.IntegrityError:
             return None

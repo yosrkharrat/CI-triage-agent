@@ -16,6 +16,11 @@ Two levels:
 
 * **violations** fail the fix. Deleted or uncollected tests, added skips,
   any change under `.github/`, test or lint configuration, an incomplete diff.
+* **pins** are the one exception to `.github/`, and only for a `dependency`
+  fix (`allow_pins`): a workflow file under `.github/workflows/` may change the
+  ref after `@` on a `uses:` line to a pinned one, a full commit SHA or an exact
+  version tag, and nothing else. Many dependency failures are an action that
+  moved under a floating tag, and pinning it is the whole fix.
 * **flags** are reported for a human but do not fail it on their own. Today
   that is one thing: assertions removed from a test file the log cited, which
   is sometimes the fix (the test was wrong) and sometimes the cheat.
@@ -180,18 +185,68 @@ _ASSERTION = re.compile(
 )
 
 
-def forbidden(path: str) -> str | None:
+#: Workflow files a `dependency` fix may touch, under the pin rule.
+_WORKFLOW = re.compile(r"^\.github/workflows/[^/]+\.ya?ml$")
+#: A `uses:` line: indentation and an optional list dash, an optional quote,
+#: the action, `@`, the ref, the same quote, then an optional comment.
+_USES = re.compile(
+    r"""^(?P<lead>\s*(?:-\s+)?uses:\s*)(?P<q>['"]?)(?P<action>[^@\s'"#]+)@(?P<ref>[^\s'"#]+)(?P=q)"""
+    r"""\s*(?:#.*)?$"""
+)
+#: A ref that cannot move: a full commit SHA, or an exact version tag.
+_PINNED = re.compile(r"^(?:[0-9a-f]{40}|v?\d+\.\d+\.\d+)$")
+
+
+def is_workflow(path: str) -> bool:
+    return bool(_WORKFLOW.match(path))
+
+
+def forbidden(path: str, *, allow_pins: bool = False) -> str | None:
     """Why a fix may not touch `path` at all, or None when it may.
 
     Only the rules that need nothing but the path: anything under `.github/`,
     and files whose whole purpose is deciding what runs or how strictly. The
     guard checks a diff against it, and the planner checks a plan's steps
     against it, so the two are held to one definition.
+
+    With `allow_pins`, a workflow file is not forbidden by its path; what may
+    change inside it is the guard's to check (`pin_only`), since a path alone
+    cannot say.
     """
+    if allow_pins and is_workflow(path):
+        return None
     if path.startswith(".github/"):
         return "changes under .github/ are not allowed"
     if _CONFIG_NAMES.match(PurePosixPath(path).name):
         return "test, lint or CI configuration changed"
+    return None
+
+
+def pin_only(f: ChangedFile) -> str | None:
+    """Why this change to a workflow file is more than pinning actions, or None.
+
+    Every removed line must pair, in order, with an added line, and each pair
+    must be the same `uses:` of the same action with only the ref changed, to
+    one that is pinned. A trailing comment may change with it, since a SHA pin
+    usually carries its version as one. Anything else, a new step, an edited
+    `run:`, a `continue-on-error`, a moved `if:`, fails.
+    """
+    if f.status != "modified":
+        return f"a workflow file may only be modified to pin actions, not {f.status}"
+    if f.patch is None:
+        return "GitHub returned no patch; cannot check it"
+    removed, added = f.lines()
+    if not removed or len(removed) != len(added):
+        return "changes more than the ref of a `uses:` line"
+    for old, new in zip(removed, added, strict=True):
+        a, b = _USES.match(old), _USES.match(new)
+        if a is None or b is None:
+            return f"changes more than the ref of a `uses:` line: {new.strip()[:120]}"
+        if (a["lead"], a["action"]) != (b["lead"], b["action"]):
+            return f"changes which action runs, not only its ref: {new.strip()[:120]}"
+        if not _PINNED.match(b["ref"]):
+            return (f"{b['action']}@{b['ref']} is not pinned; use a full commit SHA "
+                    "or an exact version tag")
     return None
 
 
@@ -219,14 +274,17 @@ def _cited(path: str, cited: str) -> bool:
 
 
 def guard(
-    files: list[ChangedFile], *, truncated: bool = False, cited: str = ""
+    files: list[ChangedFile], *, truncated: bool = False, cited: str = "",
+    allow_pins: bool = False,
 ) -> GuardResult:
     """Check a fix's diff against the rules a fix must keep.
 
     `files` is the compare API's file list between the PR head the fix started
     from and the fix branch. `truncated` says GitHub cut the list short. `cited`
     is the text of the log quotes the diagnosis rested on, used to tell which
-    test files the failure pointed at.
+    test files the failure pointed at. `allow_pins` lets a workflow file
+    through when the only change is pinning actions (`pin_only`); it is set for
+    a `dependency` fix and nothing else.
     """
     violations: list[str] = []
     flags: list[str] = []
@@ -244,8 +302,13 @@ def guard(
         before = f.previous_filename or path
         test = is_test_file(path) or is_test_file(before)
 
-        if why := forbidden(path) or forbidden(before):
+        if why := forbidden(path, allow_pins=allow_pins) or forbidden(before, allow_pins=allow_pins):
             violations.append(f"{path}: {why}")
+            continue
+
+        if allow_pins and (is_workflow(path) or is_workflow(before)):
+            if why := pin_only(f):
+                violations.append(f"{path}: {why}")
             continue
 
         if f.status == "removed":
@@ -317,3 +380,15 @@ RULES = (
     "Keep the change minimal: fix the cause the log shows, nothing else.",
 )
 
+#: What changes for a `dependency` fix: the one thing it may do under `.github/`.
+PIN_RULE = (
+    "This is a dependency failure, so one change under .github/ is allowed: in a file under "
+    ".github/workflows/, you may change the ref after `@` on a `uses:` line to a full commit "
+    "SHA or an exact version tag (v1.2.3), for the same action. Nothing else in those files "
+    "may change: no new or edited steps, `run:`, `with:`, `if:` or `continue-on-error`."
+)
+
+
+def rules(*, allow_pins: bool = False) -> tuple[str, ...]:
+    """The rules a fix is told, with the pin rule added for a `dependency` fix."""
+    return (*RULES, PIN_RULE) if allow_pins else RULES
