@@ -4,8 +4,9 @@
 against a scripted GitHub (`tests/test_guard.py`, `tests/test_delegate.py`,
 `tests/test_delegation.py`). Phase 7 ran on ci-triage-demo: one fixed, two
 honest give-ups, and four bugs found and fixed
-(`reports/delegation-e2e-2026-11-25.md`). Recording a chain for the public
-demo is still open. README → "Handing a fix to Claude" documents what was built.
+(`reports/delegation-e2e-2026-11-25.md`). The public demo replays two real
+chains from the plan run, one fixed and one the planner handed to a person
+(`scripts/export_demo_chains.py` → `dashboard/demo/chains.json`). README → "Handing a fix to Claude" documents what was built.
 
 **Follow-on (25 Nov 2026):** the brief is now a checked plan. A planner reads the
 code at the failing commit, writes ordered steps, and is held to the guard's own

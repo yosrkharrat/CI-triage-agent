@@ -2,16 +2,29 @@ import Link from "next/link";
 
 import { CategoryBadge, DelegationBadge, ErrorPanel, StatusBadge } from "@/components/ui";
 import { AgentError, agentJson } from "@/lib/agent";
-import { DEMO } from "@/lib/demo";
+import { DEMO, getRecordedRuns } from "@/lib/demo";
 import { type Delegation, OPEN_DELEGATION, type RunRecord } from "@/lib/types";
 
 export default async function RunsPage() {
   if (DEMO) {
+    const recorded = getRecordedRuns().flatMap((r) => r.delegations ?? []);
     return (
-      <ErrorPanel
-        title="The review queue needs the webhook service"
-        detail="This demo replays recorded triages and runs no service. Run the dashboard locally against ci-triage serve to review live runs."
-      />
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Fix chains</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Recordings of real runs on the public ci-triage-demo repository, each broken on purpose: a failed run is
+            diagnosed, a planner checks a fix plan against the code, and Claude makes the fix. One was fixed. In the
+            other, the planner found no fix within the rules and handed it to a person without a Claude run. Two
+            hand-made cases show how the chain works, not how often it fixes real failures. Nothing here runs live.
+          </p>
+        </div>
+        {recorded.length > 0 ? (
+          <DelegationTable delegations={recorded} demo />
+        ) : (
+          <ErrorPanel title="No chains recorded" detail="Run scripts/export_demo_chains.py to add one." />
+        )}
+      </div>
     );
   }
   let runs: RunRecord[];
@@ -44,15 +57,18 @@ export default async function RunsPage() {
   );
 }
 
-function DelegationTable({ delegations }: { delegations: Delegation[] }) {
+function DelegationTable({ delegations, demo = false }: { delegations: Delegation[]; demo?: boolean }) {
   const open = delegations.filter((d) => OPEN_DELEGATION.includes(d.status));
   const closed = delegations.filter((d) => !OPEN_DELEGATION.includes(d.status));
   return (
     <section>
-      <h2 className="mb-1 text-sm font-semibold">Fixes handed to Claude ({open.length} open)</h2>
+      <h2 className="mb-1 text-sm font-semibold">
+        {demo ? "Recorded chains" : `Fixes handed to Claude (${open.length} open)`}
+      </h2>
       <p className="mb-2 max-w-2xl text-xs text-muted">
-        A proposed one waits for a person: approving it sends the brief to Claude and approves the diagnosis with
-        it. ci-triage reports fixed only when the failing jobs pass, nothing else fails, and the diff guard passes.
+        {demo
+          ? "ci-triage reports fixed only when the failing jobs pass, nothing else fails, and the diff guard passes."
+          : "A proposed one waits for a person: approving it sends the brief to Claude and approves the diagnosis with it. ci-triage reports fixed only when the failing jobs pass, nothing else fails, and the diff guard passes."}
       </p>
       <div className="overflow-x-auto rounded-md border border-line bg-panel">
         <table className="w-full text-sm">
@@ -71,7 +87,11 @@ function DelegationTable({ delegations }: { delegations: Delegation[] }) {
                   <DelegationBadge status={d.status} />
                 </td>
                 <td className="hidden whitespace-nowrap px-4 py-2 text-xs text-muted sm:table-cell">
-                  {d.attempt ? `attempt ${d.attempt} of ${d.max_attempts}` : "not sent yet"}
+                  {d.attempt
+                    ? `attempt ${d.attempt} of ${d.max_attempts}`
+                    : OPEN_DELEGATION.includes(d.status)
+                      ? "not sent yet"
+                      : "no Claude run"}
                 </td>
                 <td className="hidden max-w-md truncate px-4 py-2 text-xs text-muted md:table-cell">
                   {d.error ?? d.closed_reason ?? d.fix_branch}

@@ -60,8 +60,20 @@ With `CI_TRIAGE_DEMO=replay`:
 - Every page is prerendered from the snapshot.
 - The browser replays each recording through `ReplayTransport` (`lib/replay.ts`),
   at the pace the run streamed. Pauses are capped at 1.2 s.
-- The ask and triage routes return 404, and the review queue explains that it
-  needs the service.
+- The ask and triage routes return 404.
+- The review queue becomes **Fix chains**: recorded delegation chains, each
+  shown on its run page from the failed run to the fix's outcome, labelled as
+  a recording. They come from `demo/chains.json`, which
+  `scripts/export_demo_chains.py` writes from the database a chain ran on (from
+  the repo root):
+
+  ```bash
+  uv run python scripts/export_demo_chains.py .ci-triage/e2e-plan.db 1 6 \
+    --model openrouter:google/gemini-3.5-flash
+  ```
+
+  It exports only chains that have ended, on a repository listed as public in
+  the script, and leaves out the App installation and webhook delivery ids.
 
 No model is called and no key is needed, so the demo can be hosted for free as a
 static site.

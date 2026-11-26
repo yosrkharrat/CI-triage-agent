@@ -205,6 +205,8 @@ export type Delegation = {
   trail?: string[];
   /** On `/delegations/{id}` only. */
   follow_ups?: RunRecord[];
+  /** The diagnosis's category; a `dependency` fix may pin actions. Missing from an older service. */
+  category?: Category;
 };
 
 /** One recorded triage, as `scripts/record-demo.mjs` lists it in the snapshot. */

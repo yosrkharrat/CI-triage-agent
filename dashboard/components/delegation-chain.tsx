@@ -43,7 +43,7 @@ function A({ href, children }: { href: string; children: React.ReactNode }) {
 
 function Diagnosis({ v }: { v: Verdict }) {
   return (
-    <p className="text-sm text-muted">
+    <p className="text-sm text-muted [overflow-wrap:anywhere]">
       <span className="font-medium text-fg">{v.category}</span> ({v.confidence.toFixed(2)}): {v.summary}
     </p>
   );
@@ -51,7 +51,7 @@ function Diagnosis({ v }: { v: Verdict }) {
 
 function Plan({ plan, checks }: { plan: FixPlan; checks: PlanChecks | null | undefined }) {
   return (
-    <div className="mt-1 space-y-2 text-sm text-muted">
+    <div className="mt-1 space-y-2 text-sm text-muted [overflow-wrap:anywhere]">
       <p>{plan.goal}</p>
       {!plan.feasible && plan.blocker && (
         <p>
@@ -119,7 +119,7 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
       title: "Failed run",
       tone: "bad",
       body: (
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted [overflow-wrap:anywhere]">
           <A href={gh(d.repo, `pull/${d.pr_number}`)}>#{d.pr_number}</A> at{" "}
           <span className="font-mono text-xs">{d.head_sha.slice(0, 8)}</span>
           {d.failed_jobs.length > 0 && <>: {d.failed_jobs.join(", ")}</>}
@@ -176,7 +176,7 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
       title: `Attempt ${h.attempt}: not fixed`,
       tone: "bad",
       body: (
-        <div className="text-sm text-muted">
+        <div className="text-sm text-muted [overflow-wrap:anywhere]">
           <p>
             <A href={h.html_url}>CI run</A> on <span className="font-mono text-xs">{h.sha.slice(0, 8)}</span>:{" "}
             {h.outcome}
@@ -214,7 +214,7 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
       tone: "accent",
       current: true,
       body: (
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted [overflow-wrap:anywhere]">
           Branch <A href={gh(d.repo, `tree/${d.fix_branch}`)}>{d.fix_branch}</A>
           {d.fix_pr ? (
             <>
@@ -237,7 +237,7 @@ export function DelegationChain({ d, verdict }: { d: Delegation; verdict: Verdic
       title: end.title,
       tone: end.tone,
       body: (
-        <div className="text-sm text-muted">
+        <div className="text-sm text-muted [overflow-wrap:anywhere]">
           {d.closed_reason && <p>{d.closed_reason}</p>}
           {d.status === "fixed" && d.guard_result && (
             <p className="mt-1">

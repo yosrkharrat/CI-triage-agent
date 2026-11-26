@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { agentJson } from "@/lib/agent";
-import type { FixtureDetail, FixtureRow, Recording } from "@/lib/types";
+import type { CheckedVerdict, FixtureDetail, FixtureRow, Recording, RunRecord } from "@/lib/types";
 
 /**
  * Replay mode: the dashboard without the Python service.
@@ -56,4 +56,40 @@ export function getRecordings(): Record<string, Recording[]> {
 
 export function demoNames(): string[] {
   return DEMO ? Object.keys(snapshot().details) : [];
+}
+
+/**
+ * Recorded delegation chains: real runs on the public ci-triage-demo repo,
+ * from failed CI to the fix's outcome, as the service's API returned them.
+ * Written by `scripts/export_demo_chains.py` from the database they ran on.
+ */
+export type Chains = {
+  captured_at: string;
+  source: string;
+  runs: Record<string, RunRecord>;
+  verdicts: Record<string, CheckedVerdict>;
+};
+
+const CHAINS = path.join(process.cwd(), "demo", "chains.json");
+
+let chains: Chains | undefined;
+function recordedChains(): Chains {
+  if (chains === undefined) {
+    chains = existsSync(CHAINS)
+      ? (JSON.parse(readFileSync(CHAINS, "utf8")) as Chains)
+      : { captured_at: "", source: "", runs: {}, verdicts: {} };
+  }
+  return chains;
+}
+
+/** The recorded runs that started a chain, oldest first; empty outside replay mode. */
+export function getRecordedRuns(): RunRecord[] {
+  return DEMO ? Object.values(recordedChains().runs).sort((a, b) => a.received_at.localeCompare(b.received_at)) : [];
+}
+
+export function getRecordedRun(id: string): { run: RunRecord; verdict: CheckedVerdict | null } | null {
+  if (!DEMO) return null;
+  const c = recordedChains();
+  const run = c.runs[id];
+  return run ? { run, verdict: c.verdicts[id] ?? null } : null;
 }

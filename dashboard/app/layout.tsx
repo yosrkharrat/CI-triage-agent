@@ -33,6 +33,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             {DEMO ? (
               <>
+                <Link href="/runs" className="label text-[13px] text-muted hover:text-fg">
+                  Fix chains
+                </Link>
                 <Link href="/#install" className="label text-[13px] text-muted hover:text-fg">
                   Install
                 </Link>

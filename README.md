@@ -686,6 +686,9 @@ arrives as a new `run_attempt`, and so as a new row.
   post. A run's page re-checks each citation against the capture, so a
   reviewer sees *which* quote failed, and it will not offer to approve one that
   did.
+- **See a fix chain.** The public demo replays two recorded delegation chains
+  from ci-triage-demo, from the failed run to the outcome: one fixed in a
+  single attempt, one the planner handed to a person without a Claude run.
 
 The review token stays on the Next.js server; the browser only talks to the
 app.
@@ -854,8 +857,7 @@ uv.
 - Labelling the rest of the corpus. This is the slow part and only a human can
   do it, which is why the harness reports what it can without one.
 - Delegation on real regressions, not hand-made ones: three demo cases show
-  the chain works, not how often it fixes things. The public dashboard demo
-  replays triages but not yet a delegation chain.
+  the chain works, not how often it fixes things.
 - `dependency` delegation is tested against a scripted GitHub only. Whether
   the Claude GitHub App's token may push a workflow change has not been tried
   on ci-triage-demo.
